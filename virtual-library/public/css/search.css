@@ -1,0 +1,100 @@
+/* Search sheet: pick a category, type, add a result as pending or done. */
+
+.search-sheet { height: calc(100dvh - var(--safe-top) - 24px); }
+
+.search-head { flex: none; padding: 0 16px 12px; border-bottom: 1px solid var(--line); }
+
+.category-picker > button svg.icon { width: 16px; height: 16px; }
+.category-picker > button { font-size: 13px; }
+
+.search-field {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  height: 48px;
+  margin-top: 12px;
+  padding: 0 6px 0 14px;
+  border-radius: var(--radius);
+  background: var(--surface-2);
+  border: 1px solid var(--line);
+  transition: border-color 160ms;
+}
+.search-field:focus-within { border-color: color-mix(in srgb, var(--accent) 60%, transparent); }
+.search-icon { display: grid; color: var(--faint); }
+.search-field input {
+  flex: 1;
+  min-width: 0;
+  height: 100%;
+  border: 0;
+  background: none;
+  outline: none;
+  font-size: 16px;                               /* 16px keeps iOS from zooming in */
+}
+.search-field input::placeholder { color: var(--faint); }
+.search-field input::-webkit-search-cancel-button { display: none; }
+
+.search-body {
+  flex: 1;
+  overflow-y: auto;
+  overscroll-behavior: contain;
+  padding: 6px 0 12px;
+}
+
+.results { margin: 0; padding: 0; list-style: none; }
+.result {
+  display: grid;
+  grid-template-columns: 52px 1fr;
+  gap: 14px;
+  align-items: center;
+  padding: 10px 16px;
+}
+.result + .result { border-top: 1px solid rgb(43 38 64 / 0.6); }
+.result .cover { width: 52px; border-radius: 7px; }
+.result .cover-fallback { padding: 6px; }
+.result .cover-fallback span { display: none; }
+.result-info { min-width: 0; }
+.result-title { font-weight: 600; font-size: 15px; line-height: 1.25; }
+.result-meta { margin-top: 2px; color: var(--muted); font-size: 13px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.result-actions { display: flex; gap: 8px; margin-top: 9px; }
+.result-actions .pill { min-height: 32px; padding: 0 13px; font-size: 13px; }
+.result-actions .pill svg.icon { width: 15px; height: 15px; stroke-width: 2.2; }
+.in-library {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  margin-top: 9px;
+  color: var(--accent);
+  font-size: 13px;
+  font-weight: 600;
+}
+.in-library svg.icon { width: 15px; height: 15px; }
+
+.search-message {
+  padding: 48px 32px;
+  text-align: center;
+  color: var(--muted);
+  font-size: 14px;
+}
+.search-message svg.icon { width: 36px; height: 36px; color: var(--faint); stroke-width: 1.4; }
+.search-message p { margin: 10px 0 18px; }
+.search-message strong { color: var(--ink); font-weight: 600; }
+.manual { margin-top: 26px; padding-top: 22px; border-top: 1px solid var(--line); }
+.manual p { margin: 0; }
+.manual .result-actions { justify-content: center; margin-top: 12px; }
+
+/* loading placeholders */
+.skeleton .cover, .skeleton .bar { background: linear-gradient(90deg, var(--surface-2), var(--surface-3), var(--surface-2)) 0 0 / 200% 100%; animation: shimmer 1.2s linear infinite; }
+.skeleton .bar { width: 70%; height: 12px; border-radius: 6px; margin: 6px 0; }
+.skeleton .bar.short { width: 40%; }
+@keyframes shimmer { to { background-position: -200% 0; } }
+
+.credits {
+  flex: none;
+  margin: 0;
+  padding: 10px 16px calc(12px + var(--safe-bottom));
+  border-top: 1px solid var(--line);
+  color: var(--faint);
+  font-size: 12px;
+  text-align: center;
+}
+.credits a { color: var(--muted); }

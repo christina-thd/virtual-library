@@ -1,0 +1,41 @@
+virtual-library/                   Home Assistant add-on containing the app
+                                   (in the repository it sits next to repository.yaml and the repo README)
+├── config.yaml                    add-on definition: version, ingress, port 3100, optional TMDB / RAWG keys
+├── Dockerfile                     Home Assistant base image + Node.js, copies src/ and public/ (no npm packages)
+├── run.sh                         bashio: add-on options → env vars (TMDB_API_KEY, RAWG_API_KEY), starts the server
+├── README.md                      add-on store page: features, install, options
+├── DOCS.md                        add-on Documentation tab: usage, ratings, search sources, API keys
+├── CHANGELOG.md                   release notes (shown in Home Assistant)
+├── icon.png, logo.png             add-on store icon (128×128) and banner (250×100)
+├── art/                           store-logo.svg, render.sh (PNG images)
+├── package.json                   version, scripts (start, dev, test), no dependencies
+├── src/                           server (Node, no framework)
+│   ├── server.js                  entry point: wires config, store, catalog and covers; graceful shutdown
+│   ├── config.js                  environment variables (PORT, HOST, STATE_FILE, COVERS_DIR, API keys)
+│   ├── app.js                     HTTP routes: page, static files, /covers, /api/search, /api/actions, /api/events
+│   ├── library/state.js           state shape, repairing saved data, view for clients
+│   ├── library/actions.js         addItem, setStatus, rateItem, removeItem — validated
+│   ├── catalog/index.js           search: provider per category, result shape, image allow-list
+│   ├── catalog/providers/         cinemeta, tvmaze, open-library, steam (keyless); tmdb, rawg (with a key)
+│   ├── covers.js                  saved covers: download (with fallbacks), serve, prune
+│   ├── http-client.js             fetch with timeout and User-Agent; errors never show the URL
+│   ├── store.js                   safe JSON saving (atomic, debounced)
+│   ├── sse.js                     live updates to all screens
+│   └── static.js                  safe static file serving
+├── public/                        browser (plain ES modules, no build step)
+│   ├── index.html                 the page (markup only)
+│   ├── css/   base.css, home.css, shelf.css, search.css, details.css
+│   ├── manifest.webmanifest       "Add to Home Screen" opens it like an app, in portrait
+│   ├── img/   logo.svg, icon-*.png
+│   └── js/
+│       ├── app.js                 entry: latest library → views; home ↔ category
+│       ├── shared/  library.js (used by server too), api, dom, format, storage
+│       ├── ui/      back (phone back button), sheet, toast, cover, stars, icons
+│       └── library/ home (category tiles), category (Pending / Done), shelf, search, details
+├── test/                          automated tests (Node's built-in runner, no extra deps):
+│                                  state, actions, catalog, covers, http, store, addon packaging
+└── docs/
+    ├── DEVELOPMENT.md             dev setup, architecture, releasing, local Docker test
+    └── _project_architecture.txt  this overview
+
+Not in the repository: data/ (local library and covers)

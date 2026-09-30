@@ -1,0 +1,29 @@
+name: "Hoard Board"
+description: "Your movies, series, books and games: what's pending and what you've finished"
+version: "1.0.0"
+slug: "virtual_library"
+init: false
+arch:
+  - aarch64
+  - amd64
+  - armhf
+  - armv7
+  - i386
+startup: application
+boot: auto
+ingress: true
+ingress_port: 3100
+# Optional direct address (http://<homeassistant-ip>:3100/), e.g. for "Add to Home Screen" on a phone.
+# Not needed for the Home Assistant sidebar or app.
+ports:
+  3100/tcp: 3100
+ports_description:
+  3100/tcp: "Web interface (not needed for the Home Assistant sidebar)"
+panel_icon: "mdi:treasure-chest"
+panel_title: "Hoard Board"
+options:
+  tmdb_api_key: ""
+  rawg_api_key: ""
+schema:
+  tmdb_api_key: "password?"
+  rawg_api_key: "password?"

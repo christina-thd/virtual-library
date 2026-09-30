@@ -1,0 +1,91 @@
+/* Home: the title, and one tile per category with its newest covers fanned out. */
+
+.home-top {
+  padding: calc(34px + var(--safe-top)) 20px 18px;
+  text-align: center;
+}
+.home-logo { display: block; margin: 0 auto 10px; border-radius: 14px; box-shadow: 0 10px 30px -8px var(--glow); }
+.home-top h1 {
+  margin: 0;
+  font-family: var(--font-display);
+  font-weight: 600;
+  font-size: 34px;
+  line-height: 1.05;
+  letter-spacing: -0.015em;
+  background: linear-gradient(120deg, var(--ink) 30%, var(--accent) 100%);
+  -webkit-background-clip: text;
+  background-clip: text;
+  color: transparent;
+}
+.tagline { margin: 6px 0 0; color: var(--muted); font-size: 14px; }
+
+.tiles {
+  display: grid;
+  gap: 14px;
+  padding: 8px 16px calc(110px + var(--safe-bottom));
+}
+
+.tile {
+  position: relative;
+  display: grid;
+  grid-template-columns: auto 1fr auto;
+  align-items: center;
+  gap: 14px;
+  min-height: 124px;
+  padding: 16px 22px 16px 18px;
+  border-radius: 20px;
+  border: 1px solid color-mix(in srgb, var(--tint) 22%, var(--line));
+  background:
+    radial-gradient(120% 140% at 0% 0%, color-mix(in srgb, var(--tint) 20%, transparent), transparent 60%),
+    var(--surface);
+  text-align: left;
+  overflow: hidden;
+  transition: transform 140ms var(--ease);
+  animation: rise 380ms var(--ease) both;
+}
+.tile:nth-child(2) { animation-delay: 40ms; }
+.tile:nth-child(3) { animation-delay: 80ms; }
+.tile:nth-child(4) { animation-delay: 120ms; }
+.tile:active { transform: scale(0.98); }
+
+.tile-icon {
+  display: grid;
+  place-items: center;
+  width: 44px;
+  height: 44px;
+  border-radius: 14px;
+  background: color-mix(in srgb, var(--tint) 16%, var(--surface-2));
+  color: var(--tint);
+}
+.tile-icon svg.icon { width: 22px; height: 22px; }
+
+.tile-text { display: flex; flex-direction: column; min-width: 0; }
+.tile-name { font-family: var(--font-display); font-weight: 600; font-size: 21px; line-height: 1.15; }
+.tile-counts { margin-top: 3px; color: var(--muted); font-size: 13px; }
+
+/* newest covers, fanned like a hand of cards */
+.tile-covers {
+  position: relative;
+  width: 104px;
+  height: 92px;
+}
+.tile-covers .cover {
+  position: absolute;
+  bottom: 0;
+  width: 58px;
+  border-radius: 7px;
+  box-shadow: 0 8px 18px -8px rgb(0 0 0 / 0.95), 0 0 0 1px rgb(255 255 255 / 0.06);
+  transform-origin: 50% 100%;
+}
+.tile-covers .cover:nth-child(1) { left: 0; transform: rotate(-12deg); }
+.tile-covers .cover:nth-child(2) { left: 23px; transform: rotate(0deg) translateY(-6px); }
+.tile-covers .cover:nth-child(3) { left: 46px; transform: rotate(12deg); }
+.tile-covers .cover:only-child { left: 23px; transform: none; }
+.tile-covers .cover:first-child:nth-last-child(2) { left: 10px; transform: rotate(-8deg); }
+.tile-covers .cover:nth-child(2):last-child { left: 36px; transform: rotate(8deg); }
+.tile-covers .cover-fallback span { display: none; }
+.tile-covers .cover.ghost {
+  background: color-mix(in srgb, var(--tint) 8%, var(--surface-2));
+  border: 1px dashed color-mix(in srgb, var(--tint) 30%, transparent);
+  box-shadow: none;
+}

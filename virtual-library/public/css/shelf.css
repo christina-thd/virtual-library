@@ -1,0 +1,120 @@
+/* One category: title with a back button, Pending / Done tabs, the grid of covers, the add button. */
+
+.view.entering { animation: view-in 280ms var(--ease) both; }
+@keyframes view-in {
+  from { opacity: 0; transform: translateY(10px); }
+}
+
+/* a glow in the category's color behind the title */
+.category-view::before {
+  content: "";
+  position: fixed;
+  inset: 0 0 auto;
+  z-index: -1;
+  height: 280px;
+  background: radial-gradient(90% 100% at 30% -35%, color-mix(in srgb, var(--tint) 34%, transparent), transparent 72%);
+  pointer-events: none;
+}
+
+.category-top {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  padding: calc(14px + var(--safe-top)) 16px 4px 8px;
+}
+.back-button { width: 42px; height: 42px; color: var(--ink); }
+.back-button svg.icon { width: 24px; height: 24px; }
+.category-top h1 {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  margin: 0;
+  font-family: var(--font-display);
+  font-weight: 600;
+  font-size: 28px;
+  line-height: 1.1;
+  letter-spacing: -0.01em;
+}
+.category-top h1 svg.icon { width: 24px; height: 24px; color: var(--tint); }
+
+/* ----- tabs (stay at the top while scrolling) ----- */
+
+.filters {
+  position: sticky;
+  top: 0;
+  z-index: 5;
+  padding: calc(10px + var(--safe-top)) 16px 12px;
+  margin-top: calc(-1 * var(--safe-top));
+  transition: background 200ms;
+}
+/* once the title has scrolled away, so the glow at the top isn't covered before that */
+.filters.stuck {
+  background: rgb(9 8 13 / 0.82);
+  backdrop-filter: blur(14px);
+  -webkit-backdrop-filter: blur(14px);
+  box-shadow: 0 1px 0 var(--line);
+}
+.status-tabs .count { font-weight: 500; opacity: 0.7; font-variant-numeric: tabular-nums; }
+
+/* ----- grid ----- */
+
+.shelf {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 18px 12px;
+  padding: 6px 16px calc(110px + var(--safe-bottom));
+}
+
+.card {
+  display: flex;
+  flex-direction: column;
+  min-width: 0;
+  text-align: left;
+  animation: rise 360ms var(--ease) both;
+  animation-delay: calc(var(--i, 0) * 25ms);
+}
+.shelf.still .card { animation: none; }
+.card .cover { transition: transform 150ms var(--ease); }
+.card:active .cover { transform: scale(0.97); }
+.card-title {
+  display: -webkit-box;
+  -webkit-line-clamp: 2;
+  -webkit-box-orient: vertical;
+  overflow: hidden;
+  margin-top: 8px;
+  font-size: 13px;
+  font-weight: 600;
+  line-height: 1.25;
+}
+.card-meta { margin-top: 3px; color: var(--faint); font-size: 12px; min-height: 15px; }
+
+/* ----- empty shelf ----- */
+
+.empty {
+  padding: 56px 36px calc(120px + var(--safe-bottom));
+  text-align: center;
+  color: var(--muted);
+}
+.empty svg.icon { width: 44px; height: 44px; color: var(--tint); opacity: 0.6; stroke-width: 1.3; }
+.empty h2 { margin: 14px 0 6px; color: var(--ink); font-family: var(--font-display); font-weight: 500; font-size: 21px; }
+.empty p { margin: 0; font-size: 14px; }
+
+/* ----- add button ----- */
+
+.fab {
+  position: fixed;
+  right: 20px;
+  bottom: calc(22px + var(--safe-bottom));
+  z-index: 10;
+  display: grid;
+  place-items: center;
+  width: 60px;
+  height: 60px;
+  border-radius: 50%;
+  background: linear-gradient(135deg, var(--accent), var(--accent-strong));
+  color: var(--accent-ink);
+  box-shadow: 0 12px 30px -8px var(--glow), 0 0 0 1px rgb(255 255 255 / 0.12) inset;
+  transition: transform 140ms var(--ease);
+}
+.fab:active { transform: scale(0.92); }
+.fab svg.icon { width: 26px; height: 26px; stroke-width: 2.4; }

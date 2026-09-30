@@ -1,0 +1,79 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+  <title>Hoard Board</title>
+  <link rel="icon" href="img/logo.svg">
+  <link rel="manifest" href="manifest.webmanifest">
+  <link rel="apple-touch-icon" href="img/icon-180.png">
+  <meta name="theme-color" content="#09080d">
+  <meta name="apple-mobile-web-app-capable" content="yes">
+  <meta name="mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+  <meta name="apple-mobile-web-app-title" content="Hoard Board">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Fraunces:opsz,wght@9..144,500;9..144,600&family=Inter:wght@400;500;600&display=swap">
+  <link rel="stylesheet" href="css/base.css">
+  <link rel="stylesheet" href="css/home.css">
+  <link rel="stylesheet" href="css/shelf.css">
+  <link rel="stylesheet" href="css/search.css">
+  <link rel="stylesheet" href="css/details.css">
+  <script type="module" src="js/app.js"></script>
+</head>
+<body>
+  <!-- ===== home: one tile per category ===== -->
+  <div class="view" id="homeView">
+    <header class="top home-top">
+      <img class="home-logo" src="img/logo.svg" alt="" width="56" height="56">
+      <h1>Hoard Board</h1>
+      <p class="tagline" id="summary">&nbsp;</p>
+    </header>
+    <main class="tiles" id="tiles"></main>
+  </div>
+
+  <!-- ===== one category: Pending / Done ===== -->
+  <div class="view category-view" id="categoryView" hidden>
+    <header class="top category-top">
+      <button type="button" class="icon-button back-button" id="backButton" aria-label="Back to all categories"></button>
+      <h1 id="categoryTitle"></h1>
+    </header>
+    <nav class="filters" id="filters">
+      <div class="status-tabs" id="statusTabs" role="tablist">
+        <button type="button" role="tab" data-status="pending">Pending <span class="count"></span></button>
+        <button type="button" role="tab" data-status="done">Done <span class="count"></span></button>
+      </div>
+    </nav>
+    <main class="shelf" id="shelf" aria-live="polite"></main>
+    <div class="empty" id="empty" hidden></div>
+  </div>
+
+  <button type="button" class="fab" id="addButton" aria-label="Add to library"></button>
+
+  <!-- ===== search (add to library) ===== -->
+  <div class="layer" id="searchLayer" hidden>
+    <div class="backdrop" data-close></div>
+    <section class="sheet search-sheet" role="dialog" aria-modal="true" aria-label="Add to library">
+      <div class="grabber" data-close></div>
+      <div class="search-head">
+        <div class="category-picker" id="searchCategories" role="radiogroup" aria-label="What are you looking for?"></div>
+        <form class="search-field" id="searchForm" autocomplete="off">
+          <span class="search-icon" aria-hidden="true"></span>
+          <input type="search" id="searchInput" enterkeyhint="search" maxlength="100" spellcheck="false">
+          <button type="button" class="icon-button" id="searchClear" aria-label="Clear" hidden></button>
+        </form>
+      </div>
+      <div class="search-body" id="searchBody"></div>
+      <p class="credits" id="searchCredits"></p>
+    </section>
+  </div>
+
+  <!-- ===== one item ===== -->
+  <div class="layer" id="detailsLayer" hidden>
+    <div class="backdrop" data-close></div>
+    <section class="sheet details-sheet" id="details" role="dialog" aria-modal="true"></section>
+  </div>
+
+  <div class="toast" id="toast" role="status" aria-live="polite"></div>
+</body>
+</html>

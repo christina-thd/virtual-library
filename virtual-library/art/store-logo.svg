@@ -1,0 +1,10 @@
+<svg xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink" viewBox="0 0 250 100" width="250" height="100">
+  <!-- Banner for the Home Assistant add-on page (rendered to ../logo.png, see docs/DEVELOPMENT.md).
+       Reuses the app logo; the text has a dark outline so it reads on light and dark themes. -->
+  <image x="4" y="8" width="84" height="84" xlink:href="../public/img/logo.svg" href="../public/img/logo.svg"/>
+
+  <g font-family="Fraunces" font-weight="600" stroke="#120d1f" stroke-linejoin="round" paint-order="stroke">
+    <text x="97" y="50" font-size="26" fill="#eeeaf6" stroke-width="4.5">Hoard</text>
+    <text x="97" y="80" font-size="26" fill="#b69cfb" stroke-width="4.5">Board</text>
+  </g>
+</svg>
