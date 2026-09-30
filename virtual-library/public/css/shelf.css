@@ -46,7 +46,11 @@
   padding: calc(10px + var(--safe-top)) 16px 12px;
   margin-top: calc(-1 * var(--safe-top));
   transition: background 200ms;
+  /* The bar reaches up under the status bar (so it can cover it once stuck), which on iPhones with a notch
+     puts its empty top over the back button. Only the tabs themselves take taps. */
+  pointer-events: none;
 }
+.filters > * { pointer-events: auto; }
 /* once the title has scrolled away, so the glow at the top isn't covered before that */
 .filters.stuck {
   background: rgb(9 8 13 / 0.82);

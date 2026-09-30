@@ -1,5 +1,8 @@
 # Changelog
 
+## 1.0.2
+- Fix: the back button (‹) at the top of a category didn't respond on iPhones with a notch
+
 ## 1.0.1
 - Fix: opening the search on a phone no longer pushes the screen down when the keyboard appears
 - Close button moved to the top of the search, next to a title
