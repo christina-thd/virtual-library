@@ -18,7 +18,7 @@ const STATUS_LABEL = { pending: 'Pending', done: 'Done' };
 /**
  * @param {object} options
  * @param {() => object[]} options.getItems    the library, to mark results that are already in it
- * @param {(itemId: string) => void} options.openItem
+ * @param {(itemId: string, how: { fromSearch?: boolean, justAdded?: boolean }) => void} options.openItem
  */
 export function createSearch({ getItems, openItem }) {
   const sheet = createSheet($('searchLayer'));
@@ -35,6 +35,9 @@ export function createSearch({ getItems, openItem }) {
   let searched = '';
   let controller = null;
   let timer = null;
+  // what was added from this search (key → { itemId, status, fresh, seen }): its row says "Added to …" until
+  // the next search, even before the library update arrives; `fresh` plays the badge's pop once
+  const added = new Map();
 
   picker.classList.add('segmented');
   picker.innerHTML = CATEGORIES.map((c) => `
@@ -54,6 +57,7 @@ export function createSearch({ getItems, openItem }) {
     }
     controller = new AbortController();
     const { signal } = controller;
+    if (query !== searched) added.clear();
     searched = query;
     phase = 'loading';
     render();
@@ -90,6 +94,30 @@ export function createSearch({ getItems, openItem }) {
   // ----- rendering -----
 
   const libraryMatch = (result) => getItems().find((item) => sameSource(item.source, result.source));
+  const keyOf = (entry) => (entry.source ? `${entry.source.provider}:${entry.source.id}` : `typed:${entry.category}:${entry.title}`);
+
+  /** The item this entry became, if it's in the library: { itemId, status, recent, fresh }. */
+  function ownedBy(entry) {
+    const key = keyOf(entry);
+    const mine = added.get(key);
+    const item = entry.source ? libraryMatch(entry) : mine && getItems().find((i) => i.id === mine.itemId);
+    const fresh = Boolean(mine?.fresh);
+    if (mine) mine.fresh = false;
+    if (item) {
+      if (mine) mine.seen = true;
+      return { itemId: item.id, status: item.status, recent: Boolean(mine), fresh };
+    }
+    if (mine && !mine.seen) return { ...mine, recent: true, fresh };  // just added: the library update is on its way
+    if (mine) added.delete(key);                        // removed from the library since
+    return null;
+  }
+
+  /** "✓ Added to Done" when added from this search, "✓ In your library · Done" otherwise. Tap to open it. */
+  function ownedHtml({ itemId, status, recent, fresh }) {
+    const text = recent ? `Added to ${STATUS_LABEL[status]}` : `In your library · ${STATUS_LABEL[status]}`;
+    return `<button type="button" class="in-library ${recent ? 'just-added' : ''} ${fresh ? 'pop' : ''}" data-open="${itemId}">
+      <span class="in-library-check">${icon('check')}</span><span>${text}</span><span class="in-library-open">Open</span></button>`;
+  }
 
   function addButtons(index) {
     return `<div class="result-actions">
@@ -99,10 +127,8 @@ export function createSearch({ getItems, openItem }) {
   }
 
   function resultHtml(result, index) {
-    const owned = libraryMatch(result);
-    const action = owned
-      ? `<button type="button" class="in-library" data-open="${owned.id}">${icon('check')}In your library · ${STATUS_LABEL[owned.status]}</button>`
-      : addButtons(index);
+    const owned = ownedBy(result);
+    const action = owned ? ownedHtml(owned) : addButtons(index);
     return `
       <li class="result">
         ${coverHtml({ image: result.thumbUrl, title: result.title, category: result.category })}
@@ -116,9 +142,10 @@ export function createSearch({ getItems, openItem }) {
 
   /** Adding by hand, for things the catalog doesn't know. Index -1 means "the typed title". */
   function manualHtml(query) {
+    const owned = ownedBy({ category, title: query });
     return `<div class="manual">
-      <p>Add <strong>“${escapeHtml(query)}”</strong> anyway?</p>
-      ${addButtons(-1)}
+      <p>${owned ? `<strong>“${escapeHtml(query)}”</strong>` : `Add <strong>“${escapeHtml(query)}”</strong> anyway?`}</p>
+      ${owned ? ownedHtml(owned) : addButtons(-1)}
     </div>`;
   }
 
@@ -151,8 +178,10 @@ export function createSearch({ getItems, openItem }) {
     for (const b of button.parentElement.children) b.disabled = true;
     try {
       const { itemId } = await sendAction({ type: 'addItem', ...entry, status });
-      toast(`Added to ${STATUS_LABEL[status]}`);
-      if (status === 'done') openItem(itemId);    // to rate it, if you like
+      added.set(keyOf(entry), { itemId, status, fresh: true });
+      render();
+      toast(`“${entry.title}” added to ${STATUS_LABEL[status]}`, { icon: 'check' });
+      if (status === 'done') openItem(itemId, { fromSearch: true, justAdded: true });   // to rate it, if you like
     } catch (err) {
       toast(err.message, { error: true });
       for (const b of button.parentElement.children) b.disabled = false;
@@ -188,7 +217,7 @@ export function createSearch({ getItems, openItem }) {
     const addButton = e.target.closest('[data-add]');
     if (addButton) return add(addButton);
     const owned = e.target.closest('[data-open]');
-    if (owned) openItem(owned.dataset.open);
+    if (owned) openItem(owned.dataset.open, { fromSearch: true });
   });
 
   // the keyboard covers half the screen: hide it when scrolling through results

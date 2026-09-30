@@ -1,13 +1,14 @@
 // Item sheet: big cover, move between Pending and Done, rate when done, remove.
 import { sendAction } from '../shared/api.js';
 import { $, escapeHtml } from '../shared/dom.js';
-import { formatDate } from '../shared/format.js';
 import { categoryOf } from '../shared/library.js';
+import { celebrate } from '../ui/celebrate.js';
 import { coverHtml } from '../ui/cover.js';
 import { icon } from '../ui/icons.js';
 import { createSheet } from '../ui/sheet.js';
 import { previewStars, starInputHtml } from '../ui/stars.js';
 import { toast } from '../ui/toast.js';
+import { cheerFor } from './cheers.js';
 
 const DISARM_MS = 3000;
 
@@ -17,6 +18,8 @@ export function createDetails({ getItem }) {
   const sheet = createSheet($('detailsLayer'), { onClose: () => { itemId = null; } });
 
   let itemId = null;
+  let options = {};                 // how it was opened: { fromSearch, justAdded }
+  let popBanner = false;            // the "Added to …" banner pops in once, when the sheet opens
   let waitingFor = null;            // just added: opens when the item arrives with the next view
   let removeArmed = false;          // remove needs a second tap
   let disarmTimer = null;
@@ -32,16 +35,21 @@ export function createDetails({ getItem }) {
     const kind = categoryOf(item.category);
     const meta = [item.year, item.creator].filter(Boolean).map(escapeHtml).join(' · ');
     const done = item.status === 'done';
-    const dates = done
-      ? `Finished ${formatDate(item.finishedAt)}`
-      : `Added ${formatDate(item.addedAt)}`;
-    const glow = item.image ? `<div class="details-glow" style="background-image:url('${escapeHtml(item.image)}')"></div>` : '';
+    const glow = item.image
+      ? `<div class="details-glow" style="background-image:url('${escapeHtml(item.image)}')"></div>`
+      : '<div class="details-glow tint"></div>';
+    const banner = options.justAdded
+      ? `<div class="details-added ${popBanner ? 'pop' : ''}">${icon('check')}Added to ${done ? 'Done' : 'Pending'}</div>` : '';
+    popBanner = false;
 
     panel.dataset.category = item.category;
     panel.innerHTML = `
       ${glow}
       <div class="grabber" data-drag data-close></div>
-      <button type="button" class="icon-button details-close" data-close aria-label="Close">${icon('close')}</button>
+      <div class="details-bar">
+        ${banner}
+        <button type="button" class="details-close" data-close>${options.fromSearch ? 'Back to search' : 'Close'}</button>
+      </div>
       <div class="details-content">
         <div data-drag>${coverHtml(item, 'details-cover')}</div>
         <h2 class="details-title">${escapeHtml(item.title)}</h2>
@@ -58,11 +66,16 @@ export function createDetails({ getItem }) {
             ${starInputHtml(item.rating)}
           </div>` : ''}
 
-        <p class="details-dates">${dates}</p>
         <button type="button" class="pill danger details-remove ${removeArmed ? 'armed' : ''}" data-remove>
           ${removeArmed ? 'Tap again to remove' : 'Remove from library'}
         </button>
       </div>`;
+  }
+
+  /** Pending → Done: confetti in the category's color, and a (hopefully) funny line. */
+  function celebrateFinishing(item) {
+    const tint = getComputedStyle(panel).getPropertyValue('--tint').trim();
+    celebrate(cheerFor(item.category), [tint, '#f4c566', '#a78bfa', '#eeeaf6']);
   }
 
   function disarm() {
@@ -76,7 +89,10 @@ export function createDetails({ getItem }) {
 
     const statusButton = e.target.closest('[data-status]');
     if (statusButton && statusButton.dataset.status !== item.status) {
-      send({ type: 'setStatus', itemId, status: statusButton.dataset.status }).catch(() => {});
+      const status = statusButton.dataset.status;
+      send({ type: 'setStatus', itemId, status })
+        .then(() => { if (status === 'done') celebrateFinishing(item); })
+        .catch(() => {});
       return;
     }
 
@@ -105,9 +121,12 @@ export function createDetails({ getItem }) {
   });
 
   return {
-    open(id) {
+    /** @param {{ fromSearch?: boolean, justAdded?: boolean }} [how] */
+    open(id, how = {}) {
       const item = getItem(id);
       waitingFor = item ? null : id;
+      options = how;
+      popBanner = Boolean(how.justAdded);
       if (!item) return;
       itemId = id;
       disarm();
@@ -118,7 +137,7 @@ export function createDetails({ getItem }) {
 
     /** The library changed: show the new state, or close if the item is gone. */
     refresh() {
-      if (waitingFor && getItem(waitingFor)) return this.open(waitingFor);
+      if (waitingFor && getItem(waitingFor)) return this.open(waitingFor, options);
       if (!itemId) return;
       const item = getItem(itemId);
       if (item) render(item);

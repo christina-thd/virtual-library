@@ -1,5 +1,18 @@
 # Changelog
 
+## 1.0.5
+- Fix no cover UI
+
+## 1.0.4
+- Finishing something (Pending → Done) is celebrated: confetti and a funny line for movies, series, books or games
+- The item page no longer shows the "Finished on" / "Added on" date
+
+## 1.0.3
+- Clearer when something is added: its search result shows "✓ Added to Pending" (or Done), with a confirmation message
+- Adding as Done opens the item with "Added to Done" and a "Back to search" button, instead of an unlabelled ✕
+- The item page's close button now says Close
+- Items without a picture get a designed cover in their category's colors, with the title, instead of a plain placeholder
+
 ## 1.0.2
 - Fix: the back button (‹) at the top of a category didn't respond on iPhones with a notch
 

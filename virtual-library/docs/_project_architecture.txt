@@ -30,8 +30,8 @@ virtual-library/                   Home Assistant add-on containing the app
 │   └── js/
 │       ├── app.js                 entry: latest library → views; home ↔ category
 │       ├── shared/  library.js (used by server too), api, dom, format, storage
-│       ├── ui/      back (phone back button), sheet, viewport (sheets above the keyboard), toast, cover, stars, icons
-│       └── library/ home (category tiles), category (Pending / Done), shelf, search, details
+│       ├── ui/      back (phone back button), sheet, viewport (sheets above the keyboard), celebrate, toast, cover, stars, icons
+│       └── library/ home (category tiles), category (Pending / Done), shelf, search, details, cheers (finishing lines)
 ├── test/                          automated tests (Node's built-in runner, no extra deps):
 │                                  state, actions, catalog, covers, http, store, addon packaging
 └── docs/

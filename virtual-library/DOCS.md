@@ -19,10 +19,12 @@ and what's still pending.
   **Done** is everything you've finished. The newest are first. The tab you last used is remembered on each phone.
 - Tap a cover to open it: move it between Pending and Done, rate it, or remove it.
 - **+** searches the kind you're in (on the home screen, the kind you searched last).
-- To close the search or an item, tap **Close** (or ✕), swipe it down from the top, or use your phone's back button.
+- To close the search or an item, tap **Close** (or **Back to search**), swipe it down from the top, or use your phone's back button.
+- After adding something, its search result says **✓ Added to Pending** (or Done); tap it to open the item.
 
 ### Ratings
 
+Moving something from Pending to Done is celebrated with confetti and a (hopefully) funny line.
 Finished things can have a rating from 1 to 5 stars. It's optional: tap a star to rate,
 and tap the same star again to clear it. Adding something straight to **Done** opens it, so
 you can rate it right away. Moving an item back to Pending clears its rating.
@@ -30,7 +32,7 @@ you can rate it right away. Moving an item back to Pending clears its rating.
 ### Not in the search?
 
 If the search doesn't find it, you can still add it by its title (**Add "…" anyway?**).
-It gets a placeholder cover with its title.
+It gets a cover designed from its title, in its category's colors.
 
 ## Direct address and "Add to Home Screen"
 

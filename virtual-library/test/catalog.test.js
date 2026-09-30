@@ -80,15 +80,27 @@ describe('keyless catalogs', () => {
     assert.equal(results[1].coverUrl, null);
   });
 
-  test('games: Steam, portrait box art, apps only', async () => {
-    const { results } = await search(providers, {
-      'https://store.steampowered.com/api/storesearch/': {
-        items: [{ type: 'app', id: 1145360, name: 'Hades' }, { type: 'sub', id: 9, name: 'Bundle' }],
+  const steamSearch = { items: [{ type: 'app', id: 3357650, name: 'PRAGMATA' }, { type: 'app', id: 1145360, name: 'Hades' }, { type: 'sub', id: 9, name: 'Bundle' }] };
+
+  test('games: Steam, portrait box art from the store asset list (newer games keep it in hashed folders), apps only', async () => {
+    const { results, calls } = await search(providers, {
+      'https://store.steampowered.com/api/storesearch/': steamSearch,
+      'https://api.steampowered.com/IStoreBrowseService/GetItems/v1/': {
+        response: { store_items: [{ appid: 3357650, assets: { asset_url_format: 'steam/apps/3357650/${FILENAME}?t=1', library_capsule: '2c65f3/library_capsule.jpg' } }] },
       },
-    }, 'game', 'hades');
-    assert.equal(results.length, 1);
-    assert.equal(results[0].coverUrl, 'https://shared.akamai.steamstatic.com/store_item_assets/steam/apps/1145360/library_600x900.jpg');
-    assert.deepEqual(results[0].source, { provider: 'steam', id: '1145360' });
+    }, 'game', 'pragmata');
+    assert.equal(results.length, 2);
+    assert.equal(calls.length, 2);                   // one asset request for all results
+    assert.match(decodeURIComponent(calls[1].url), /"appid":3357650.*"appid":1145360/);
+    assert.equal(results[0].coverUrl, 'https://shared.akamai.steamstatic.com/store_item_assets/steam/apps/3357650/2c65f3/library_capsule.jpg?t=1');
+    // not in the asset list: the classic address
+    assert.equal(results[1].coverUrl, 'https://shared.akamai.steamstatic.com/store_item_assets/steam/apps/1145360/library_600x900.jpg');
+    assert.deepEqual(results[0].source, { provider: 'steam', id: '3357650' });
+  });
+
+  test('games: Steam search still works when the asset list is down', async () => {
+    const { results } = await search(providers, { 'https://store.steampowered.com/api/storesearch/': steamSearch }, 'game', 'pragmata');
+    assert.equal(results[0].coverUrl, 'https://shared.akamai.steamstatic.com/store_item_assets/steam/apps/3357650/library_600x900.jpg');
   });
 });
 

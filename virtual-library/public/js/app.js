@@ -7,6 +7,7 @@ import { createSearch } from './library/search.js';
 import { fetchInfo, subscribe } from './shared/api.js';
 import { $ } from './shared/dom.js';
 import { goBack, pushBack } from './ui/back.js';
+import { installCelebrate } from './ui/celebrate.js';
 import { installCoverFallback } from './ui/cover.js';
 import { icon } from './ui/icons.js';
 import { trackVisibleViewport } from './ui/viewport.js';
@@ -16,7 +17,7 @@ const getItem = (id) => items.find((i) => i.id === id);
 
 const categoryView = createCategoryView({ onBack: goBack });
 const details = createDetails({ getItem });
-const search = createSearch({ getItems: () => items, openItem: (id) => details.open(id) });
+const search = createSearch({ getItems: () => items, openItem: (id, how) => details.open(id, how) });
 
 // ----- home ↔ category -----
 
@@ -45,6 +46,7 @@ onTileTap(openCategory);
 // ----- start -----
 
 installCoverFallback();
+installCelebrate();
 trackVisibleViewport();
 $('addButton').innerHTML = icon('plus');
 $('addButton').addEventListener('click', () => search.open(categoryView.category));

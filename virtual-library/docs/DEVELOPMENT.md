@@ -51,9 +51,10 @@ public/                   browser (plain ES modules, no build step)
   js/app.js               entry: keeps the latest library, hands it to the views, switches home ↔ category
   js/shared/              library.js (categories and rules, also used by the server), api, dom, format, storage
   js/ui/                  reusable pieces: back (phone back button), sheet (bottom sheets, swipe to close),
-                          viewport (keeps sheets above the keyboard), toast, cover, stars, icons
+                          viewport (keeps sheets above the keyboard), celebrate (confetti + message),
+                          toast, cover, stars, icons
   js/library/             the views: home (category tiles), category (title + Pending / Done tabs), shelf (grid),
-                          search (add), details (one item)
+                          search (add), details (one item), cheers (the lines said when you finish something)
 
 test/                     node:test suites
 ```

@@ -83,7 +83,6 @@
 .tile-covers .cover:only-child { left: 23px; transform: none; }
 .tile-covers .cover:first-child:nth-last-child(2) { left: 10px; transform: rotate(-8deg); }
 .tile-covers .cover:nth-child(2):last-child { left: 36px; transform: rotate(8deg); }
-.tile-covers .cover-fallback span { display: none; }
 .tile-covers .cover.ghost {
   background: color-mix(in srgb, var(--tint) 8%, var(--surface-2));
   border: 1px dashed color-mix(in srgb, var(--tint) 30%, transparent);

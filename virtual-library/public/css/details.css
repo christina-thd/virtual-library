@@ -14,6 +14,12 @@
   transform: scale(1.3);
   pointer-events: none;
 }
+/* no picture: a glow in the category's color instead */
+.details-glow.tint {
+  background: radial-gradient(70% 90% at 50% 10%, color-mix(in srgb, var(--tint) 70%, transparent), transparent 70%);
+  filter: blur(20px);
+  opacity: 0.5;
+}
 .details-glow::after {
   content: "";
   position: absolute;
@@ -26,9 +32,45 @@
   padding: 0 22px calc(24px + var(--safe-bottom));
   text-align: center;
 }
-.details-close { position: absolute; top: 6px; right: 12px; z-index: 1; background: rgb(9 8 13 / 0.5); color: var(--ink); }
+/* top row: "Added to Done" (right after adding) on the left, Close / Back to search on the right */
+.details-bar {
+  position: relative;
+  z-index: 1;
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  min-height: 36px;
+  padding: 0 16px;
+}
+.details-close {
+  height: 36px;
+  margin-left: auto;
+  padding: 0 14px;
+  border-radius: 999px;
+  background: rgb(9 8 13 / 0.55);
+  backdrop-filter: blur(8px);
+  -webkit-backdrop-filter: blur(8px);
+  color: var(--ink);
+  font-weight: 600;
+  font-size: 14px;
+}
+.details-close:active { transform: scale(0.96); }
+.details-added {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  height: 32px;
+  padding: 0 12px 0 8px;
+  border-radius: 999px;
+  background: color-mix(in srgb, var(--accent) 18%, transparent);
+  border: 1px solid color-mix(in srgb, var(--accent) 40%, transparent);
+  color: var(--accent);
+  font-weight: 600;
+  font-size: 13px;
+}
+.details-added.pop { animation: pop 420ms var(--ease) both; }
+.details-added svg.icon { width: 16px; height: 16px; stroke-width: 2.6; }
 .details-cover { width: 148px; margin: 8px auto 0; border-radius: 12px; box-shadow: 0 24px 50px -18px rgb(0 0 0 / 0.95); }
-.details-cover .cover-fallback span { font-size: 17px; }
 
 .details-title {
   margin: 18px 0 6px;
@@ -60,6 +102,5 @@
 .star-input button.on svg { fill: currentColor; opacity: 1; filter: drop-shadow(0 0 10px rgb(244 197 102 / 0.4)); }
 .star-input button:active svg { transform: scale(0.85); }
 
-.details-dates { margin: 22px 0 0; color: var(--faint); font-size: 13px; }
 
-.details-remove { margin-top: 20px; }
+.details-remove { margin-top: 28px; }
