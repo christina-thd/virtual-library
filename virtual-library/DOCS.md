@@ -18,7 +18,8 @@ and what's still pending.
 - In each kind, **Pending** is everything you haven't seen, read or played yet, or haven't finished.
   **Done** is everything you've finished. The newest are first. The tab you last used is remembered on each phone.
 - Tap a cover to open it: move it between Pending and Done, rate it, or remove it.
-- **+** searches the kind you're in (on the home screen, the kind you searched last).
+- **+** inside a kind adds to that kind only (e.g. "Add a game"). **+** on the home screen lets you pick the kind
+  (it starts on the one you picked last).
 - To close the search or an item, tap **Close** (or **Back to search**), swipe it down from the top, or use your phone's back button.
 - After adding something, its search result says **✓ Added to Pending** (or Done); tap it to open the item.
 

@@ -1,5 +1,9 @@
 # Changelog
 
+## 1.0.6
+- **+** inside a category only adds to that category ("Add a game"), so nothing lands somewhere you're not looking
+- **+** on the home screen still lets you pick the category
+
 ## 1.0.5
 - Fix no cover UI
 

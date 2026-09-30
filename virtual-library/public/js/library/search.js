@@ -26,7 +26,10 @@ export function createSearch({ getItems, openItem }) {
   const input = $('searchInput');
   const picker = $('searchCategories');
 
-  let category = CATEGORY_IDS.includes(storage.get(CATEGORY_KEY)) ? storage.get(CATEGORY_KEY) : 'movie';
+  // the category picked on the home screen's search, remembered on this phone
+  const homeCategory = () => (CATEGORY_IDS.includes(storage.get(CATEGORY_KEY)) ? storage.get(CATEGORY_KEY) : 'movie');
+  let category = homeCategory();
+  let locked = false;               // opened from a category: only that category can be added
   let credits = {};
   // idle | loading | results | error
   let phase = 'idle';
@@ -74,7 +77,7 @@ export function createSearch({ getItems, openItem }) {
 
   function setCategory(id) {
     category = id;
-    storage.set(CATEGORY_KEY, id);
+    if (!locked) storage.set(CATEGORY_KEY, id);
     input.placeholder = `Search ${categoryOf(id).plural.toLowerCase()}`;
     for (const button of picker.children) {
       const selected = button.dataset.category === id;
@@ -225,10 +228,22 @@ export function createSearch({ getItems, openItem }) {
 
   setCategory(category);
 
+  /** From a category: only that one ("Add a game"). From home: any, with the category buttons. */
+  function lockTo(id) {
+    locked = Boolean(id);
+    picker.hidden = locked;
+    $('searchTitle').textContent = locked ? `Add a ${categoryOf(id).label.toLowerCase()}` : 'Add to your hoard';
+    const wanted = locked ? id : homeCategory();
+    if (wanted !== category) setCategory(wanted);
+  }
+
   return {
-    /** Opens on the given category (the one chosen on the shelf), keeping the last search. */
-    open(preferredCategory) {
-      if (CATEGORY_IDS.includes(preferredCategory) && preferredCategory !== category) setCategory(preferredCategory);
+    /**
+     * Opens the search, keeping the last search text.
+     * @param {string|null} onlyCategory  the category shown on screen (only it can be added), or null on home
+     */
+    open(onlyCategory) {
+      lockTo(CATEGORY_IDS.includes(onlyCategory) ? onlyCategory : null);
       sheet.open();
       // in the tap's handler, so phones show the keyboard; without scrolling, because the sheet is still
       // below the screen (sliding in) and the phone would pan the whole page down to "show" the field

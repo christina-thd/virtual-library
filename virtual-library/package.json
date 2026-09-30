@@ -1,6 +1,6 @@
 {
   "name": "virtual-library",
-  "version": "1.0.5",
+  "version": "1.0.6",
   "description": "Personal library of movies, series, books and games, packaged as a Home Assistant add-on",
   "private": true,
   "type": "module",
