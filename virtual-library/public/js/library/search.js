@@ -181,7 +181,7 @@ export function createSearch({ getItems, openItem }) {
   $('searchClear').addEventListener('click', () => {
     input.value = '';
     run();
-    input.focus();
+    input.focus({ preventScroll: true });
   });
 
   body.addEventListener('click', (e) => {
@@ -201,7 +201,9 @@ export function createSearch({ getItems, openItem }) {
     open(preferredCategory) {
       if (CATEGORY_IDS.includes(preferredCategory) && preferredCategory !== category) setCategory(preferredCategory);
       sheet.open();
-      input.focus();                               // in the tap's handler, so phones show the keyboard
+      // in the tap's handler, so phones show the keyboard; without scrolling, because the sheet is still
+      // below the screen (sliding in) and the phone would pan the whole page down to "show" the field
+      input.focus({ preventScroll: true });
       input.select();
     },
 

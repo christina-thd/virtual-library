@@ -9,6 +9,7 @@ import { $ } from './shared/dom.js';
 import { goBack, pushBack } from './ui/back.js';
 import { installCoverFallback } from './ui/cover.js';
 import { icon } from './ui/icons.js';
+import { trackVisibleViewport } from './ui/viewport.js';
 
 let items = [];
 const getItem = (id) => items.find((i) => i.id === id);
@@ -44,6 +45,7 @@ onTileTap(openCategory);
 // ----- start -----
 
 installCoverFallback();
+trackVisibleViewport();
 $('addButton').innerHTML = icon('plus');
 $('addButton').addEventListener('click', () => search.open(categoryView.category));
 $('shelf').addEventListener('click', (e) => {

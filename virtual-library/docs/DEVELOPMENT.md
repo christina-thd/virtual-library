@@ -50,7 +50,8 @@ public/                   browser (plain ES modules, no build step)
   manifest.webmanifest    web app manifest ("Add to Home Screen")
   js/app.js               entry: keeps the latest library, hands it to the views, switches home ↔ category
   js/shared/              library.js (categories and rules, also used by the server), api, dom, format, storage
-  js/ui/                  reusable pieces: back (phone back button), sheet (bottom sheets), toast, cover, stars, icons
+  js/ui/                  reusable pieces: back (phone back button), sheet (bottom sheets, swipe to close),
+                          viewport (keeps sheets above the keyboard), toast, cover, stars, icons
   js/library/             the views: home (category tiles), category (title + Pending / Done tabs), shelf (grid),
                           search (add), details (one item)
 

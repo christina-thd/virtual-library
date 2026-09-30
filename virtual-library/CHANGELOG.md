@@ -1,5 +1,9 @@
 # Changelog
 
+## 1.0.1
+- Fix: opening the search on a phone no longer pushes the screen down when the keyboard appears
+- Close button moved to the top of the search, next to a title
+
 ## 1.0.0
 - First release as a Home Assistant add-on
 - Movies, series, books and games, each with its cover

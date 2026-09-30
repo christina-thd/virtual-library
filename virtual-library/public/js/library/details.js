@@ -40,10 +40,10 @@ export function createDetails({ getItem }) {
     panel.dataset.category = item.category;
     panel.innerHTML = `
       ${glow}
-      <div class="grabber" data-close></div>
+      <div class="grabber" data-drag data-close></div>
       <button type="button" class="icon-button details-close" data-close aria-label="Close">${icon('close')}</button>
       <div class="details-content">
-        ${coverHtml(item, 'details-cover')}
+        <div data-drag>${coverHtml(item, 'details-cover')}</div>
         <h2 class="details-title">${escapeHtml(item.title)}</h2>
         <div class="details-meta"><span class="kind">${icon(item.category)}${kind.label}</span>${meta ? `<span>· ${meta}</span>` : ''}</div>
 

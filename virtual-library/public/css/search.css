@@ -1,11 +1,41 @@
 /* Search sheet: pick a category, type, add a result as pending or done. */
 
-.search-sheet { height: calc(100dvh - var(--safe-top) - 24px); }
+.search-sheet { height: calc(var(--viewport-height) - var(--safe-top) - 24px); }
 
 .search-head { flex: none; padding: 0 16px 12px; border-bottom: 1px solid var(--line); }
 
+/* title on the left, Close on the right: where phones expect a way out */
+.search-title-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  margin: -4px 0 10px;
+}
+.search-title {
+  margin: 0;
+  font-family: var(--font-display);
+  font-weight: 600;
+  font-size: 20px;
+  line-height: 1.2;
+}
+.search-close {
+  height: 36px;
+  padding: 0 14px;
+  border-radius: 999px;
+  background: var(--surface-3);
+  color: var(--ink);
+  font-weight: 600;
+  font-size: 14px;
+}
+.search-close:active { transform: scale(0.96); }
+
 .category-picker > button svg.icon { width: 16px; height: 16px; }
-.category-picker > button { font-size: 13px; }
+.category-picker > button { gap: 4px; font-size: 13px; }
+/* narrow phones: labels only, so all four fit */
+@media (max-width: 370px) {
+  .category-picker > button svg.icon { display: none; }
+}
 
 .search-field {
   display: flex;
