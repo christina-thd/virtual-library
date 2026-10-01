@@ -31,6 +31,8 @@
   --font-body: Inter, system-ui, -apple-system, "Segoe UI", sans-serif;
 
   --safe-top: env(safe-area-inset-top, 0px);
+  /* the top of the screen kept free above sheets, for messages (js/ui/toast.js): 16px + up to two lines + a gap */
+  --toast-room: 86px;
   /* the part of the screen you can see (smaller while the keyboard is open), kept up to date by js/ui/viewport.js */
   --viewport-top: 0px;
   --viewport-height: 100dvh;
@@ -154,7 +156,7 @@ svg.icon { width: 1.2em; height: 1.2em; flex: none; fill: none; stroke: currentC
   display: flex;
   flex-direction: column;
   width: 100%;
-  max-height: calc(var(--viewport-height) - var(--safe-top) - 24px);
+  max-height: calc(var(--viewport-height) - var(--safe-top) - var(--toast-room));
   border-radius: 24px 24px 0 0;
   border-top: 1px solid var(--line);
   background: var(--surface);
@@ -190,7 +192,7 @@ svg.icon { width: 1.2em; height: 1.2em; flex: none; fill: none; stroke: currentC
 .toast {
   position: fixed;
   left: 50%;
-  top: calc(16px + var(--viewport-top) + var(--safe-top));   /* at the top: sheets and the add button are below */
+  top: calc(16px + var(--viewport-top) + var(--safe-top));   /* always here: sheets stop below it (--toast-room) */
   z-index: 40;
   display: flex;
   align-items: center;
@@ -212,13 +214,6 @@ svg.icon { width: 1.2em; height: 1.2em; flex: none; fill: none; stroke: currentC
   pointer-events: none;
 }
 .toast.show { opacity: 1; transform: translate(-50%, 0); }
-/* the search sheet reaches almost to the top: show the message over its category buttons instead, the full width,
-   so it never covers the title or the Close button above them */
-body:has(#searchLayer:not([hidden])):not(:has(#detailsLayer:not([hidden]))) .toast {
-  top: calc(var(--viewport-top) + var(--safe-top) + 89px);
-  width: calc(100% - 32px);
-  justify-content: center;
-}
 .toast-text { overflow-wrap: anywhere; }
 .toast-icon {
   display: grid;
