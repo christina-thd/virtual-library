@@ -3,6 +3,7 @@
 ## 3.0.0
 - **Stats**: finished per month, top genres, time spent, ratings and backlog
 - Monthly stats count from the day you update, so a library filled in all at once doesn't skew them
+- Sorting: ties are A–Z
 - Genres for movies, series, books and games (filled in for your library too)
 
 ## 2.1.0
