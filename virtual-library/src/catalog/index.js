@@ -61,6 +61,7 @@ const clean = (value, max) => (typeof value === 'string' || typeof value === 'nu
  * and this turns its results into what screens show and send back with `addItem`.
  * `providers` maps each category to a list of them, best first (or to just one), or to a list of
  * sources to pick from: [{ id, label, providers: [...] }].
+ * @param {{ http: any, providers?: Record<string, any>, now?: () => number }} options
  */
 export function createCatalog({ http, providers = chooseProviders(), now = Date.now }) {
   const toSources = (value) => {

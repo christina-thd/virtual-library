@@ -8,6 +8,8 @@ const WEEK = 7 * 24 * 60 * 60 * 1000;
  * including ones added before details were kept. A series you
  * haven't finished is looked up again once a week, as new episodes come out. Items typed in by hand have no
  * catalog entry, so they stay without.
+ * @param {{ state: any, catalog: { detailsOf(category: string, source: object): Promise<object | null> }, onChange: () => void,
+ *   now?: () => number, logger?: { warn(message: string): void } }} options
  */
 export function createDetailsSync({ state, catalog, onChange, now = Date.now, logger = console }) {
   const tried = new Set();          // once per run of the add-on: a catalog that fails or doesn't know won't soon

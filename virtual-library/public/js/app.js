@@ -6,7 +6,7 @@ import { onTileTap, renderHome, reshuffleHome } from './library/home.js';
 import { createSearch } from './library/search.js';
 import { createStatsView } from './library/stats.js';
 import { fetchInfo, subscribe } from './shared/api.js';
-import { $ } from './shared/dom.js';
+import { $, closest } from './shared/dom.js';
 import { goBack, pushBack } from './ui/back.js';
 import { installCelebrate } from './ui/celebrate.js';
 import { installCoverFallback } from './ui/cover.js';
@@ -25,6 +25,7 @@ const statsView = createStatsView({ onBack: goBack, onOpenItem: (id) => details.
 
 function showView(id) {
   for (const view of document.querySelectorAll('.view')) {
+    if (!(view instanceof HTMLElement)) continue;
     const shown = view.id === id;
     view.hidden = !shown;
     view.classList.toggle('entering', shown);
@@ -65,7 +66,7 @@ trackVisibleViewport();
 $('addButton').innerHTML = icon('plus');
 $('addButton').addEventListener('click', () => search.open(categoryView.category));
 $('shelf').addEventListener('click', (e) => {
-  const card = e.target.closest('[data-item]');
+  const card = closest(e, '[data-item]');
   if (card) details.open(card.dataset.item);
 });
 

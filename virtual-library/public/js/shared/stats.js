@@ -52,7 +52,7 @@ function ratings(finished) {
 
 /**
  * Everything the Stats page shows, for one category or (null) the whole library.
- * @param {object[]} items  the library
+ * @param {import('./library.js').Item[]} items  the library
  * @param {{ category?: string|null, now?: number, since?: number }} [options]  since: when the stats started
  */
 export function libraryStats(items, { category = null, now = Date.now(), since = 0 } = {}) {

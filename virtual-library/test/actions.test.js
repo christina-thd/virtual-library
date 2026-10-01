@@ -21,7 +21,7 @@ const add = (overrides = {}) => apply({
 const itemOf = (id) => state.items.find((i) => i.id === id);
 
 function rejects(action, status, message) {
-  assert.throws(() => apply(action), (err) => {
+  assert.throws(() => apply(action), (/** @type {any} */ err) => {
     assert.ok(err instanceof ActionError, err.message);
     assert.equal(err.status, status);
     if (message) assert.match(err.message, message);

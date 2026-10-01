@@ -15,6 +15,7 @@ const syncWith = (state, catalog, changes = { count: 0 }) =>
   createDetailsSync({ state, catalog, onChange: () => changes.count++, now: () => NOW, logger: quiet });
 
 test('fills in items not looked up yet, one at a time, and tells screens', async () => {
+  /** @type {{ items: any[] }} */
   const state = { items: [movie('a'), movie('b', { runtime: 90, genres: ['Drama'], detailsAt: NOW - DAY }), movie('c', { source: null }),
     { ...movie('d'), category: 'game' }, series('e')] };
   const asked = [];
@@ -34,6 +35,7 @@ test('fills in items not looked up yet, one at a time, and tells screens', async
 
 test('a series you are still watching (or waiting for) is looked up again after a week; a finished one is not', async () => {
   const old = NOW - 8 * DAY;
+  /** @type {{ items: any[] }} */
   const state = { items: [
     series('a', { seasons: 2, episodes: 18, genres: [], detailsAt: old }),
     series('b', { status: 'waiting', seasons: 2, episodes: 18, genres: [], detailsAt: old }),

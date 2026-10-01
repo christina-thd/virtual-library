@@ -95,7 +95,11 @@ export const readDetails = (category, raw) => DETAIL_READERS[category]?.(raw ?? 
 /** Every detail field, the category's from `raw` and the rest null, as items store them. */
 export const itemDetails = (category, raw) => ({ ...NO_DETAILS, ...readDetails(category, raw) });
 
-/** Distinct https URLs that pass `allowed`, best first. */
+/**
+ * Distinct https URLs that pass `allowed`, best first.
+ * @param {unknown[]} urls
+ * @param {(url: string) => boolean} [allowed]
+ */
 export function parseImageUrls(urls, allowed = () => true) {
   const valid = urls.filter((url) => typeof url === 'string' && url.startsWith('https://') && url.length < 500 && allowed(url));
   return [...new Set(valid)].slice(0, MAX_IMAGE_URLS);

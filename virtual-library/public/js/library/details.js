@@ -1,7 +1,7 @@
 // Item sheet: big cover, move between Pending, Waiting (series) and Done, drop it, rate when done (and for games,
 // hours played), remove.
 import { sendAction } from '../shared/api.js';
-import { $, escapeHtml } from '../shared/dom.js';
+import { $, closest, escapeHtml } from '../shared/dom.js';
 import { formatCount, formatRuntime } from '../shared/format.js';
 import { categoryOf, STATUS_LABELS, statusesFor } from '../shared/library.js';
 import { celebrate } from '../ui/celebrate.js';
@@ -19,7 +19,7 @@ const DISARM_MS = 3000;
 /** 1 → "1 hour", 42.5 → "42.5 hours". */
 const formatHours = (hours) => `${hours} ${hours === 1 ? 'hour' : 'hours'}`;
 
-/** @param {{ getItem: (id: string) => object | undefined }} options */
+/** @param {{ getItem: (id: string) => import('../shared/library.js').Item | undefined }} options */
 export function createDetails({ getItem }) {
   const panel = $('details');
   const sheet = createSheet($('detailsLayer'), { onClose: () => { itemId = null; } });
@@ -107,7 +107,7 @@ export function createDetails({ getItem }) {
     const item = itemId && getItem(itemId);
     if (!item) return;
 
-    const statusButton = e.target.closest('[data-status]');
+    const statusButton = closest(e, '[data-status]');
     if (statusButton && statusButton.dataset.status !== item.status) {
       const status = statusButton.dataset.status;
       send({ type: 'setStatus', itemId, status })
@@ -117,7 +117,7 @@ export function createDetails({ getItem }) {
     }
 
     // given up on: it counts as done (no confetti), with a mark on its cover
-    if (e.target.closest('[data-drop]')) {
+    if (closest(e, '[data-drop]')) {
       const dropped = !item.dropped;
       send({ type: 'setDropped', itemId, dropped })
         .then(() => toast(dropped ? `“${item.title}” dropped` : `“${item.title}” is no longer dropped`, { icon: 'check' }))
@@ -125,7 +125,7 @@ export function createDetails({ getItem }) {
       return;
     }
 
-    const starButton = e.target.closest('[data-rate]');
+    const starButton = closest(e, '[data-rate]');
     if (starButton) {
       const stars = Number(starButton.dataset.rate);
       const rating = stars === item.rating ? null : stars;       // tap your rating again to clear it
@@ -136,7 +136,7 @@ export function createDetails({ getItem }) {
       return;
     }
 
-    if (e.target.closest('[data-remove]')) {
+    if (closest(e, '[data-remove]')) {
       if (!removeArmed) {
         removeArmed = true;
         disarmTimer = setTimeout(() => { disarm(); if (itemId) render(getItem(itemId)); }, DISARM_MS);
@@ -153,19 +153,20 @@ export function createDetails({ getItem }) {
 
   // hours played (games): saved when leaving the field or pressing Enter (which also hides the keyboard)
   panel.addEventListener('submit', (e) => {
-    if (!e.target.closest('[data-hours]')) return;
+    if (!closest(e, '[data-hours]')) return;
     e.preventDefault();
     $('hoursInput').blur();
   });
 
   panel.addEventListener('change', (e) => {
-    if (e.target.id !== 'hoursInput') return;
+    const input = /** @type {HTMLInputElement} */ (e.target);
+    if (input.id !== 'hoursInput') return;
     const item = itemId && getItem(itemId);
     if (!item) return;
-    const text = e.target.value.trim().replace(',', '.');           // "42,5" too, as many phones write it
+    const text = input.value.trim().replace(',', '.');           // "42,5" too, as many phones write it
     const hours = text === '' ? null : Math.round(Number(text) * 10) / 10;
     if (hours !== null && !(hours >= 0.1 && hours <= 100_000)) {
-      e.target.value = item.hoursPlayed ?? '';
+      input.value = item.hoursPlayed == null ? '' : String(item.hoursPlayed);
       return toast('Type a number, like 42.5', { error: true });
     }
     if (hours === item.hoursPlayed) return;

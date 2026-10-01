@@ -15,6 +15,10 @@ export class JsonFileStore {
   #pending = null;
   #timer = null;
 
+  /**
+   * @param {string} file
+   * @param {{ debounceMs?: number, logger?: { warn(message: string): void } }} [options]
+   */
   constructor(file, { debounceMs = 300, logger = console } = {}) {
     this.#file = file;
     this.#debounceMs = debounceMs;

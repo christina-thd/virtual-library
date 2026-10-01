@@ -2,6 +2,7 @@
 //   <div class="layer" hidden><div class="backdrop" data-close></div><section class="sheet">…</section></div>
 // Sheets can stack (the item sheet opens on top of search); the back button closes the top one.
 // Tapping [data-close] closes the sheet; dragging [data-drag] (its top) down far enough, or flicking it, does too.
+import { closest } from '../shared/dom.js';
 import { goBack, pushBack } from './back.js';
 
 const DRAG_START_PX = 8;            // movement before a touch counts as a drag (so taps still work)
@@ -16,7 +17,7 @@ function enableDragToClose(panel, close) {
   let justDragged = false;
 
   panel.addEventListener('pointerdown', (e) => {
-    if (e.button > 0 || !e.target.closest('[data-drag]')) return;
+    if (e.button > 0 || !closest(e, '[data-drag]')) return;
     drag = { id: e.pointerId, startY: e.clientY, startTime: e.timeStamp, moved: false, dy: 0 };
   });
 
@@ -32,7 +33,7 @@ function enableDragToClose(panel, close) {
         // the pointer is already gone: the drag still works while it's over the sheet
       }
       panel.classList.add('dragging');
-      document.activeElement?.blur?.();              // hide the keyboard
+      /** @type {HTMLElement} */ (document.activeElement)?.blur?.();   // hide the keyboard
     }
     drag.dy = dy;
     panel.style.transform = `translateY(${dy}px)`;
@@ -64,8 +65,12 @@ function enableDragToClose(panel, close) {
   }, true);
 }
 
+/**
+ * @param {HTMLElement} layer
+ * @param {{ onClose?: () => void }} [options]  onClose: called when it starts closing
+ */
 export function createSheet(layer, { onClose } = {}) {
-  const panel = layer.querySelector('.sheet');
+  const panel = /** @type {HTMLElement} */ (layer.querySelector('.sheet'));
   let isOpen = false;
   let closing = false;              // going back is asynchronous: don't go back twice
 
@@ -110,7 +115,7 @@ export function createSheet(layer, { onClose } = {}) {
   };
 
   layer.addEventListener('click', (e) => {
-    if (e.target.closest('[data-close]')) sheet.close();
+    if (closest(e, '[data-close]')) sheet.close();
   });
   enableDragToClose(panel, () => sheet.close());
 

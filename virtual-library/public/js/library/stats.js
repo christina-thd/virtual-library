@@ -1,6 +1,6 @@
 // Stats: what you finished per month, your genres, time spent, ratings and backlog, for the whole library or one
 // category (the switch at the top). The numbers come from shared/stats.js.
-import { $, escapeHtml } from '../shared/dom.js';
+import { $, closest, escapeHtml } from '../shared/dom.js';
 import { CATEGORIES, categoryOf } from '../shared/library.js';
 import { libraryStats } from '../shared/stats.js';
 import { coverHtml } from '../ui/cover.js';
@@ -142,10 +142,10 @@ export function createStatsView({ onBack, onOpenItem }) {
 
   function render() {
     if (!shown) return;
-    for (const button of filter.children) {
+    for (const button of /** @type {HTMLCollectionOf<HTMLElement>} */ (filter.children)) {
       const selected = button.dataset.filter === (category ?? '');
       button.classList.toggle('selected', selected);
-      button.setAttribute('aria-selected', selected);
+      button.setAttribute('aria-selected', String(selected));
     }
     view.dataset.category = category ?? '';
     const s = libraryStats(library, { category, since });
@@ -156,14 +156,14 @@ export function createStatsView({ onBack, onOpenItem }) {
   }
 
   filter.addEventListener('click', (e) => {
-    const button = e.target.closest('[data-filter]');
+    const button = closest(e, '[data-filter]');
     if (!button) return;
     category = button.dataset.filter || null;
     render();
   });
 
   body.addEventListener('click', (e) => {
-    const oldest = e.target.closest('[data-item]');
+    const oldest = closest(e, '[data-item]');
     if (oldest) onOpenItem(oldest.dataset.item);
   });
 

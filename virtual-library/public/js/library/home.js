@@ -1,5 +1,5 @@
 // Home: one tile per category, with how many are pending and done, and a few covers picked at random.
-import { $ } from '../shared/dom.js';
+import { $, closest } from '../shared/dom.js';
 import { CATEGORIES, statusesFor } from '../shared/library.js';
 import { coverHtml } from '../ui/cover.js';
 import { icon } from '../ui/icons.js';
@@ -71,7 +71,7 @@ export function renderHome(library) {
 /** Calls `onOpen(categoryId)` when a tile is tapped. */
 export function onTileTap(onOpen) {
   $('tiles').addEventListener('click', (e) => {
-    const tile = e.target.closest('[data-open-category]');
+    const tile = closest(e, '[data-open-category]');
     if (tile) onOpen(tile.dataset.openCategory);
   });
 }

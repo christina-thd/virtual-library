@@ -1,10 +1,15 @@
 # Development
 
-Requires Node.js 20+. There are no npm dependencies, so there's nothing to install.
+Requires Node.js 22+ (the add-on runs Node 22: the Dockerfile's Alpine 3.22). The add-on itself has no npm
+dependencies; `npm install` only brings the dev tools (ESLint, TypeScript as a checker), which aren't shipped.
 
 ```sh
-npm run dev     # http://localhost:3100, restarts on changes
-npm test        # unit, HTTP and add-on packaging tests (Node's built-in test runner)
+npm install         # the dev tools
+npm run dev         # http://localhost:3100, restarts on changes
+npm test            # unit, HTTP and add-on packaging tests (Node's built-in test runner)
+npm run lint        # ESLint (eslint.config.js)
+npm run typecheck   # type checks the JavaScript from its JSDoc comments (tsconfig.json); nothing is compiled
+npm run check       # all three, as the pull request checks do
 ```
 
 Search needs internet access (it asks the real catalogs); the tests don't.
@@ -58,7 +63,8 @@ public/                   browser (plain ES modules, no build step)
                           viewport (keeps sheets above the keyboard), celebrate (confetti + message),
                           toast, cover, stars, icons
   js/library/             the views: home (category tiles), category (title + Pending / (Waiting) / Done tabs, sort), shelf (grid),
-                          search (add), details (one item), stats (the Stats page), cheers (the lines said when you finish something)
+                          search (the controller) and search-results (what it shows), details (one item),
+                          stats (the Stats page), cheers (the lines said when you finish something)
 
 test/                     node:test suites
 ```
@@ -115,7 +121,8 @@ sidebar, which serves it under `/api/hassio_ingress/<token>/`.
 
 1. Bump `version` in **both** `config.yaml` and `package.json` (a test fails if they differ).
 2. Add an entry at the top of `CHANGELOG.md`.
-3. Run `npm test`, then commit and push. Home Assistant shows the update in the add-on store.
+3. Run `npm run check`, then open a pull request into `main`: it checks the version went up and runs lint, types
+   and tests. Merging releases it: Home Assistant shows the update in the add-on store.
 
 The library is kept in the add-on's `/data` folder across updates.
 

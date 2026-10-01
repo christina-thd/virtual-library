@@ -17,7 +17,10 @@ const ALIASES = {
   'game-show': ['Game Show'], 'game show': ['Game Show'], 'film-noir': ['Film Noir'], 'musical': ['Musical'],
 };
 
-/** Books: the genres picked out of a catalog's subjects, by what the subject says. Earlier subjects matter more. */
+/**
+ * Books: the genres picked out of a catalog's subjects, by what the subject says. Earlier subjects matter more.
+ * @type {Array<[string, RegExp]>}
+ */
 const BOOK_GENRES = [
   ['Sci-Fi', /science fiction|sci-fi/i],
   ['Fantasy', /fantasy/i],
