@@ -197,28 +197,29 @@ svg.icon { width: 1.2em; height: 1.2em; flex: none; fill: none; stroke: currentC
   gap: 8px;
   max-width: calc(100% - 32px);
   padding: 11px 18px;
-  border-radius: 999px;
+  width: max-content;                            /* one line when it fits; wraps (never cut) when it doesn't */
+  border-radius: 22px;
   border: 1px solid var(--line);
   background: var(--surface-3);
   box-shadow: 0 10px 30px -10px rgb(0 0 0 / 0.8);
   font-size: 14px;
   font-weight: 500;
-  white-space: nowrap;
-  overflow: hidden;
-  text-overflow: ellipsis;
+  line-height: 1.35;
+  text-align: center;
   opacity: 0;
   transform: translate(-50%, -12px);
   transition: opacity 200ms, transform 240ms var(--ease);
   pointer-events: none;
 }
 .toast.show { opacity: 1; transform: translate(-50%, 0); }
-/* the search sheet reaches almost to the top: lay the message over its title row, the same size, so it doesn't half-cover it */
+/* the search sheet reaches almost to the top: show the message over its category buttons instead, the full width,
+   so it never covers the title or the Close button above them */
 body:has(#searchLayer:not([hidden])):not(:has(#detailsLayer:not([hidden]))) .toast {
-  top: calc(var(--viewport-top) + var(--safe-top) + 39px);
+  top: calc(var(--viewport-top) + var(--safe-top) + 89px);
   width: calc(100% - 32px);
   justify-content: center;
 }
-.toast-text { overflow: hidden; text-overflow: ellipsis; }
+.toast-text { overflow-wrap: anywhere; }
 .toast-icon {
   display: grid;
   place-items: center;
