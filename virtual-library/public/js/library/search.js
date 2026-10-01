@@ -26,12 +26,23 @@ export function createSearch({ getItems, openItem }) {
   const body = $('searchBody');
   const input = $('searchInput');
   const picker = $('searchCategories');
+  const sourcePicker = $('searchSources');
 
   // the category picked on the home screen's search, remembered on this phone
   const homeCategory = () => (CATEGORY_IDS.includes(storage.get(CATEGORY_KEY)) ? storage.get(CATEGORY_KEY) : 'movie');
   let category = homeCategory();
   let locked = false;               // opened from a category: only that category can be added
-  let credits = {};
+  // category → [{ id, label, credits }], from the server. Several for a category is a switch (games: PC / Nintendo)
+  let sources = {};
+  const sourcesOf = (id) => sources[id] ?? [];
+  // category → the source picked on the switch. Not remembered: each time the search opens it's back to the
+  // first one (games: PC)
+  const picked = new Map();
+  /** The source picked for the category, else its first one. */
+  function currentSource() {
+    const list = sourcesOf(category);
+    return list.find((s) => s.id === picked.get(category)) ?? list[0] ?? null;
+  }
   // idle | loading | results | error
   let phase = 'idle';
   let results = [];
@@ -41,7 +52,7 @@ export function createSearch({ getItems, openItem }) {
   let timer = null;
   // results already fetched since the page loaded (category + query → results): shown again without asking
   const cache = new Map();
-  const cacheKey = (query) => `${category}\0${query.toLowerCase().replace(/\s+/g, ' ')}`;
+  const cacheKey = (query) => `${category}\0${currentSource()?.id ?? ''}\0${query.toLowerCase().replace(/\s+/g, ' ')}`;
   // what was added from this search (key → { itemId, status, fresh, seen }): its row says "Added to …" until
   // the next search, even before the library update arrives; `fresh` plays the badge's pop once
   const added = new Map();
@@ -75,7 +86,8 @@ export function createSearch({ getItems, openItem }) {
     phase = 'loading';
     render();
     try {
-      results = await searchCatalog(category, query, signal);
+      const source = sourcesOf(category).length > 1 ? currentSource().id : null;   // only sent when there's a choice
+      results = await searchCatalog(category, query, signal, source);
       cache.set(key, results);
       if (cache.size > CACHE_SIZE) cache.delete(cache.keys().next().value);
       phase = 'results';
@@ -96,12 +108,32 @@ export function createSearch({ getItems, openItem }) {
       button.classList.toggle('selected', selected);
       button.setAttribute('aria-checked', selected);
     }
+    showSources();
     run();
   }
 
-  /** The catalog that found the results shown, or every catalog asked for this category, in order. */
+  /** The PC / Nintendo switch, for a category that has more than one source. */
+  function showSources() {
+    const list = sourcesOf(category);
+    sourcePicker.hidden = list.length < 2;
+    if (sourcePicker.hidden) return;
+    const current = currentSource();
+    // an icon when there is one (the label is then its name), else the label
+    sourcePicker.innerHTML = list.map((s) => `
+      <button type="button" role="radio" data-source="${escapeHtml(s.id)}" class="${s === current ? 'selected' : ''}"
+        aria-checked="${s === current}" ${s.icon ? `aria-label="${escapeHtml(s.label)}" title="${escapeHtml(s.label)}"` : ''}>
+        ${s.icon ? icon(s.icon) : escapeHtml(s.label)}</button>`).join('');
+  }
+
+  function setSource(id) {
+    picked.set(category, id);
+    showSources();
+    run();
+  }
+
+  /** The catalog that found the results shown, or every catalog asked for this source, in order. */
   function showCredits() {
-    const list = credits[category] ?? [];
+    const list = currentSource()?.credits ?? [];
     const answered = phase === 'results' && list.find((c) => c.id === results[0]?.source?.provider);
     const link = (c) => `<a href="${escapeHtml(c.url)}" target="_blank" rel="noopener">${escapeHtml(c.name)}</a>`;
     $('searchCredits').innerHTML = list.length ? `Search by ${(answered ? [answered] : list).map(link).join(', then ')}` : '';
@@ -218,6 +250,11 @@ export function createSearch({ getItems, openItem }) {
     if (button && button.dataset.category !== category) setCategory(button.dataset.category);
   });
 
+  sourcePicker.addEventListener('click', (e) => {
+    const button = e.target.closest('[data-source]');
+    if (button && button.dataset.source !== currentSource()?.id) setSource(button.dataset.source);
+  });
+
   input.addEventListener('input', () => {
     $('searchClear').hidden = !input.value;
     clearTimeout(timer);
@@ -263,7 +300,13 @@ export function createSearch({ getItems, openItem }) {
      * @param {string|null} onlyCategory  the category shown on screen (only it can be added), or null on home
      */
     open(onlyCategory) {
+      const switched = picked.size > 0;
+      picked.clear();                                // games: back to PC
       lockTo(CATEGORY_IDS.includes(onlyCategory) ? onlyCategory : null);
+      if (switched) {
+        showSources();
+        run();                                       // the kept search text, on PC again
+      }
       sheet.open();
       // in the tap's handler, so phones show the keyboard; without scrolling, because the sheet is still
       // below the screen (sliding in) and the phone would pan the whole page down to "show" the field
@@ -271,9 +314,12 @@ export function createSearch({ getItems, openItem }) {
       input.select();
     },
 
-    setCredits(value) {
-      credits = value;
-      showCredits();
+    /** What each category searches (from /api/info): credits, and the platform switch for games. */
+    setSources(value) {
+      sources = value ?? {};
+      showSources();
+      if (sourcesOf(category).length > 1) run();       // a search made before this went to the default source
+      else showCredits();
     },
 
     /** The library changed: update the "In your library" marks. */

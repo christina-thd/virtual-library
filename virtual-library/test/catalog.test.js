@@ -172,9 +172,60 @@ describe('fallback catalogs (asked when the one before finds nothing)', () => {
   });
 
   test('credits list every catalog of a category, in the order they are asked', () => {
-    const { credits } = createCatalog({ http: fakeHttp({}), providers });
-    assert.deepEqual(credits.book.map((c) => c.name), ['Open Library', 'Apple Books']);
-    assert.deepEqual(credits.game[1], { id: 'gog', name: 'GOG', url: 'https://www.gog.com/' });
+    const { sources } = createCatalog({ http: fakeHttp({}), providers });
+    assert.deepEqual(sources.book, [{ id: 'all', label: null, icon: null, credits: [
+      { id: 'openlibrary', name: 'Open Library', url: 'https://openlibrary.org/' },
+      { id: 'applebooks', name: 'Apple Books', url: 'https://www.apple.com/apple-books/' },
+    ] }]);
+    assert.deepEqual(sources.game[0].credits[1], { id: 'gog', name: 'GOG', url: 'https://www.gog.com/' });
+  });
+});
+
+describe('games: PC or Nintendo, picked on the search screen', () => {
+  const providers = chooseProviders();
+  const nintendoAnswer = {
+    response: { docs: [{
+      fs_id: '1173281', title: 'Mario Kart 8 Deluxe', dates_released_dts: ['2017-04-28T00:00:00Z'], system_names_txt: ['Nintendo Switch'],
+      image_url: 'https://www.nintendo.com/eu/media/images/05_packshots/PS_NSwitch_MarioKart8Deluxe_image500w.jpg',
+      image_url_sq_s: 'https://www.nintendo.com/eu/media/images/11_square_images/SQ_NSwitch_MarioKart8Deluxe_image500w.jpg',
+    }] },
+  };
+
+  test('the two switch choices, PC first', () => {
+    const { sources } = createCatalog({ http: fakeHttp({}), providers });
+    assert.deepEqual(sources.game.map((s) => [s.id, s.label]), [['pc', 'PC & Steam Deck'], ['nintendo', 'Nintendo']]);
+    const rawg = createCatalog({ http: fakeHttp({}), providers: chooseProviders({ rawgApiKey: 'k' }) });
+    assert.equal(rawg.sources.game[0].label, 'All platforms');   // RAWG knows consoles too
+  });
+
+  test('Nintendo: the store search, box art as the cover, consoles as the line under the title', async () => {
+    const http = fakeHttp({ 'https://searching.nintendo-europe.com/en/select': nintendoAnswer });
+    const results = await createCatalog({ http, providers }).search('game', 'mario kart 8', 'nintendo');
+    assert.match(http.calls[0].url, /\?q=mario%20kart%208&fq=type:GAME&/);
+    assert.equal(http.calls.length, 1);                // Steam isn't asked
+    assert.deepEqual(results[0], {
+      category: 'game', title: 'Mario Kart 8 Deluxe', year: 2017, creator: 'Nintendo Switch',
+      source: { provider: 'nintendo', id: '1173281' },
+      coverUrl: 'https://www.nintendo.com/eu/media/images/05_packshots/PS_NSwitch_MarioKart8Deluxe_image500w.jpg',
+      thumbUrl: 'https://www.nintendo.com/eu/media/images/11_square_images/SQ_NSwitch_MarioKart8Deluxe_image500w.jpg',
+    });
+  });
+
+  test('PC is the default, and each choice is remembered separately', async () => {
+    const http = fakeHttp({
+      'https://store.steampowered.com/api/storesearch/': { items: [{ type: 'app', id: 1145360, name: 'Hades' }] },
+      'https://searching.nintendo-europe.com/en/select': { response: { docs: [{ fs_id: '1', title: 'Hades' }] } },
+    });
+    const catalog = createCatalog({ http, providers });
+    assert.equal((await catalog.search('game', 'hades'))[0].source.provider, 'steam');
+    assert.equal((await catalog.search('game', 'hades', 'nintendo'))[0].source.provider, 'nintendo');
+    assert.equal((await catalog.search('game', 'hades', 'pc'))[0].source.provider, 'steam');   // from memory
+  });
+
+  test('an unknown choice is refused', async () => {
+    const catalog = createCatalog({ http: fakeHttp({}), providers });
+    await assert.rejects(catalog.search('game', 'x', 'xbox'), (err) => err instanceof SearchError && /pc, nintendo/.test(err.message));
+    await assert.rejects(catalog.search('movie', 'x', 'nintendo'), SearchError);
   });
 });
 
@@ -212,12 +263,16 @@ describe('catalogs with an API key', () => {
   });
 
   test('a key puts its catalog first; the keyless ones stay as fallbacks', () => {
-    const ids = (providers) => Object.fromEntries(Object.entries(providers).map(([c, list]) => [c, list.map((p) => p.id)]));
+    // category → source → catalogs asked, in order
+    const ids = (providers) => Object.fromEntries(Object.entries(createCatalog({ http: fakeHttp({}), providers }).sources)
+      .map(([c, list]) => [c, Object.fromEntries(list.map((s) => [s.id, s.credits.map((p) => p.id)]))]));
     assert.deepEqual(ids(chooseProviders()), {
-      movie: ['cinemeta'], series: ['tvmaze', 'cinemeta'], book: ['openlibrary', 'applebooks'], game: ['steam', 'gog'],
+      movie: { all: ['cinemeta'] }, series: { all: ['tvmaze', 'cinemeta'] }, book: { all: ['openlibrary', 'applebooks'] },
+      game: { pc: ['steam', 'gog'], nintendo: ['nintendo'] },
     });
     assert.deepEqual(ids(chooseProviders({ tmdbApiKey: 'a', rawgApiKey: 'b' })), {
-      movie: ['tmdb', 'cinemeta'], series: ['tmdb', 'tvmaze', 'cinemeta'], book: ['openlibrary', 'applebooks'], game: ['rawg', 'steam', 'gog'],
+      movie: { all: ['tmdb', 'cinemeta'] }, series: { all: ['tmdb', 'tvmaze', 'cinemeta'] }, book: { all: ['openlibrary', 'applebooks'] },
+      game: { pc: ['rawg', 'steam', 'gog'], nintendo: ['nintendo'] },
     });
   });
 });
@@ -294,7 +349,7 @@ describe('createCatalog', () => {
   });
 
   test('lists who searches each category, for the credits line', () => {
-    assert.deepEqual(Object.keys(catalog.credits).sort(), ['book', 'game', 'movie', 'series']);
-    assert.equal(catalog.credits.series[0].name, 'TVmaze');
+    assert.deepEqual(Object.keys(catalog.sources).sort(), ['book', 'game', 'movie', 'series']);
+    assert.equal(catalog.sources.series[0].credits[0].name, 'TVmaze');
   });
 });

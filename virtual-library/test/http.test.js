@@ -17,10 +17,11 @@ const JPEG = Buffer.from([0xff, 0xd8, 0xff, 0xe0]);
 
 /** A catalog that knows one series, and fails for the query "down". */
 const catalog = {
-  credits: { series: [{ id: 'fake', name: 'Fake', url: 'https://fake.example/' }] },
+  sources: { series: [{ id: 'all', label: null, icon: null, credits: [{ id: 'fake', name: 'Fake', url: 'https://fake.example/' }] }] },
   isAllowedImage: (url) => url.startsWith('https://img.example/'),
-  async search(category, query) {
+  async search(category, query, source) {
     if (category !== 'series') throw new SearchError('category must be series');
+    if (source) throw new SearchError(`asked ${source}`);
     if (query === 'down') throw new UpstreamError('api.example did not answer');
     return [{ category, title: 'Dark', year: 2017, creator: 'Netflix', source: { provider: 'fake', id: '1' }, coverUrl: IMAGE, thumbUrl: IMAGE }];
   },
@@ -91,7 +92,7 @@ describe('pages and static files', () => {
     const info = await (await fetch(`${base}/api/info`)).json();
     assert.equal(info.version, 'test');
     assert.deepEqual(info.categories.map((c) => c.id), ['movie', 'series', 'book', 'game']);
-    assert.equal(info.credits.series[0].name, 'Fake');
+    assert.equal(info.sources.series[0].credits[0].name, 'Fake');
   });
 });
 
@@ -100,6 +101,11 @@ describe('search API', () => {
     const res = await fetch(`${base}/api/search?category=series&q=dark`);
     assert.equal(res.status, 200);
     assert.equal((await res.json()).results[0].title, 'Dark');
+  });
+
+  test('passes on which source to ask (games: pc or nintendo)', async () => {
+    const res = await fetch(`${base}/api/search?category=series&q=dark&source=nintendo`);
+    assert.equal((await res.json()).error, 'asked nintendo');
   });
 
   test('a bad search is 400, a catalog that is down is 502', async () => {

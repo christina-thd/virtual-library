@@ -63,9 +63,9 @@ function readJsonBody(req) {
  *   GET  /manifest.webmanifest   web app manifest ("Add to Home Screen" opens it like an app)
  *   GET  /css/*, /js/*, /img/*   static files
  *   GET  /covers/<file>    saved cover images
- *   GET  /api/info         { version, categories, credits }
+ *   GET  /api/info         { version, categories, sources }
  *   GET  /api/events       live view (Server-Sent Events)
- *   GET  /api/search?category=movie&q=dune   search a catalog: { results }
+ *   GET  /api/search?category=movie&q=dune[&source=nintendo]   search a catalog: { results }
  *   POST /api/actions      apply one action, e.g. { "type": "setStatus", "itemId": "…", "status": "done" }
  */
 export function createApp({
@@ -90,7 +90,7 @@ export function createApp({
   }
 
   async function search(res, searchParams) {
-    const results = await catalog.search(searchParams.get('category'), searchParams.get('q'));
+    const results = await catalog.search(searchParams.get('category'), searchParams.get('q'), searchParams.get('source'));
     sendJson(res, 200, { results });
   }
 
@@ -116,7 +116,7 @@ export function createApp({
     if (pathname === '/api/events') return hub.connect(req, res, view());
     if (pathname === '/api/search') return search(res, searchParams);
     if (pathname === '/api/info') {
-      return sendJson(res, 200, { version: config.version, categories: CATEGORIES, credits: catalog.credits });
+      return sendJson(res, 200, { version: config.version, categories: CATEGORIES, sources: catalog.sources });
     }
     if (pathname.startsWith('/covers/')) return sendCover(req, res, pathname);
     if (Object.hasOwn(PAGES, pathname)) {

@@ -50,6 +50,6 @@ npm run dev
 For issues, check the add-on logs or open an issue in this repository.
 
 Search results and covers come from [Cinemeta](https://www.stremio.com/), [TVmaze](https://www.tvmaze.com/),
-[Open Library](https://openlibrary.org/), [Apple Books](https://www.apple.com/apple-books/), [Steam](https://store.steampowered.com/)
-and [GOG](https://www.gog.com/) (plus [TMDB](https://www.themoviedb.org/)
+[Open Library](https://openlibrary.org/), [Apple Books](https://www.apple.com/apple-books/), [Steam](https://store.steampowered.com/),
+[GOG](https://www.gog.com/) and [Nintendo](https://www.nintendo.com/) (plus [TMDB](https://www.themoviedb.org/)
 and [RAWG](https://rawg.io/) with your own API keys). This project is not affiliated with or endorsed by any of them.

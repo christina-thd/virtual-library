@@ -3,6 +3,7 @@
 ## Unreleased
 - Search asks a second catalog when the first finds nothing or is down: Cinemeta for series, Apple Books for books,
   GOG for games (no account needed). With an API key, TMDB / RAWG go first and the free ones stay as fallbacks
+- Nintendo games: pick PC or Nintendo when searching games (Switch, 3DS, Wii U, Wii and the classics, with box art)
 - Home screen tiles show random covers from each category (new ones each time you come back to the home screen), not only the newest
 - Anything can be added as typed, also when there are results: "Not in the list?" below them
 - Faster search: recent searches come back instantly, and slow Steam cover lookups no longer hold up game results

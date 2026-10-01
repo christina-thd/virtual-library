@@ -37,6 +37,11 @@
   .category-picker > button svg.icon { display: none; }
 }
 
+/* games: which store to ask (PC / Nintendo), a small switch inside the search field, on the right */
+.source-picker { flex: none; grid-auto-columns: auto; padding: 2px; }        /* each button as wide as its label */
+.source-picker > button { min-height: 30px; padding: 0 9px; font-size: 12px; }
+.source-picker > button svg.icon { width: 18px; height: 18px; }
+
 .search-field {
   display: flex;
   align-items: center;

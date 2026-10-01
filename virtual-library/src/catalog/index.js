@@ -3,6 +3,7 @@ import { parseYear } from '../library/state.js';
 import { appleBooks } from './providers/apple-books.js';
 import { createCinemeta } from './providers/cinemeta.js';
 import { gog } from './providers/gog.js';
+import { nintendo } from './providers/nintendo.js';
 import { openLibrary } from './providers/open-library.js';
 import { createRawg } from './providers/rawg.js';
 import { steam } from './providers/steam.js';
@@ -26,6 +27,9 @@ export class SearchError extends Error {
 /**
  * Which catalogs search each category, best first: the next one is asked only when the one before
  * finds nothing or doesn't answer. The keyless ones always; one with an API key goes first when it's set.
+ *
+ * Games are split by platform (picked on the search screen), because each store answers every search with
+ * look-alikes of its own ("metroid" on Steam is "Metroidvania Maker"), so one can't be a fallback for the other.
  */
 export function chooseProviders({ tmdbApiKey = null, rawgApiKey = null } = {}) {
   const withKey = (key, create) => (key ? [create(key)] : []);
@@ -33,7 +37,11 @@ export function chooseProviders({ tmdbApiKey = null, rawgApiKey = null } = {}) {
     movie: [...withKey(tmdbApiKey, (k) => createTmdb('movie', k)), createCinemeta('movie')],
     series: [...withKey(tmdbApiKey, (k) => createTmdb('series', k)), tvmaze, createCinemeta('series')],
     book: [openLibrary, appleBooks],
-    game: [...withKey(rawgApiKey, createRawg), steam, gog],
+    game: [
+      // `icon`: what the switch shows (public/js/ui/icons.js); the label is its name for screen readers and tooltips
+      { id: 'pc', label: rawgApiKey ? 'All platforms' : 'PC & Steam Deck', icon: rawgApiKey ? 'game' : 'steam', providers: [...withKey(rawgApiKey, createRawg), steam, gog] },
+      { id: 'nintendo', label: 'Nintendo', icon: 'nintendo', providers: [nintendo] },
+    ],
   };
 }
 
@@ -43,11 +51,16 @@ const clean = (value, max) => (typeof value === 'string' || typeof value === 'nu
  * Search across the catalogs. Every provider has the same shape:
  *   { id, name, url, imageHosts: [hostname], search(query, http) → [{ id, title, year, creator, coverUrl, thumbUrl? }] }
  * and this turns its results into what screens show and send back with `addItem`.
- * `providers` maps each category to a list of them, best first (or to just one).
+ * `providers` maps each category to a list of them, best first (or to just one), or to a list of
+ * sources to pick from: [{ id, label, providers: [...] }].
  */
 export function createCatalog({ http, providers = chooseProviders(), now = Date.now }) {
-  const chains = Object.fromEntries(Object.entries(providers).map(([category, p]) => [category, [p].flat()]));
-  const imageHosts = new Set(Object.values(chains).flat().flatMap((p) => p.imageHosts));
+  const toSources = (value) => {
+    const list = [value].flat();
+    return list[0]?.providers ? list : [{ id: 'all', label: null, providers: list }];
+  };
+  const sourcesOf = Object.fromEntries(Object.entries(providers).map(([category, value]) => [category, toSources(value)]));
+  const imageHosts = new Set(Object.values(sourcesOf).flat().flatMap((s) => s.providers).flatMap((p) => p.imageHosts));
 
   /** Only https images from the catalogs' own image servers are shown and downloaded. */
   function isAllowedImage(url) {
@@ -64,19 +77,23 @@ export function createCatalog({ http, providers = chooseProviders(), now = Date.
   // at once goes out once. Failures are dropped, to be tried again.
   const cache = new Map();
 
-  function search(category, rawQuery) {
+  /** `sourceId` picks one of the category's sources (e.g. games: "pc" or "nintendo"); the first one by default. */
+  function search(category, rawQuery, sourceId = null) {
     if (!CATEGORY_IDS.includes(category)) return Promise.reject(new SearchError(`category must be one of: ${CATEGORY_IDS.join(', ')}`));
     const query = clean(rawQuery, MAX_QUERY);
     if (!query) return Promise.reject(new SearchError('Type something to search for'));
+    const sources = sourcesOf[category];
+    const source = sourceId ? sources.find((s) => s.id === sourceId) : sources[0];
+    if (!source) return Promise.reject(new SearchError(`source must be one of: ${sources.map((s) => s.id).join(', ')}`));
 
-    const key = `${category}\0${query.toLowerCase().replace(/\s+/g, ' ')}`;
+    const key = `${category}\0${source.id}\0${query.toLowerCase().replace(/\s+/g, ' ')}`;
     const hit = cache.get(key);
     cache.delete(key);                             // re-added below: most recently used last
     if (hit && now() - hit.at < CACHE_TTL_MS) {
       cache.set(key, hit);
       return hit.results;
     }
-    const results = ask(category, query);
+    const results = ask(category, source.providers, query);
     cache.set(key, { at: now(), results });
     if (cache.size > CACHE_SIZE) cache.delete(cache.keys().next().value);
     results.catch(() => {
@@ -86,10 +103,10 @@ export function createCatalog({ http, providers = chooseProviders(), now = Date.
   }
 
   /** The first catalog that finds something. Fails only if none of them answered. */
-  async function ask(category, query) {
+  async function ask(category, providerList, query) {
     let answered = false;
     let failure = null;
-    for (const provider of chains[category]) {
+    for (const provider of providerList) {
       let found;
       try {
         found = await provider.search(query, http);
@@ -120,9 +137,12 @@ export function createCatalog({ http, providers = chooseProviders(), now = Date.
       .slice(0, MAX_RESULTS);
   }
 
-  /** Credits per category, in the order they're asked, shown under the search results. */
-  const credits = Object.fromEntries(Object.entries(chains).map(([category, list]) =>
-    [category, list.map((p) => ({ id: p.id, name: p.name, url: p.url }))]));
+  /**
+   * What the search screen offers per category: [{ id, label, credits: [{ id, name, url }] }], credits in the
+   * order they're asked. One source with no label is just "search"; several are a switch (games: PC / Nintendo).
+   */
+  const sources = Object.fromEntries(Object.entries(sourcesOf).map(([category, list]) =>
+    [category, list.map((s) => ({ id: s.id, label: s.label, icon: s.icon ?? null, credits: s.providers.map((p) => ({ id: p.id, name: p.name, url: p.url })) }))]));
 
-  return { search, isAllowedImage, credits };
+  return { search, isAllowedImage, sources };
 }

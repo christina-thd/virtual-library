@@ -57,7 +57,7 @@ $('shelf').addEventListener('click', (e) => {
   if (card) details.open(card.dataset.item);
 });
 
-fetchInfo().then(({ credits }) => search.setCredits(credits)).catch(() => {});
+fetchInfo().then(({ sources }) => search.setSources(sources)).catch(() => {});
 
 subscribe((view) => {
   items = view.items;

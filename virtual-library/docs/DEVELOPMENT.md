@@ -36,7 +36,7 @@ src/                      server (Node, no framework, no dependencies)
   library/state.js        state shape, repairing saved data, the view sent to screens
   library/actions.js      every library action, validated (the only code that changes state)
   catalog/index.js        search: picks a provider per category, cleans up results, image allow-list
-  catalog/providers/      one file per catalog: cinemeta, tvmaze, open-library, apple-books, steam, gog, tmdb, rawg
+  catalog/providers/      one file per catalog: cinemeta, tvmaze, open-library, apple-books, steam, gog, nintendo, tmdb, rawg
   covers.js               saved cover images (CoverStore) and keeping them in step with the library
   http-client.js          fetch with a timeout and a User-Agent, for catalogs and images
   store.js                JSON file storage: debounced, atomic writes
@@ -77,6 +77,8 @@ The screen sends a result back as it is with `addItem`. `source` stops the same 
 A provider is a small object: `{ id, name, url, imageHosts, search(query, http) }`. To add or swap one,
 write a file in `src/catalog/providers/` and add it to its category's list in `chooseProviders`
 (`src/catalog/index.js`), best first. TMDB and RAWG go first when their API key is set; the keyless ones stay as fallbacks.
+A category can instead offer several sources to pick from (games: `pc` and `nintendo`, sent as `&source=`);
+`/api/info` lists them per category with their credits, and the search screen shows a switch when there's more than one.
 
 **Covers.** Items keep a list of image URLs, best first (e.g. a large poster, then the search thumbnail).
 After every change, `createCoverSync` (`src/covers.js`) downloads covers that aren't saved yet, one at a

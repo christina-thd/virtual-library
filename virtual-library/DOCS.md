@@ -54,8 +54,10 @@ Search works out of the box, with no account:
 | Movies | Cinemeta (IMDb data) | — | TMDB |
 | Series | TVmaze | Cinemeta | TMDB |
 | Books  | Open Library | Apple Books | — |
-| Games  | Steam (PC games) | GOG | RAWG (every platform) |
+| Games: PC | Steam | GOG | RAWG (every platform) |
+| Games: Nintendo | Nintendo's store (Switch, 3DS, Wii U, Wii and the classics) | — | — |
 
+For games, pick **PC** or **Nintendo** in the search field under the Game tab; each time you open the search it starts on PC.
 The next catalog is also asked when one doesn't answer, so search keeps working if a website is down.
 The line under the results says which catalog found them.
 
