@@ -1,5 +1,10 @@
 # Changelog
 
+## 2.1.0
+- Messages always in the same place, never over buttons
+- Home screen covers: only items with a cover
+- Search clears when you close it
+
 ## 2.0.0
 - More search sources: Apple Books, GOG and Nintendo games
 - Faster search
