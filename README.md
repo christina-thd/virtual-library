@@ -6,9 +6,9 @@ Search for something, add it as **Pending** or **Done**, and give
 finished things an optional 5-star rating. Every item shows its cover. Made for phones, in portrait.
 
 <p>
-  <img src="images/home.jpg" alt="Home: a tile per category with its newest covers" width="200">
-  <img src="images/category.jpg" alt="Games: finished ones with their ratings" width="200">
-  <img src="images/search.jpg" alt="Adding a game from the Games shelf" width="200">
+  <img src="images/home.jpg" alt="Home: a tile per category, with a few of its covers" width="200">
+  <img src="images/category.jpg" alt="Movies, Done: best rated first, and the ones you dropped" width="200">
+  <img src="images/search.jpg" alt="Adding a game: searching Nintendo&#39;s store" width="200">
   <img src="images/details.jpg" alt="Finishing a game: confetti and a congratulation" width="200">
 </p>
 
