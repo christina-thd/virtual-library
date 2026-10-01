@@ -1,7 +1,7 @@
-// Item sheet: big cover, move between Pending and Done, rate when done, remove.
+// Item sheet: big cover, move between Pending, Waiting (series) and Done, rate when done, remove.
 import { sendAction } from '../shared/api.js';
 import { $, escapeHtml } from '../shared/dom.js';
-import { categoryOf } from '../shared/library.js';
+import { categoryOf, STATUS_LABELS, statusesFor } from '../shared/library.js';
 import { celebrate } from '../ui/celebrate.js';
 import { coverHtml } from '../ui/cover.js';
 import { icon } from '../ui/icons.js';
@@ -9,6 +9,8 @@ import { createSheet } from '../ui/sheet.js';
 import { previewStars, starInputHtml } from '../ui/stars.js';
 import { toast } from '../ui/toast.js';
 import { cheerFor } from './cheers.js';
+
+const STATUS_ICONS = { pending: 'clock', waiting: 'hourglass', done: 'check' };
 
 const DISARM_MS = 3000;
 
@@ -51,8 +53,9 @@ export function createDetails({ getItem }) {
         <div class="details-meta"><span class="kind">${icon(item.category)}${kind.label}</span>${meta ? `<span>· ${meta}</span>` : ''}</div>
 
         <div class="segmented details-status" role="radiogroup" aria-label="Status">
-          <button type="button" role="radio" data-status="pending" class="${done ? '' : 'selected'}" aria-checked="${!done}">${icon('clock')}Pending</button>
-          <button type="button" role="radio" data-status="done" class="${done ? 'selected' : ''}" aria-checked="${done}">${icon('check')}Done</button>
+          ${statusesFor(item.category).map((status) => `
+            <button type="button" role="radio" data-status="${status}" class="${status === item.status ? 'selected' : ''}"
+              aria-checked="${status === item.status}">${icon(STATUS_ICONS[status])}${STATUS_LABELS[status]}</button>`).join('')}
         </div>
 
         ${done ? `

@@ -101,6 +101,21 @@ describe('setStatus', () => {
     rejects({ type: 'setStatus', itemId: 'ghost', status: 'done' }, 404);
     rejects({ type: 'setStatus', itemId: add(), status: 'todo' }, 400);
   });
+
+  test('a series can wait for a new season: done → waiting clears the finish date and rating, like pending', () => {
+    const id = add({ status: 'done', rating: 4 });
+    apply({ type: 'setStatus', itemId: id, status: 'waiting' });
+    assert.deepEqual([itemOf(id).status, itemOf(id).finishedAt, itemOf(id).rating], ['waiting', null, null]);
+    apply({ type: 'setStatus', itemId: id, status: 'done' }, { ...ctx, now: NOW + 7 });
+    assert.deepEqual([itemOf(id).status, itemOf(id).finishedAt], ['done', NOW + 7]);
+    assert.equal(itemOf(add({ source: null, title: 'Severance', status: 'waiting' })).status, 'waiting');
+  });
+
+  test('only series can wait', () => {
+    const movie = add({ category: 'movie', source: null, title: 'Dune' });
+    rejects({ type: 'setStatus', itemId: movie, status: 'waiting' }, 400, /pending, done/);
+    rejects({ type: 'addItem', category: 'book', title: 'Dune', status: 'waiting' }, 400);
+  });
 });
 
 describe('rateItem', () => {

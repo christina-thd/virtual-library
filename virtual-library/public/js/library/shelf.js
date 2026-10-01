@@ -38,9 +38,11 @@ function emptyHtml({ category, status, inCategory }) {
   const kind = categoryOf(category).plural.toLowerCase();
   const [title, hint] = !inCategory
     ? [`No ${kind} yet`, 'Tap + to hoard your first one.']
-    : status === 'pending'
-      ? ['Nothing pending', 'All caught up. Tap + to add something new.']
-      : [`No finished ${kind} yet`, 'Things you mark as done show up here, with your rating.'];
+    : {
+      pending: ['Nothing pending', 'All caught up. Tap + to add something new.'],
+      waiting: ['Nothing waiting', 'Series you’ve caught up on, waiting for a new season. Move one here from its page.'],
+      done: [`No finished ${kind} yet`, 'Things you mark as done show up here, with your rating.'],
+    }[status];
   return `${icon(category)}<h2>${title}</h2><p>${hint}</p>`;
 }
 

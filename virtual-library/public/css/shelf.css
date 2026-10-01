@@ -78,6 +78,9 @@
   white-space: nowrap;
 }
 .sort-icon { display: grid; }
+/* series (Pending / Waiting / Done): just the icon, so the three tabs fit on a phone */
+.three-tabs .sort-picker { padding: 0 14px; }
+.three-tabs .sort-label { display: none; }
 .sort-icon svg.icon { width: 16px; height: 16px; stroke-width: 2; }
 .sort-picker select {
   position: absolute;

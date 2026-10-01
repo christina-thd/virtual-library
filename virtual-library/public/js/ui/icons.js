@@ -15,6 +15,7 @@ const PATHS = {
   plus: '<path d="M12 5v14M5 12h14"/>',
   check: '<path d="m5 12.5 4.5 4.5L19 7.5"/>',
   clock: '<circle cx="12" cy="12" r="8.5"/><path d="M12 7.5V12l3 2"/>',
+  hourglass: '<path d="M6.5 3.5h11M6.5 20.5h11M7.5 3.5v2.2a4 4 0 0 0 1.6 3.2L12 11l2.9-2.1a4 4 0 0 0 1.6-3.2V3.5M7.5 20.5v-2.2a4 4 0 0 1 1.6-3.2L12 13l2.9 2.1a4 4 0 0 1 1.6 3.2v2.2"/>',
   close: '<path d="M6 6l12 12M18 6 6 18"/>',
   search: '<circle cx="11" cy="11" r="7"/><path d="m20 20-3.5-3.5"/>',
   alert: '<circle cx="12" cy="12" r="8.5"/><path d="M12 8v4.5M12 16h.01"/>',

@@ -1,4 +1,4 @@
-import { CATEGORY_IDS, isRating, MAX_CREATOR, MAX_TITLE, STATUSES } from '../../public/js/shared/library.js';
+import { CATEGORY_IDS, isRating, MAX_CREATOR, MAX_TITLE, statusesFor } from '../../public/js/shared/library.js';
 import { findBySource, findItem, newId, parseImageUrls, parseSource, parseYear } from './state.js';
 
 /** A rejected action. `status` is the HTTP status the API answers with. */
@@ -39,12 +39,12 @@ function getItem(state, itemId) {
 // `ctx` is { now, allowImage(url) } — only images from the search catalog are kept.
 
 const handlers = {
-  /** Adds a search result (or a title typed by hand) as pending or done. */
+  /** Adds a search result (or a title typed by hand) as pending, done, or (series) waiting. */
   addItem(state, action, ctx) {
     const category = oneOf(action.category, CATEGORY_IDS, 'category');
     const title = text(action.title, MAX_TITLE);
     if (!title) throw new ActionError('title is required');
-    const status = oneOf(action.status ?? 'pending', STATUSES, 'status');
+    const status = oneOf(action.status ?? 'pending', statusesFor(category), 'status');
     const source = parseSource(action.source);
     const existing = source && findBySource(state, source);
     if (existing) throw new ActionError(`"${existing.title}" is already in your library`, 409);
@@ -67,10 +67,10 @@ const handlers = {
     return { itemId: item.id };
   },
 
-  /** Moving back to pending clears the rating: ratings belong to finished things. */
+  /** Moving away from done clears the rating: ratings belong to finished things. */
   setStatus(state, { itemId, status }, ctx) {
     const item = getItem(state, itemId);
-    oneOf(status, STATUSES, 'status');
+    oneOf(status, statusesFor(item.category), 'status');
     if (item.status === status) return;
     item.status = status;
     item.finishedAt = status === 'done' ? ctx.now : null;

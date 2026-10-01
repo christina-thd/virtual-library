@@ -30,7 +30,7 @@ Keep track of what you've watched, read and played, and what's still pending.
 **Features:**
 - Movies, series, books and games in one place, each with its cover
 - Search built in, no account or API key needed
-- A home screen per kind, Pending and Done lists, and an optional 5-star rating
+- A home screen per kind, Pending and Done lists (series also Waiting, for a new season), and an optional 5-star rating
 
 [Documentation →](./virtual-library/README.md)
 

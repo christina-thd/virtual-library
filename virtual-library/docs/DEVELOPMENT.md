@@ -53,7 +53,7 @@ public/                   browser (plain ES modules, no build step)
   js/ui/                  reusable pieces: back (phone back button), sheet (bottom sheets, swipe to close),
                           viewport (keeps sheets above the keyboard), celebrate (confetti + message),
                           toast, cover, stars, icons
-  js/library/             the views: home (category tiles), category (title + Pending / Done tabs), shelf (grid),
+  js/library/             the views: home (category tiles), category (title + Pending / (Waiting) / Done tabs, sort), shelf (grid),
                           search (add), details (one item), cheers (the lines said when you finish something)
 
 test/                     node:test suites
@@ -67,7 +67,8 @@ to every screen over `GET /api/events` (Server-Sent Events). Screens never chang
 only render the latest view.
 
 **Actions:** `addItem`, `setStatus`, `rateItem`, `removeItem`. See `src/library/actions.js`.
-Only finished items can be rated; moving an item back to pending clears its rating.
+Statuses are `pending`, `done` and, for series only, `waiting` (`statusesFor` in `public/js/shared/library.js`).
+Only finished items can be rated; moving an item away from done clears its rating.
 
 **Search.** `GET /api/search?category=movie&q=dune` asks the providers for that category, one after the
 other until one finds something (a provider that's down is skipped), and returns

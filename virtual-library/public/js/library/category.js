@@ -1,12 +1,12 @@
-// One category: its title, the Pending / Done tabs, the sort button and the shelf. It always opens on Pending;
-// each tab starts in its own order (Pending: recent first, Done: best rated first), whatever was picked before.
+// One category: its title, the Pending / (series: Waiting /) Done tabs, the sort button and the shelf. It always opens
+// on Pending; each tab starts in its own order (Pending, Waiting: recent first, Done: best rated first), whatever was picked before.
 import { $, escapeHtml } from '../shared/dom.js';
-import { categoryOf } from '../shared/library.js';
+import { categoryOf, statusesFor } from '../shared/library.js';
 import { icon } from '../ui/icons.js';
 import { renderShelf, SORTS, sortsFor } from './shelf.js';
 
 // the order each tab starts in
-const START_SORT = { pending: 'recent', done: 'rating' };
+const START_SORT = { pending: 'recent', waiting: 'recent', done: 'rating' };
 
 export function createCategoryView({ onBack }) {
   let category = null;
@@ -81,6 +81,9 @@ export function createCategoryView({ onBack }) {
       category = id;
       view.dataset.category = id;
       status = 'pending';                          // always opens on Pending
+      // only series have Waiting (caught up, waiting for a new season)
+      for (const button of tabs.querySelectorAll('[data-status]')) button.hidden = !statusesFor(id).includes(button.dataset.status);
+      $('filters').classList.toggle('three-tabs', statusesFor(id).length > 2);   // room for them: the sort button is an icon
       Object.assign(sorts, START_SORT);
       markSelected();
       $('categoryTitle').innerHTML = `${icon(id)}<span>${categoryOf(id).plural}</span>`;

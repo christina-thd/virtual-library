@@ -40,6 +40,15 @@ describe('normalizeState', () => {
     assert.deepEqual(fixed.imageUrls, []);
   });
 
+  test('waiting is kept for series only; anything else waiting becomes pending', () => {
+    const [series, movie] = normalizeState({ items: [
+      item({ id: 'a1', category: 'series', status: 'waiting', rating: 4 }),
+      item({ id: 'b2', status: 'waiting' }),
+    ] }, NOW).items;
+    assert.deepEqual([series.status, series.rating, series.finishedAt], ['waiting', null, null]);
+    assert.equal(movie.status, 'pending');
+  });
+
   test('a rating only survives on finished items', () => {
     const [pending] = normalizeState({ items: [item({ status: 'pending', rating: 4 })] }, NOW).items;
     assert.equal(pending.rating, null);

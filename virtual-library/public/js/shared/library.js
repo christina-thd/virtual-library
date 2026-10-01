@@ -8,8 +8,17 @@ export const CATEGORIES = Object.freeze([
 ]);
 export const CATEGORY_IDS = Object.freeze(CATEGORIES.map((c) => c.id));
 
-/** Pending: not seen / not finished yet. Done: seen, read or played. */
-export const STATUSES = Object.freeze(['pending', 'done']);
+/**
+ * Pending: not seen / not finished yet. Done: seen, read or played.
+ * Waiting (series only): seen everything that's out, waiting for a new season.
+ */
+export const STATUSES = Object.freeze(['pending', 'waiting', 'done']);
+export const STATUS_LABELS = Object.freeze({ pending: 'Pending', waiting: 'Waiting', done: 'Done' });
+
+const SERIES_STATUSES = STATUSES;
+const OTHER_STATUSES = Object.freeze(['pending', 'done']);
+/** The statuses a category uses, in tab order. */
+export const statusesFor = (category) => (category === 'series' ? SERIES_STATUSES : OTHER_STATUSES);
 
 export const MAX_RATING = 5;
 export const MAX_TITLE = 150;

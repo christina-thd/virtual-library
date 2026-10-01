@@ -2,7 +2,7 @@
 import { searchCatalog, sendAction } from '../shared/api.js';
 import { $, escapeHtml } from '../shared/dom.js';
 import { metaLine } from '../shared/format.js';
-import { CATEGORIES, CATEGORY_IDS, categoryOf, sameSource } from '../shared/library.js';
+import { CATEGORIES, CATEGORY_IDS, categoryOf, sameSource, STATUS_LABELS } from '../shared/library.js';
 import { storage } from '../shared/storage.js';
 import { coverHtml } from '../ui/cover.js';
 import { icon } from '../ui/icons.js';
@@ -14,7 +14,6 @@ const DEBOUNCE_MS = 250;
 const CACHE_SIZE = 50;
 const MIN_QUERY = 2;
 
-const STATUS_LABEL = { pending: 'Pending', done: 'Done' };
 
 /**
  * @param {object} options
@@ -162,7 +161,7 @@ export function createSearch({ getItems, openItem }) {
 
   /** "✓ Added to Done" when added from this search, "✓ In your library · Done" otherwise. Tap to open it. */
   function ownedHtml({ itemId, status, recent, fresh }) {
-    const text = recent ? `Added to ${STATUS_LABEL[status]}` : `In your library · ${STATUS_LABEL[status]}`;
+    const text = recent ? `Added to ${STATUS_LABELS[status]}` : `In your library · ${STATUS_LABELS[status]}`;
     return `<button type="button" class="in-library ${recent ? 'just-added' : ''} ${fresh ? 'pop' : ''}" data-open="${itemId}">
       <span class="in-library-check">${icon('check')}</span><span>${text}</span><span class="in-library-open">Open</span></button>`;
   }
@@ -235,7 +234,7 @@ export function createSearch({ getItems, openItem }) {
       const { itemId } = await sendAction({ type: 'addItem', ...entry, status });
       added.set(keyOf(entry), { itemId, status, fresh: true });
       render();
-      toast(`“${entry.title}” added to ${STATUS_LABEL[status]}`, { icon: 'check' });
+      toast(`“${entry.title}” added to ${STATUS_LABELS[status]}`, { icon: 'check' });
       if (status === 'done') openItem(itemId, { fromSearch: true });   // to rate it, if you like
     } catch (err) {
       toast(err.message, { error: true });

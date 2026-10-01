@@ -14,10 +14,13 @@ and what's still pending.
 ### The library
 
 - The home screen has one tile per kind (Movies, Series, Books, Games), with how many are pending
-  and done, and the newest covers. Tap a tile to open it; the back button (or ‹) returns home.
+  and done, and a few random covers. Tap a tile to open it; the back button (or ‹) returns home.
 - In each kind, **Pending** is everything you haven't seen, read or played yet, or haven't finished.
-  **Done** is everything you've finished. The newest are first. The tab you last used is remembered on each phone.
-- Tap a cover to open it: move it between Pending and Done, rate it, or remove it.
+  **Done** is everything you've finished. Each kind opens on Pending, newest first; Done starts with your best rated.
+  Use the sort button next to the tabs for A–Z (or rating, on Done).
+- **Series** have a third tab, **Waiting**: series you've caught up on, waiting for a new season. Move a series there
+  from its page; when the new season is out, move it back to Pending.
+- Tap a cover to open it: move it between Pending, (Waiting) and Done, rate it, or remove it.
 - **+** inside a kind adds to that kind only (e.g. "Add a game"). **+** on the home screen lets you pick the kind
   (it starts on the one you picked last).
 - To close the search or an item, tap **Close** (or **Back to search**), swipe it down from the top, or use your phone's back button.
@@ -28,7 +31,7 @@ and what's still pending.
 Moving something from Pending to Done is celebrated with confetti and a (hopefully) funny line.
 Finished things can have a rating from 1 to 5 stars. It's optional: tap a star to rate,
 and tap the same star again to clear it. Adding something straight to **Done** opens it, so
-you can rate it right away. Moving an item back to Pending clears its rating.
+you can rate it right away. Moving an item back to Pending (or Waiting) clears its rating.
 
 ### Not in the search?
 

@@ -1,5 +1,5 @@
 import { randomBytes } from 'node:crypto';
-import { CATEGORY_IDS, isRating, MAX_CREATOR, MAX_TITLE, sameSource, STATUSES } from '../../public/js/shared/library.js';
+import { CATEGORY_IDS, isRating, MAX_CREATOR, MAX_TITLE, sameSource, statusesFor } from '../../public/js/shared/library.js';
 
 /**
  * State shape (saved to disk as JSON):
@@ -11,7 +11,7 @@ import { CATEGORY_IDS, isRating, MAX_CREATOR, MAX_TITLE, sameSource, STATUSES } 
  *       source: { provider, id } | null,   where it was found (null: added by hand)
  *       imageUrls: [string],               the catalog's images, best first (the next is tried if one fails)
  *       cover: string | null,              file name of the saved copy (see covers.js)
- *       status ('pending' | 'done'), rating (1–5) | null,
+ *       status ('pending' | 'waiting' (series only) | 'done'), rating (1–5) | null,
  *       addedAt, finishedAt | null,        ms timestamps
  *     }],
  *   }
@@ -59,7 +59,7 @@ function normalizeItem(raw, now) {
   if (!raw || typeof raw !== 'object') return null;
   const title = toText(raw.title, MAX_TITLE);
   if (!title || !CATEGORY_IDS.includes(raw.category)) return null;   // nothing useful to show
-  const status = STATUSES.includes(raw.status) ? raw.status : 'pending';
+  const status = statusesFor(raw.category).includes(raw.status) ? raw.status : 'pending';
   const addedAt = toTime(raw.addedAt, now);
   return {
     id: /^[a-f0-9]{1,32}$/.test(raw.id) ? raw.id : newId(),

@@ -1,6 +1,6 @@
 // Home: one tile per category, with how many are pending and done, and a few covers picked at random.
 import { $ } from '../shared/dom.js';
-import { CATEGORIES } from '../shared/library.js';
+import { CATEGORIES, statusesFor } from '../shared/library.js';
 import { coverHtml } from '../ui/cover.js';
 import { icon } from '../ui/icons.js';
 
@@ -35,10 +35,14 @@ function tileItems(categoryId, items) {
   return ids.map((id) => byId.get(id));
 }
 
-function countsText(items) {
+/** "3 pending · 5 done"; series also "· 2 waiting" (left out while there are none). */
+function countsText(categoryId, items) {
   if (!items.length) return 'Nothing hoarded yet';
-  const done = items.filter((i) => i.status === 'done').length;
-  return `${items.length - done} pending · ${done} done`;
+  return statusesFor(categoryId)
+    .map((status) => [status, items.filter((i) => i.status === status).length])
+    .filter(([status, count]) => count || status !== 'waiting')
+    .map(([status, count]) => `${count} ${status}`)
+    .join(' · ');
 }
 
 function tileHtml(category, items) {
@@ -51,7 +55,7 @@ function tileHtml(category, items) {
       <span class="tile-icon">${icon(category.id)}</span>
       <span class="tile-text">
         <span class="tile-name">${category.plural}</span>
-        <span class="tile-counts">${countsText(items)}</span>
+        <span class="tile-counts">${countsText(category.id, items)}</span>
       </span>
       <span class="tile-covers">${covers}</span>
     </button>`;
