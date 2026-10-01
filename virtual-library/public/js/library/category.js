@@ -65,9 +65,9 @@ export function createCategoryView({ onBack }) {
     render({ animate: true });
   });
 
-  // the tabs get a background once they stick to the top (the title above them has scrolled away)
-  new IntersectionObserver(([entry]) => $('filters').classList.toggle('stuck', !entry.isIntersecting))
-    .observe(view.querySelector('.top'));
+  // the title, back button and tabs always stay at the top; they get a background once the shelf scrolls under them
+  new IntersectionObserver(([entry]) => $('categoryHead').classList.toggle('stuck', !entry.isIntersecting))
+    .observe($('headSentinel'));
 
   markSelected();
 

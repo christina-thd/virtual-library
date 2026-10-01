@@ -37,27 +37,23 @@
 }
 .category-top h1 svg.icon { width: 24px; height: 24px; color: var(--tint); }
 
-/* ----- tabs (stay at the top while scrolling) ----- */
+/* ----- title, back button and tabs (stay at the top while scrolling) ----- */
 
-.filters {
+.category-head {
   position: sticky;
   top: 0;
   z-index: 5;
-  padding: calc(10px + var(--safe-top)) 16px 12px;
-  margin-top: calc(-1 * var(--safe-top));
   transition: background 200ms;
-  /* The bar reaches up under the status bar (so it can cover it once stuck), which on iPhones with a notch
-     puts its empty top over the back button. Only the tabs themselves take taps. */
-  pointer-events: none;
 }
-.filters > * { pointer-events: auto; }
-/* once the title has scrolled away, so the glow at the top isn't covered before that */
-.filters.stuck {
-  background: rgb(9 8 13 / 0.82);
+/* once the shelf has scrolled under it, so the glow at the top isn't covered before that */
+.category-head.stuck {
+  background: rgb(9 8 13 / 0.94);
   backdrop-filter: blur(14px);
   -webkit-backdrop-filter: blur(14px);
   box-shadow: 0 1px 0 var(--line);
 }
+.head-sentinel { height: 1px; }
+.filters { padding: 10px 16px 12px; }
 .status-tabs .count { font-weight: 500; opacity: 0.7; font-variant-numeric: tabular-nums; }
 
 /* tabs and the sort button side by side */
