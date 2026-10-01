@@ -36,8 +36,8 @@ export function createDetails({ getItem }) {
   function render(item) {
     const kind = categoryOf(item.category);
     const meta = [item.year, item.creator].filter(Boolean).map(escapeHtml).join(' · ');
-    // a quieter line under it: how long a movie is, how many seasons and episodes of a series are out
-    const facts = [formatRuntime(item.runtime), formatCount(item.seasons, 'season'), formatCount(item.episodes, 'episode')]
+    // a quieter line under it: how long a movie or book is, how many seasons and episodes of a series are out
+    const facts = [formatRuntime(item.runtime), formatCount(item.seasons, 'season'), formatCount(item.episodes, 'episode'), formatCount(item.pages, 'page')]
       .filter(Boolean).join(' · ');
     const done = item.status === 'done';
     const glow = item.image

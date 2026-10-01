@@ -104,7 +104,20 @@ describe('keyless catalogs', () => {
   });
 });
 
-describe('details: movie durations, series seasons and episodes', () => {
+describe('details: movie durations, series seasons and episodes, book pages', () => {
+  test('books: pages come with Open Library search results, and can be looked up by work; Apple Books has none', async () => {
+    const { results, calls } = await search(chooseProviders(), {
+      'https://openlibrary.org/search.json': { docs: [{ key: '/works/OL27482W', title: 'The Hobbit', number_of_pages_median: 310 }, { key: '/works/OL1W', title: 'Thin' }] },
+    }, 'book', 'hobbit');
+    assert.match(calls[0].url, /fields=[^&]*number_of_pages_median/);
+    assert.deepEqual(results.map((r) => r.pages), [310, undefined]);
+
+    const http = fakeHttp({ 'https://openlibrary.org/search.json?q=key%3A%22%2Fworks%2FOL27482W%22': { docs: [{ number_of_pages_median: 310 }] } });
+    const catalog = createCatalog({ http, providers: chooseProviders() });
+    assert.deepEqual(await catalog.detailsOf('book', { provider: 'openlibrary', id: '/works/OL27482W' }), { pages: 310 });
+    assert.equal(await catalog.detailsOf('book', { provider: 'applebooks', id: '1' }), null);
+  });
+
   test('a duration is kept from search results when the catalog includes it (Cinemeta only sometimes does)', async () => {
     const { results } = await search(chooseProviders(), {
       'https://v3-cinemeta.strem.io/catalog/movie/top/search=': { metas: [{ imdb_id: 'tt1', name: 'Dune', runtime: '155 min' }, { imdb_id: 'tt2', name: 'Dune 2' }] },
@@ -145,7 +158,7 @@ describe('details: movie durations, series seasons and episodes', () => {
 
   test('nothing for catalogs that do not know, or items typed by hand', async () => {
     const catalog = createCatalog({ http: fakeHttp({}), providers: chooseProviders() });
-    assert.equal(await catalog.detailsOf('book', { provider: 'openlibrary', id: '/works/OL1W' }), null);
+    assert.equal(await catalog.detailsOf('game', { provider: 'steam', id: '1' }), null);
     assert.equal(await catalog.detailsOf('movie', null), null);
   });
 });

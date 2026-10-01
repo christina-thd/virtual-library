@@ -15,7 +15,7 @@ const syncWith = (state, catalog, changes = { count: 0 }) =>
 
 test('fills in items not looked up yet, one at a time, and tells screens', async () => {
   const state = { items: [movie('a'), movie('b', { runtime: 90, detailsAt: NOW - DAY }), movie('c', { source: null }),
-    { ...movie('d'), category: 'book' }, series('e')] };
+    { ...movie('d'), category: 'game' }, series('e')] };
   const asked = [];
   const catalog = {
     async detailsOf(category, source) {
@@ -25,7 +25,7 @@ test('fills in items not looked up yet, one at a time, and tells screens', async
   };
   const changes = { count: 0 };
   await syncWith(state, catalog, changes).sync();
-  assert.deepEqual(asked, ['tta', 'tte']);          // not: already looked up, typed by hand, a book
+  assert.deepEqual(asked, ['tta', 'tte']);          // not: already looked up, typed by hand, a game
   assert.deepEqual([state.items[0].runtime, state.items[0].detailsAt], [120, NOW]);
   assert.deepEqual([state.items[4].seasons, state.items[4].episodes], [3, 26]);
   assert.equal(changes.count, 2);

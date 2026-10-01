@@ -1,5 +1,5 @@
 import { CATEGORY_IDS, MAX_CREATOR, MAX_QUERY, MAX_TITLE } from '../../public/js/shared/library.js';
-import { parseCount, parseMinutes, parseYear } from '../library/state.js';
+import { parseYear, readDetails } from '../library/state.js';
 import { appleBooks } from './providers/apple-books.js';
 import { createCinemeta } from './providers/cinemeta.js';
 import { gog } from './providers/gog.js';
@@ -49,8 +49,9 @@ const clean = (value, max) => (typeof value === 'string' || typeof value === 'nu
 
 /**
  * Search across the catalogs. Every provider has the same shape:
- *   { id, name, url, imageHosts: [hostname], search(query, http) → [{ id, title, year, creator, coverUrl, thumbUrl?, runtime? }],
- *     details?(id, http) → movies { runtime: minutes or "155 min" }, series { seasons, episodes } }
+ *   { id, name, url, imageHosts: [hostname], search(query, http) → [{ id, title, year, creator, coverUrl, thumbUrl?, ...details? }],
+ *     details?(id, http) → movies { runtime: minutes or "155 min" }, series { seasons, episodes }, books { pages } }
+ * (search results may include some details already: Cinemeta movies sometimes the runtime, Open Library the pages)
  * and this turns its results into what screens show and send back with `addItem`.
  * `providers` maps each category to a list of them, best first (or to just one), or to a list of
  * sources to pick from: [{ id, label, providers: [...] }].
@@ -133,7 +134,7 @@ export function createCatalog({ http, providers = chooseProviders(), now = Date.
         source: { provider: provider.id, id: clean(r.id, 100) },
         coverUrl: image(r.coverUrl),
         thumbUrl: image(r.thumbUrl) ?? image(r.coverUrl),
-        ...(category === 'movie' && parseMinutes(r.runtime) ? { runtime: parseMinutes(r.runtime) } : {}),
+        ...Object.fromEntries(Object.entries(readDetails(category, r)).filter(([, value]) => value != null)),
       }))
       .filter((r) => r.title && r.source.id)
       .slice(0, MAX_RESULTS);
@@ -148,15 +149,12 @@ export function createCatalog({ http, providers = chooseProviders(), now = Date.
 
   /**
    * Details from the catalog an item was found in: movies { runtime } (minutes), series { seasons, episodes }
-   * (out so far). Null when that catalog can't tell; a field it doesn't know is null.
+   * (out so far), books { pages }. Null when that catalog can't tell; a field it doesn't know is null.
    */
   async function detailsOf(category, source) {
     const provider = (sourcesOf[category] ?? []).flatMap((s) => s.providers).find((p) => p.id === source?.provider);
     if (!provider?.details) return null;
-    const raw = (await provider.details(source.id, http)) ?? {};
-    return category === 'movie'
-      ? { runtime: parseMinutes(raw.runtime) }
-      : { seasons: parseCount(raw.seasons), episodes: parseCount(raw.episodes) };
+    return readDetails(category, await provider.details(source.id, http));
   }
 
   return { search, isAllowedImage, sources, detailsOf };

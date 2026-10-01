@@ -1,5 +1,5 @@
 import { CATEGORY_IDS, isRating, MAX_CREATOR, MAX_TITLE, statusesFor } from '../../public/js/shared/library.js';
-import { findBySource, findItem, newId, parseImageUrls, parseMinutes, parseSource, parseYear } from './state.js';
+import { findBySource, findItem, itemDetails, newId, parseImageUrls, parseSource, parseYear } from './state.js';
 
 /** A rejected action. `status` is the HTTP status the API answers with. */
 export class ActionError extends Error {
@@ -48,6 +48,7 @@ const handlers = {
     const source = parseSource(action.source);
     const existing = source && findBySource(state, source);
     if (existing) throw new ActionError(`"${existing.title}" is already in your library`, 409);
+    const details = itemDetails(category, action);
 
     const item = {
       id: newId(),
@@ -61,11 +62,9 @@ const handlers = {
       status,
       rating: status === 'done' ? rating(action.rating) : null,
       dropped: false,
-      // the rest of the details are looked up after adding (catalog/details.js)
-      runtime: category === 'movie' ? parseMinutes(action.runtime) : null,
-      seasons: null,
-      episodes: null,
-      detailsAt: category === 'movie' && parseMinutes(action.runtime) ? ctx.now : null,
+      // from the search result when it has them (a movie's runtime, a book's pages); else looked up after adding
+      ...details,
+      detailsAt: Object.values(details).some((v) => v != null) ? ctx.now : null,
       addedAt: ctx.now,
       finishedAt: status === 'done' ? ctx.now : null,
     };

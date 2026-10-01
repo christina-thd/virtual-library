@@ -9,7 +9,7 @@ export const openLibrary = {
   imageHosts: ['covers.openlibrary.org'],
 
   async search(query, http) {
-    const fields = 'key,title,author_name,first_publish_year,cover_i';
+    const fields = 'key,title,author_name,first_publish_year,cover_i,number_of_pages_median';
     const data = await http.json(`${API}/search.json?q=${encodeURIComponent(query)}&limit=20&fields=${fields}`);
     return (data.docs ?? []).map((book) => ({
       id: book.key,                                   // "/works/OL27482W"
@@ -18,6 +18,13 @@ export const openLibrary = {
       creator: book.author_name?.[0] ?? null,
       thumbUrl: book.cover_i ? `${COVERS}/${book.cover_i}-M.jpg` : null,
       coverUrl: book.cover_i ? `${COVERS}/${book.cover_i}-L.jpg` : null,
+      pages: book.number_of_pages_median,             // the typical length across its editions
     }));
+  },
+
+  /** How many pages, for books added before pages were kept. */
+  async details(id, http) {
+    const data = await http.json(`${API}/search.json?q=${encodeURIComponent(`key:"${id}"`)}&fields=key,number_of_pages_median`);
+    return { pages: data.docs?.[0]?.number_of_pages_median };
   },
 };

@@ -15,6 +15,7 @@ import { CATEGORY_IDS, isRating, MAX_CREATOR, MAX_TITLE, sameSource, statusesFor
  *       dropped: boolean,                  done, but given up on (it wasn't worth finishing)
  *       runtime: minutes | null,           how long a movie is
  *       seasons, episodes: number | null,  how many of a series are out
+ *       pages: number | null,              how long a book is
  *       detailsAt: ms | null,              when those were last looked up (in the background, see catalog/details.js)
  *       addedAt, finishedAt | null,        ms timestamps
  *     }],
@@ -45,7 +46,7 @@ export function parseYear(value) {
   return year >= 1000 && year <= 9999 ? year : null;
 }
 
-/** A count of seasons or episodes: a whole number from 1, or null. */
+/** A count of seasons, episodes or pages: a whole number from 1, or null. */
 export const parseCount = (value) => (Number.isInteger(value) && value > 0 && value < 100_000 ? value : null);
 
 /** Minutes from a number or catalog text ("155 min", "2h 35min"), or null. */
@@ -59,6 +60,23 @@ export function parseMinutes(value) {
   }
   return Number.isInteger(minutes) && minutes > 0 && minutes <= 24 * 60 ? minutes : null;
 }
+
+// The details each category keeps, read from saved data, a search result or a catalog lookup.
+const DETAIL_READERS = {
+  movie: (raw) => ({ runtime: parseMinutes(raw.runtime) }),
+  series: (raw) => ({ seasons: parseCount(raw.seasons), episodes: parseCount(raw.episodes) }),
+  book: (raw) => ({ pages: parseCount(raw.pages) }),
+};
+const NO_DETAILS = Object.freeze({ runtime: null, seasons: null, episodes: null, pages: null });
+
+/** The details a category keeps, e.g. series: ['seasons', 'episodes']; none for games. */
+export const detailFields = (category) => (DETAIL_READERS[category] ? Object.keys(DETAIL_READERS[category]({})) : []);
+
+/** The category's details found in `raw` (unknown ones null); {} for a category that keeps none. */
+export const readDetails = (category, raw) => DETAIL_READERS[category]?.(raw ?? {}) ?? {};
+
+/** Every detail field, the category's from `raw` and the rest null, as items store them. */
+export const itemDetails = (category, raw) => ({ ...NO_DETAILS, ...readDetails(category, raw) });
 
 /** Distinct https URLs that pass `allowed`, best first. */
 export function parseImageUrls(urls, allowed = () => true) {
@@ -92,9 +110,7 @@ function normalizeItem(raw, now) {
     status,
     rating: status === 'done' && isRating(raw.rating) ? raw.rating : null,
     dropped: status === 'done' && raw.dropped === true,
-    runtime: raw.category === 'movie' ? parseMinutes(raw.runtime) : null,
-    seasons: raw.category === 'series' ? parseCount(raw.seasons) : null,
-    episodes: raw.category === 'series' ? parseCount(raw.episodes) : null,
+    ...itemDetails(raw.category, raw),
     detailsAt: Number.isFinite(raw.detailsAt) && raw.detailsAt > 0 ? raw.detailsAt : null,
     addedAt,
     finishedAt: status === 'done' ? toTime(raw.finishedAt, addedAt) : null,

@@ -1,11 +1,11 @@
+import { detailFields } from '../library/state.js';
+
 const WEEK = 7 * 24 * 60 * 60 * 1000;
 
-/** What's looked up per category: how long a movie is; how many seasons and episodes a series has (so far). */
-export const DETAIL_FIELDS = Object.freeze({ movie: ['runtime'], series: ['seasons', 'episodes'] });
-
 /**
- * Keeps items' details filled in: looks them up in the catalog each item was found in (one at a time, in the
- * background), for items added without them, including ones added before details were kept. A series you
+ * Keeps items' details (a movie's runtime, a series' seasons and episodes, a book's pages) filled in: looks them
+ * up in the catalog each item was found in (one at a time, in the background), for items added without them,
+ * including ones added before details were kept. A series you
  * haven't finished is looked up again once a week, as new episodes come out. Items typed in by hand have no
  * catalog entry, so they stay without.
  */
@@ -14,7 +14,7 @@ export function createDetailsSync({ state, catalog, onChange, now = Date.now, lo
   let running = null;
 
   function needsLookUp(item) {
-    if (!item.source || !DETAIL_FIELDS[item.category] || tried.has(item.id)) return false;
+    if (!item.source || !detailFields(item.category).length || tried.has(item.id)) return false;
     if (item.detailsAt == null) return true;
     return item.category === 'series' && item.status !== 'done' && now() - item.detailsAt > WEEK;
   }
@@ -30,7 +30,7 @@ export function createDetailsSync({ state, catalog, onChange, now = Date.now, lo
         continue;                                      // tried again when the add-on restarts
       }
       if (!state.items.includes(item)) continue;       // removed meanwhile
-      for (const field of DETAIL_FIELDS[item.category]) item[field] = details?.[field] ?? item[field] ?? null;
+      for (const field of detailFields(item.category)) item[field] = details?.[field] ?? item[field] ?? null;
       item.detailsAt = now();
       onChange();
     }

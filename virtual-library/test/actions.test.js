@@ -125,6 +125,8 @@ describe('details', () => {
     assert.equal(itemOf(add({ category: 'movie', source: null, title: 'Cats' })).detailsAt, null);
     const dark = itemOf(add({ runtime: 50 }));                       // a series
     assert.deepEqual([dark.runtime, dark.seasons, dark.episodes, dark.detailsAt], [null, null, null, null]);
+    const hobbit = itemOf(add({ category: 'book', source: null, title: 'The Hobbit', pages: 310, runtime: 90 }));
+    assert.deepEqual([hobbit.pages, hobbit.runtime, hobbit.detailsAt], [310, null, NOW]);
   });
 });
 
