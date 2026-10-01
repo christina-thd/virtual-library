@@ -1,5 +1,5 @@
 import { CATEGORY_IDS, isRating, MAX_CREATOR, MAX_TITLE, statusesFor } from '../../public/js/shared/library.js';
-import { findBySource, findItem, itemDetails, newId, parseImageUrls, parseSource, parseYear } from './state.js';
+import { findBySource, findItem, itemDetails, newId, parseHours, parseImageUrls, parseSource, parseYear } from './state.js';
 
 /** A rejected action. `status` is the HTTP status the API answers with. */
 export class ActionError extends Error {
@@ -62,6 +62,7 @@ const handlers = {
       status,
       rating: status === 'done' ? rating(action.rating) : null,
       dropped: false,
+      hoursPlayed: null,
       // from the search result when it has them (a movie's runtime, a book's pages); else looked up after adding
       ...details,
       detailsAt: Object.values(details).some((v) => v != null) ? ctx.now : null,
@@ -102,6 +103,15 @@ const handlers = {
     const item = getItem(state, itemId);
     if (item.status !== 'done') throw new ActionError('Only finished items can be rated');
     item.rating = rating(stars);
+  },
+
+  /** How long you played a game you finished, in hours (half hours are fine); null clears it. */
+  setHours(state, { itemId, hours }) {
+    const item = getItem(state, itemId);
+    if (item.category !== 'game') throw new ActionError('Only games have hours played');
+    if (item.status !== 'done') throw new ActionError('Hours played are for finished games');
+    if (hours != null && parseHours(hours) == null) throw new ActionError('hours must be a number from 0.1 to 100000, or null');
+    item.hoursPlayed = parseHours(hours);
   },
 
   removeItem(state, { itemId }) {

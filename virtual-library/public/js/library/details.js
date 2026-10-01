@@ -1,4 +1,5 @@
-// Item sheet: big cover, move between Pending, Waiting (series) and Done, drop it, rate when done, remove.
+// Item sheet: big cover, move between Pending, Waiting (series) and Done, drop it, rate when done (and for games,
+// hours played), remove.
 import { sendAction } from '../shared/api.js';
 import { $, escapeHtml } from '../shared/dom.js';
 import { formatCount, formatRuntime } from '../shared/format.js';
@@ -14,6 +15,9 @@ import { cheerFor } from './cheers.js';
 const STATUS_ICONS = { pending: 'clock', waiting: 'hourglass', done: 'check' };
 
 const DISARM_MS = 3000;
+
+/** 1 → "1 hour", 42.5 → "42.5 hours". */
+const formatHours = (hours) => `${hours} ${hours === 1 ? 'hour' : 'hours'}`;
 
 /** @param {{ getItem: (id: string) => object | undefined }} options */
 export function createDetails({ getItem }) {
@@ -72,6 +76,15 @@ export function createDetails({ getItem }) {
             <div class="rating-label">${item.rating ? 'Your rating' : 'Rate it (optional)'}</div>
             ${starInputHtml(item.rating)}
           </div>` : ''}
+
+        ${done && item.category === 'game' ? `
+          <form class="hours" data-hours>
+            <label class="rating-label" for="hoursInput">Hours played (optional)</label>
+            <span class="hours-field">
+              <input id="hoursInput" type="text" inputmode="decimal" autocomplete="off" maxlength="8" placeholder="–"
+                value="${item.hoursPlayed ?? ''}"><span aria-hidden="true">h</span>
+            </span>
+          </form>` : ''}
 
         <button type="button" class="pill danger details-remove ${removeArmed ? 'armed' : ''}" data-remove>
           ${removeArmed ? 'Tap again to remove' : 'Remove from library'}
@@ -138,6 +151,29 @@ export function createDetails({ getItem }) {
     }
   });
 
+  // hours played (games): saved when leaving the field or pressing Enter (which also hides the keyboard)
+  panel.addEventListener('submit', (e) => {
+    if (!e.target.closest('[data-hours]')) return;
+    e.preventDefault();
+    $('hoursInput').blur();
+  });
+
+  panel.addEventListener('change', (e) => {
+    if (e.target.id !== 'hoursInput') return;
+    const item = itemId && getItem(itemId);
+    if (!item) return;
+    const text = e.target.value.trim().replace(',', '.');           // "42,5" too, as many phones write it
+    const hours = text === '' ? null : Math.round(Number(text) * 10) / 10;
+    if (hours !== null && !(hours >= 0.1 && hours <= 100_000)) {
+      e.target.value = item.hoursPlayed ?? '';
+      return toast('Type a number, like 42.5', { error: true });
+    }
+    if (hours === item.hoursPlayed) return;
+    send({ type: 'setHours', itemId, hours })
+      .then(() => toast(hours ? `${formatHours(hours)} played on “${item.title}”` : `Hours played on “${item.title}” cleared`, { icon: 'check' }))
+      .catch(() => render(item));
+  });
+
   return {
     /** @param {{ fromSearch?: boolean }} [how] */
     open(id, how = {}) {
@@ -157,8 +193,9 @@ export function createDetails({ getItem }) {
       if (waitingFor && getItem(waitingFor)) return this.open(waitingFor, options);
       if (!itemId) return;
       const item = getItem(itemId);
-      if (item) render(item);
-      else sheet.close();
+      if (!item) return sheet.close();
+      if (document.activeElement?.id === 'hoursInput') return;   // typing: don't wipe it (it's shown on leaving)
+      render(item);
     },
   };
 }

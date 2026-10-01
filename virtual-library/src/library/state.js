@@ -13,6 +13,7 @@ import { CATEGORY_IDS, isRating, MAX_CREATOR, MAX_TITLE, sameSource, statusesFor
  *       cover: string | null,              file name of the saved copy (see covers.js)
  *       status ('pending' | 'waiting' (series only) | 'done'), rating (1–5) | null,
  *       dropped: boolean,                  done, but given up on (it wasn't worth finishing)
+ *       hoursPlayed: number | null,        games: how long you played it, entered when done
  *       runtime: minutes | null,           how long a movie is
  *       seasons, episodes: number | null,  how many of a series are out
  *       pages: number | null,              how long a book is
@@ -59,6 +60,12 @@ export function parseMinutes(value) {
     if (hours || mins) minutes = Number(hours?.[1] ?? 0) * 60 + Number(mins?.[1] ?? 0);
   }
   return Number.isInteger(minutes) && minutes > 0 && minutes <= 24 * 60 ? minutes : null;
+}
+
+/** Hours played, to a tenth of an hour (42.5): from 0.1 up to 100,000, or null. */
+export function parseHours(value) {
+  const hours = typeof value === 'number' && Number.isFinite(value) ? Math.round(value * 10) / 10 : NaN;
+  return hours >= 0.1 && hours <= 100_000 ? hours : null;
 }
 
 // The details each category keeps, read from saved data, a search result or a catalog lookup.
@@ -110,6 +117,7 @@ function normalizeItem(raw, now) {
     status,
     rating: status === 'done' && isRating(raw.rating) ? raw.rating : null,
     dropped: status === 'done' && raw.dropped === true,
+    hoursPlayed: raw.category === 'game' ? parseHours(raw.hoursPlayed) : null,   // kept if moved back from done
     ...itemDetails(raw.category, raw),
     detailsAt: Number.isFinite(raw.detailsAt) && raw.detailsAt > 0 ? raw.detailsAt : null,
     addedAt,

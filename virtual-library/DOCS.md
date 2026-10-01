@@ -20,7 +20,8 @@ and what's still pending.
   Use the sort button next to the tabs for A–Z (or rating, on Done).
 - **Series** have a third tab, **Waiting**: series you've caught up on, waiting for a new season. Move a series there
   from its page; when the new season is out, move it back to Pending.
-- Tap a cover to open it: move it between Pending, (Waiting) and Done, rate it, or remove it.
+- Tap a cover to open it: move it between Pending, (Waiting) and Done, rate it, or remove it. A finished game also
+  has **Hours played**, if you want to keep track.
 - Gave up on something because it wasn't worth finishing? Tap **Dropped it** on its page. It goes to Done (no confetti),
   greyed out with a red **Dropped** band across its cover. Tap it again to undo, or move it back to Pending.
 - **+** inside a kind adds to that kind only (e.g. "Add a game"). **+** on the home screen lets you pick the kind

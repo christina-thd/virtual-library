@@ -6,6 +6,7 @@
 - Nintendo games: pick PC or Nintendo when searching games (Switch, 3DS, Wii U, Wii and the classics, with box art)
 - An item's page shows how long a movie is (e.g. 2h 35m), how many pages a book has, and how many seasons and episodes of a series are out
   (checked again weekly while you're still watching); items already in the library get them after an update
+- Games: note how many hours you played a finished game, on its page (optional)
 - **Dropped it**: mark something you gave up on. It goes to Done, greyed out with a red "Dropped" band on its cover,
   and is left out of the home screen covers
 - Series have a third tab, **Waiting**, for series you've caught up on that are waiting for a new season

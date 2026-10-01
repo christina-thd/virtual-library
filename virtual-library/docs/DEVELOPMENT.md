@@ -68,7 +68,7 @@ test/                     node:test suites
 to every screen over `GET /api/events` (Server-Sent Events). Screens never change items locally; they
 only render the latest view.
 
-**Actions:** `addItem`, `setStatus`, `setDropped`, `rateItem`, `removeItem`. See `src/library/actions.js`.
+**Actions:** `addItem`, `setStatus`, `setDropped`, `rateItem`, `setHours` (games), `removeItem`. See `src/library/actions.js`.
 Statuses are `pending`, `done` and, for series only, `waiting` (`statusesFor` in `public/js/shared/library.js`).
 Only finished items can be rated; moving an item away from done clears its rating and its `dropped` mark
 (dropped: given up on; it counts as done).

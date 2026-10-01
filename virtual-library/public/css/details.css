@@ -86,6 +86,33 @@
 
 .rating { margin-top: 22px; }
 .rating-label { color: var(--muted); font-size: 13px; }
+
+/* games: hours played, a small field under the stars */
+.hours { margin-top: 18px; }
+.hours-field {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  margin-top: 8px;
+  padding: 0 14px;
+  height: 42px;
+  border-radius: 999px;
+  border: 1px solid var(--line);
+  background: var(--surface-2);
+  color: var(--muted);
+  font-weight: 600;
+}
+.hours-field:focus-within { border-color: color-mix(in srgb, var(--accent) 60%, transparent); }
+.hours-field input {
+  width: 72px;
+  border: 0;
+  background: none;
+  color: var(--ink);
+  font-size: 16px;                               /* iPhone zooms into fields with smaller text */
+  font-weight: 600;
+  text-align: center;
+  outline: none;
+}
 .star-input { display: flex; justify-content: center; gap: 6px; margin-top: 8px; }
 .star-input button { display: grid; place-items: center; width: 44px; height: 44px; color: var(--star); }
 .star-input svg { width: 34px; height: 34px; fill: none; stroke: currentColor; stroke-width: 1.4; opacity: 0.4; transition: transform 160ms var(--ease), opacity 160ms; }

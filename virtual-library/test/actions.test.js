@@ -161,6 +161,32 @@ describe('setDropped', () => {
   });
 });
 
+describe('setHours', () => {
+  const game = () => add({ category: 'game', source: null, title: 'Hades', status: 'done' });
+
+  test('a finished game keeps how long you played it, to a tenth of an hour; null clears it', () => {
+    const id = game();
+    assert.equal(itemOf(id).hoursPlayed, null);
+    apply({ type: 'setHours', itemId: id, hours: 42.54 });
+    assert.equal(itemOf(id).hoursPlayed, 42.5);
+    apply({ type: 'setHours', itemId: id, hours: null });
+    assert.equal(itemOf(id).hoursPlayed, null);
+  });
+
+  test('moving the game back to pending keeps its hours (time played stays played)', () => {
+    const id = game();
+    apply({ type: 'setHours', itemId: id, hours: 30 });
+    apply({ type: 'setStatus', itemId: id, status: 'pending' });
+    assert.equal(itemOf(id).hoursPlayed, 30);
+  });
+
+  test('only for finished games, with a sensible number', () => {
+    rejects({ type: 'setHours', itemId: add(), hours: 5 }, 400, /games/);
+    rejects({ type: 'setHours', itemId: add({ category: 'game', source: null, title: 'Celeste' }), hours: 5 }, 400, /finished/);
+    for (const hours of [0, -3, 'ten', 1e9, NaN]) rejects({ type: 'setHours', itemId: game(), hours }, 400);
+  });
+});
+
 describe('rateItem', () => {
   test('rates 1–5 and clears with null', () => {
     const id = add({ status: 'done' });
@@ -199,6 +225,6 @@ describe('applyAction', () => {
   });
 
   test('lists every action', () => {
-    assert.deepEqual([...ACTION_TYPES].sort(), ['addItem', 'rateItem', 'removeItem', 'setDropped', 'setStatus']);
+    assert.deepEqual([...ACTION_TYPES].sort(), ['addItem', 'rateItem', 'removeItem', 'setDropped', 'setHours', 'setStatus']);
   });
 });
