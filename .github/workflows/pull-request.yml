@@ -1,0 +1,47 @@
+# Checks a pull request into main before it's merged. Home Assistant builds the add-on from main, so merging is
+# releasing: the add-on's version has to go up (or Home Assistant won't offer the update), and the tests must pass.
+name: Pull request checks
+
+on:
+  pull_request:
+    branches: [main]
+
+jobs:
+  version:
+    name: Version goes up
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0                          # main too, to compare with
+
+      - name: Compare config.yaml's version with main's
+        env:
+          BASE: ${{ github.base_ref }}
+        run: |
+          version_of() { sed -nE 's/^version:[[:space:]]*"?([^"[:space:]]+)"?.*/\1/p'; }
+          new=$(version_of < virtual-library/config.yaml)
+          old=$(git show "origin/$BASE:virtual-library/config.yaml" | version_of)
+          echo "main: $old, this pull request: $new"
+          if [ "$new" = "$old" ]; then
+            echo "::error file=virtual-library/config.yaml::The version is still $old, the same as on $BASE. Raise it in config.yaml and package.json, and add it to CHANGELOG.md, or Home Assistant won't offer the update."
+            exit 1
+          fi
+          highest=$(printf '%s\n%s\n' "$old" "$new" | sort -V | tail -n 1)
+          if [ "$highest" != "$new" ]; then
+            echo "::error file=virtual-library/config.yaml::The version $new is lower than $old on $BASE."
+            exit 1
+          fi
+
+  tests:
+    name: Tests
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: virtual-library
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 20                        # the oldest the add-on supports (package.json engines)
+      - run: npm test
