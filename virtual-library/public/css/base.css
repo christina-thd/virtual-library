@@ -190,7 +190,7 @@ svg.icon { width: 1.2em; height: 1.2em; flex: none; fill: none; stroke: currentC
 .toast {
   position: fixed;
   left: 50%;
-  bottom: calc(96px + var(--safe-bottom));
+  top: calc(16px + var(--viewport-top) + var(--safe-top));   /* at the top: sheets and the add button are below */
   z-index: 40;
   display: flex;
   align-items: center;
@@ -207,11 +207,17 @@ svg.icon { width: 1.2em; height: 1.2em; flex: none; fill: none; stroke: currentC
   overflow: hidden;
   text-overflow: ellipsis;
   opacity: 0;
-  transform: translate(-50%, 12px);
+  transform: translate(-50%, -12px);
   transition: opacity 200ms, transform 240ms var(--ease);
   pointer-events: none;
 }
 .toast.show { opacity: 1; transform: translate(-50%, 0); }
+/* the search sheet reaches almost to the top: lay the message over its title row, the same size, so it doesn't half-cover it */
+body:has(#searchLayer:not([hidden])):not(:has(#detailsLayer:not([hidden]))) .toast {
+  top: calc(var(--viewport-top) + var(--safe-top) + 39px);
+  width: calc(100% - 32px);
+  justify-content: center;
+}
 .toast-text { overflow: hidden; text-overflow: ellipsis; }
 .toast-icon {
   display: grid;

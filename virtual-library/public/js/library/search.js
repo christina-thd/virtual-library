@@ -19,7 +19,7 @@ const STATUS_LABEL = { pending: 'Pending', done: 'Done' };
 /**
  * @param {object} options
  * @param {() => object[]} options.getItems    the library, to mark results that are already in it
- * @param {(itemId: string, how: { fromSearch?: boolean, justAdded?: boolean }) => void} options.openItem
+ * @param {(itemId: string, how: { fromSearch?: boolean }) => void} options.openItem
  */
 export function createSearch({ getItems, openItem }) {
   const sheet = createSheet($('searchLayer'));
@@ -236,7 +236,7 @@ export function createSearch({ getItems, openItem }) {
       added.set(keyOf(entry), { itemId, status, fresh: true });
       render();
       toast(`“${entry.title}” added to ${STATUS_LABEL[status]}`, { icon: 'check' });
-      if (status === 'done') openItem(itemId, { fromSearch: true, justAdded: true });   // to rate it, if you like
+      if (status === 'done') openItem(itemId, { fromSearch: true });   // to rate it, if you like
     } catch (err) {
       toast(err.message, { error: true });
       for (const b of button.parentElement.children) b.disabled = false;

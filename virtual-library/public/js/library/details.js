@@ -18,8 +18,7 @@ export function createDetails({ getItem }) {
   const sheet = createSheet($('detailsLayer'), { onClose: () => { itemId = null; } });
 
   let itemId = null;
-  let options = {};                 // how it was opened: { fromSearch, justAdded }
-  let popBanner = false;            // the "Added to …" banner pops in once, when the sheet opens
+  let options = {};                 // how it was opened: { fromSearch }
   let waitingFor = null;            // just added: opens when the item arrives with the next view
   let removeArmed = false;          // remove needs a second tap
   let disarmTimer = null;
@@ -38,16 +37,12 @@ export function createDetails({ getItem }) {
     const glow = item.image
       ? `<div class="details-glow" style="background-image:url('${escapeHtml(item.image)}')"></div>`
       : '<div class="details-glow tint"></div>';
-    const banner = options.justAdded
-      ? `<div class="details-added ${popBanner ? 'pop' : ''}">${icon('check')}Added to ${done ? 'Done' : 'Pending'}</div>` : '';
-    popBanner = false;
 
     panel.dataset.category = item.category;
     panel.innerHTML = `
       ${glow}
       <div class="grabber" data-drag data-close></div>
       <div class="details-bar">
-        ${banner}
         <button type="button" class="details-close" data-close>${options.fromSearch ? 'Back to search' : 'Close'}</button>
       </div>
       <div class="details-content">
@@ -101,7 +96,9 @@ export function createDetails({ getItem }) {
       const stars = Number(starButton.dataset.rate);
       const rating = stars === item.rating ? null : stars;       // tap your rating again to clear it
       previewStars(panel, rating);
-      send({ type: 'rateItem', itemId, rating }).catch(() => render(item));
+      send({ type: 'rateItem', itemId, rating })
+        .then(() => toast(rating ? `Rated “${item.title}” ${rating} of 5` : `Rating of “${item.title}” cleared`, { icon: 'check' }))
+        .catch(() => render(item));
       return;
     }
 
@@ -121,12 +118,11 @@ export function createDetails({ getItem }) {
   });
 
   return {
-    /** @param {{ fromSearch?: boolean, justAdded?: boolean }} [how] */
+    /** @param {{ fromSearch?: boolean }} [how] */
     open(id, how = {}) {
       const item = getItem(id);
       waitingFor = item ? null : id;
       options = how;
-      popBanner = Boolean(how.justAdded);
       if (!item) return;
       itemId = id;
       disarm();

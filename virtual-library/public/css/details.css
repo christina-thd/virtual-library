@@ -55,21 +55,6 @@
   font-size: 14px;
 }
 .details-close:active { transform: scale(0.96); }
-.details-added {
-  display: inline-flex;
-  align-items: center;
-  gap: 6px;
-  height: 32px;
-  padding: 0 12px 0 8px;
-  border-radius: 999px;
-  background: color-mix(in srgb, var(--accent) 18%, transparent);
-  border: 1px solid color-mix(in srgb, var(--accent) 40%, transparent);
-  color: var(--accent);
-  font-weight: 600;
-  font-size: 13px;
-}
-.details-added.pop { animation: pop 420ms var(--ease) both; }
-.details-added svg.icon { width: 16px; height: 16px; stroke-width: 2.6; }
 .details-cover { width: 148px; margin: 8px auto 0; border-radius: 12px; box-shadow: 0 24px 50px -18px rgb(0 0 0 / 0.95); }
 
 .details-title {

@@ -9,6 +9,8 @@
 - Home screen tiles show random covers from each category (new ones each time you come back to the home screen), not only the newest
 - Anything can be added as typed, also when there are results: "Not in the list?" below them
 - Faster search: recent searches come back instantly, and slow Steam cover lookups no longer hold up game results
+- Messages ("added to Done", "Removed", errors) show at the top of the screen, so they never cover the rating stars;
+  the "Added to …" badge on the item is gone, and rating something confirms it ("Rated … 4 of 5")
 - No more zooming in on iPhone when tapping a button twice quickly (e.g. "Tap again to remove")
 
 ## 1.0.6

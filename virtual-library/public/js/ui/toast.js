@@ -4,7 +4,7 @@ import { icon as iconHtml } from './icons.js';
 let timer = null;
 
 /**
- * A short message at the bottom of the screen. The page needs <div class="toast" id="toast">.
+ * A short message at the top of the screen. The page needs <div class="toast" id="toast">.
  * `icon` (an icons.js name, e.g. 'check') shows in front of it.
  */
 export function toast(message, { error = false, icon = null } = {}) {
