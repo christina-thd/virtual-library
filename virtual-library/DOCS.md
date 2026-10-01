@@ -14,10 +14,17 @@ and what's still pending.
 ### The library
 
 - The home screen has one tile per kind (Movies, Series, Books, Games), with how many are pending
-  and done, and the newest covers. Tap a tile to open it; the back button (or ‹) returns home.
+  and done, and a few random covers. Tap a tile to open it; the back button (or ‹) returns home.
 - In each kind, **Pending** is everything you haven't seen, read or played yet, or haven't finished.
-  **Done** is everything you've finished. The newest are first. The tab you last used is remembered on each phone.
-- Tap a cover to open it: move it between Pending and Done, rate it, or remove it.
+  **Done** is everything you've finished. Each kind opens on Pending, newest first; Done starts with your best rated.
+  Use the sort button next to the tabs for A–Z, rating (on Done) or length: a movie's duration, a series' seasons,
+  a book's pages, or the hours you played a game (on Done).
+- **Series** have a third tab, **Waiting**: series you've caught up on, waiting for a new season. Move a series there
+  from its page; when the new season is out, move it back to Pending.
+- Tap a cover to open it: move it between Pending, (Waiting) and Done, rate it, or remove it. A finished game also
+  has **Hours played**, if you want to keep track.
+- Gave up on something because it wasn't worth finishing? Tap **Dropped it** on its page. It goes to Done (no confetti),
+  greyed out with a red **Dropped** band across its cover. Tap it again to undo, or move it back to Pending.
 - **+** inside a kind adds to that kind only (e.g. "Add a game"). **+** on the home screen lets you pick the kind
   (it starts on the one you picked last).
 - To close the search or an item, tap **Close** (or **Back to search**), swipe it down from the top, or use your phone's back button.
@@ -28,7 +35,7 @@ and what's still pending.
 Moving something from Pending to Done is celebrated with confetti and a (hopefully) funny line.
 Finished things can have a rating from 1 to 5 stars. It's optional: tap a star to rate,
 and tap the same star again to clear it. Adding something straight to **Done** opens it, so
-you can rate it right away. Moving an item back to Pending clears its rating.
+you can rate it right away. Moving an item back to Pending (or Waiting) clears its rating.
 
 ### Not in the search?
 
@@ -49,12 +56,22 @@ Turn it off if that's a concern; the sidebar and the Home Assistant app use your
 
 Search works out of the box, with no account:
 
-| Kind   | Searched on | With an API key |
-|--------|-------------|-----------------|
-| Movies | Cinemeta (IMDb data) | TMDB |
-| Series | TVmaze | TMDB |
-| Books  | Open Library | — |
-| Games  | Steam (PC games) | RAWG (every platform) |
+| Kind   | Searched on | Then, if nothing is found | With an API key (asked first) |
+|--------|-------------|---------------------------|-------------------------------|
+| Movies | Cinemeta (IMDb data) | — | TMDB |
+| Series | TVmaze | Cinemeta | TMDB |
+| Books  | Open Library | Apple Books | — |
+| Games: PC | Steam | GOG | RAWG (every platform) |
+| Games: Nintendo | Nintendo's store (Switch, 3DS, Wii U, Wii and the classics) | — | — |
+
+For games, pick **PC** or **Nintendo** in the search field under the Game tab; each time you open the search it starts on PC.
+The next catalog is also asked when one doesn't answer, so search keeps working if a website is down.
+The line under the results says which catalog found them.
+
+An item's page also shows how long a movie is (e.g. 2h 35m), how many seasons and episodes of a series are out
+(e.g. 3 seasons · 26 episodes), and how many pages a book has (from Open Library; Apple Books doesn't say).
+They're looked up in the background after adding; a series you haven't finished is checked again every week,
+as new episodes come out.
 
 The add-on needs internet access to search. When you add something, it saves a copy of the cover,
 so the library keeps its pictures even if a website changes.
@@ -64,12 +81,12 @@ so the library keeps its pictures even if a website changes.
 Both options are optional. Leave them empty to use the catalogs above.
 
 **tmdb_api_key** (optional)
-- Searches movies and series on [TMDB](https://www.themoviedb.org/), which has the best posters and finds more
+- Searches movies and series on [TMDB](https://www.themoviedb.org/) first, which has the best posters and finds more
 - Get a free key: create a TMDB account, then **Settings → API → Create**. Either the "API Key" or the
   longer "API Read Access Token" works.
 
 **rawg_api_key** (optional)
-- Searches games on [RAWG](https://rawg.io/), which knows console games too (Steam only has PC games)
+- Searches games on [RAWG](https://rawg.io/) first, which knows console games too (Steam and GOG only have PC games)
 - Get a free key at [rawg.io/apidocs](https://rawg.io/apidocs)
 
 Restart the add-on after changing an option. Items you've already added keep their covers.

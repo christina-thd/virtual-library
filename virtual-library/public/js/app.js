@@ -2,7 +2,7 @@
 // The server is the only source of truth; views never change items locally, they send actions.
 import { createCategoryView } from './library/category.js';
 import { createDetails } from './library/details.js';
-import { onTileTap, renderHome } from './library/home.js';
+import { onTileTap, renderHome, reshuffleHome } from './library/home.js';
 import { createSearch } from './library/search.js';
 import { fetchInfo, subscribe } from './shared/api.js';
 import { $ } from './shared/dom.js';
@@ -38,6 +38,8 @@ function openCategory(id) {
 
 function showHome() {
   categoryView.hide();
+  reshuffleHome();                                 // new random covers each time you come back
+  renderHome(items);
   showView('homeView');
 }
 
@@ -55,7 +57,7 @@ $('shelf').addEventListener('click', (e) => {
   if (card) details.open(card.dataset.item);
 });
 
-fetchInfo().then(({ credits }) => search.setCredits(credits)).catch(() => {});
+fetchInfo().then(({ sources }) => search.setSources(sources)).catch(() => {});
 
 subscribe((view) => {
   items = view.items;

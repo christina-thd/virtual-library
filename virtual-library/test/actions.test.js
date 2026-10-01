@@ -101,6 +101,90 @@ describe('setStatus', () => {
     rejects({ type: 'setStatus', itemId: 'ghost', status: 'done' }, 404);
     rejects({ type: 'setStatus', itemId: add(), status: 'todo' }, 400);
   });
+
+  test('a series can wait for a new season: done → waiting clears the finish date and rating, like pending', () => {
+    const id = add({ status: 'done', rating: 4 });
+    apply({ type: 'setStatus', itemId: id, status: 'waiting' });
+    assert.deepEqual([itemOf(id).status, itemOf(id).finishedAt, itemOf(id).rating], ['waiting', null, null]);
+    apply({ type: 'setStatus', itemId: id, status: 'done' }, { ...ctx, now: NOW + 7 });
+    assert.deepEqual([itemOf(id).status, itemOf(id).finishedAt], ['done', NOW + 7]);
+    assert.equal(itemOf(add({ source: null, title: 'Severance', status: 'waiting' })).status, 'waiting');
+  });
+
+  test('only series can wait', () => {
+    const movie = add({ category: 'movie', source: null, title: 'Dune' });
+    rejects({ type: 'setStatus', itemId: movie, status: 'waiting' }, 400, /pending, done/);
+    rejects({ type: 'addItem', category: 'book', title: 'Dune', status: 'waiting' }, 400);
+  });
+});
+
+describe('details', () => {
+  test('a movie keeps the duration from its search result (no lookup needed); the rest is looked up later', () => {
+    const dune = itemOf(add({ category: 'movie', source: null, title: 'Dune', runtime: 155 }));
+    assert.deepEqual([dune.runtime, dune.detailsAt], [155, NOW]);
+    assert.equal(itemOf(add({ category: 'movie', source: null, title: 'Cats' })).detailsAt, null);
+    const dark = itemOf(add({ runtime: 50 }));                       // a series
+    assert.deepEqual([dark.runtime, dark.seasons, dark.episodes, dark.detailsAt], [null, null, null, null]);
+    const hobbit = itemOf(add({ category: 'book', source: null, title: 'The Hobbit', pages: 310, runtime: 90 }));
+    assert.deepEqual([hobbit.pages, hobbit.runtime, hobbit.detailsAt], [310, null, NOW]);
+  });
+});
+
+describe('setDropped', () => {
+  test('dropping a pending item makes it done (and new items are not dropped)', () => {
+    const id = add();
+    assert.equal(itemOf(id).dropped, false);
+    apply({ type: 'setDropped', itemId: id, dropped: true }, { ...ctx, now: NOW + 3 });
+    assert.deepEqual([itemOf(id).status, itemOf(id).dropped, itemOf(id).finishedAt], ['done', true, NOW + 3]);
+    apply({ type: 'rateItem', itemId: id, rating: 1 });               // it can still get a (bad) rating
+    assert.equal(itemOf(id).rating, 1);
+  });
+
+  test('dropping a done item keeps its finish date and rating; undropping keeps it done', () => {
+    const id = add({ status: 'done', rating: 2 });
+    apply({ type: 'setDropped', itemId: id, dropped: true }, { ...ctx, now: NOW + 9 });
+    assert.deepEqual([itemOf(id).finishedAt, itemOf(id).rating, itemOf(id).dropped], [NOW, 2, true]);
+    apply({ type: 'setDropped', itemId: id, dropped: false });
+    assert.deepEqual([itemOf(id).status, itemOf(id).dropped, itemOf(id).rating], ['done', false, 2]);
+  });
+
+  test('moving it back to pending (or waiting) clears the mark', () => {
+    const id = add();
+    apply({ type: 'setDropped', itemId: id, dropped: true });
+    apply({ type: 'setStatus', itemId: id, status: 'waiting' });
+    assert.deepEqual([itemOf(id).status, itemOf(id).dropped], ['waiting', false]);
+  });
+
+  test('rejects unknown items and anything but true or false', () => {
+    rejects({ type: 'setDropped', itemId: 'ghost', dropped: true }, 404);
+    rejects({ type: 'setDropped', itemId: add(), dropped: 'yes' }, 400);
+  });
+});
+
+describe('setHours', () => {
+  const game = () => add({ category: 'game', source: null, title: 'Hades', status: 'done' });
+
+  test('a finished game keeps how long you played it, to a tenth of an hour; null clears it', () => {
+    const id = game();
+    assert.equal(itemOf(id).hoursPlayed, null);
+    apply({ type: 'setHours', itemId: id, hours: 42.54 });
+    assert.equal(itemOf(id).hoursPlayed, 42.5);
+    apply({ type: 'setHours', itemId: id, hours: null });
+    assert.equal(itemOf(id).hoursPlayed, null);
+  });
+
+  test('moving the game back to pending keeps its hours (time played stays played)', () => {
+    const id = game();
+    apply({ type: 'setHours', itemId: id, hours: 30 });
+    apply({ type: 'setStatus', itemId: id, status: 'pending' });
+    assert.equal(itemOf(id).hoursPlayed, 30);
+  });
+
+  test('only for finished games, with a sensible number', () => {
+    rejects({ type: 'setHours', itemId: add(), hours: 5 }, 400, /games/);
+    rejects({ type: 'setHours', itemId: add({ category: 'game', source: null, title: 'Celeste' }), hours: 5 }, 400, /finished/);
+    for (const hours of [0, -3, 'ten', 1e9, NaN]) rejects({ type: 'setHours', itemId: game(), hours }, 400);
+  });
 });
 
 describe('rateItem', () => {
@@ -141,6 +225,6 @@ describe('applyAction', () => {
   });
 
   test('lists every action', () => {
-    assert.deepEqual([...ACTION_TYPES].sort(), ['addItem', 'rateItem', 'removeItem', 'setStatus']);
+    assert.deepEqual([...ACTION_TYPES].sort(), ['addItem', 'rateItem', 'removeItem', 'setDropped', 'setHours', 'setStatus']);
   });
 });

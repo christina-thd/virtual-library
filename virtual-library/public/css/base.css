@@ -39,7 +39,8 @@
 
 * { box-sizing: border-box; -webkit-tap-highlight-color: transparent; }
 
-html { background: var(--bg); }
+/* no double-tap zoom (iPhone zooms on two quick taps, e.g. "Tap again to remove"); pinch zoom still works */
+html { background: var(--bg); touch-action: manipulation; }
 
 body {
   min-height: 100dvh;
@@ -56,7 +57,7 @@ body {
 body.locked { overflow: hidden; }
 
 button, input { font: inherit; color: inherit; }
-button { border: 0; background: none; padding: 0; cursor: pointer; }
+button { border: 0; background: none; padding: 0; cursor: pointer; touch-action: manipulation; }
 button:focus-visible, input:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
 [hidden] { display: none !important; }
 
@@ -189,29 +190,36 @@ svg.icon { width: 1.2em; height: 1.2em; flex: none; fill: none; stroke: currentC
 .toast {
   position: fixed;
   left: 50%;
-  bottom: calc(96px + var(--safe-bottom));
+  top: calc(16px + var(--viewport-top) + var(--safe-top));   /* at the top: sheets and the add button are below */
   z-index: 40;
   display: flex;
   align-items: center;
   gap: 8px;
   max-width: calc(100% - 32px);
   padding: 11px 18px;
-  border-radius: 999px;
+  width: max-content;                            /* one line when it fits; wraps (never cut) when it doesn't */
+  border-radius: 22px;
   border: 1px solid var(--line);
   background: var(--surface-3);
   box-shadow: 0 10px 30px -10px rgb(0 0 0 / 0.8);
   font-size: 14px;
   font-weight: 500;
-  white-space: nowrap;
-  overflow: hidden;
-  text-overflow: ellipsis;
+  line-height: 1.35;
+  text-align: center;
   opacity: 0;
-  transform: translate(-50%, 12px);
+  transform: translate(-50%, -12px);
   transition: opacity 200ms, transform 240ms var(--ease);
   pointer-events: none;
 }
 .toast.show { opacity: 1; transform: translate(-50%, 0); }
-.toast-text { overflow: hidden; text-overflow: ellipsis; }
+/* the search sheet reaches almost to the top: show the message over its category buttons instead, the full width,
+   so it never covers the title or the Close button above them */
+body:has(#searchLayer:not([hidden])):not(:has(#detailsLayer:not([hidden]))) .toast {
+  top: calc(var(--viewport-top) + var(--safe-top) + 89px);
+  width: calc(100% - 32px);
+  justify-content: center;
+}
+.toast-text { overflow-wrap: anywhere; }
 .toast-icon {
   display: grid;
   place-items: center;
@@ -294,6 +302,27 @@ svg.icon { width: 1.2em; height: 1.2em; flex: none; fill: none; stroke: currentC
   box-shadow: 0 10px 24px -14px rgb(0 0 0 / 0.9), inset 0 0 0 1px rgb(255 255 255 / 0.05);
 }
 .cover img { display: block; width: 100%; height: 100%; object-fit: cover; }
+/* dropped (given up on): greyed out, with a red band across the bottom; sized from the cover's width (cqw), so
+   it suits every size, and only the icon on small covers (home tiles) */
+.cover.dropped img, .cover.dropped .cover-generated { filter: grayscale(1) brightness(0.45); }
+.cover-dropped {
+  position: absolute;
+  inset: auto 0 0;
+  z-index: 1;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 4cqw;
+  padding: 5cqw 0;
+  background: rgb(185 28 28 / 0.92);
+  color: #fff1f1;
+  font-size: clamp(9px, 11cqw, 15px);
+  font-weight: 800;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+}
+.cover-dropped svg.icon { width: 1.3em; height: 1.3em; stroke-width: 2.4; }
+@container (max-width: 70px) { .cover-dropped span { display: none; } }
 .cover::after {
   content: "";
   position: absolute;

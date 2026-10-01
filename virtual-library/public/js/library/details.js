@@ -1,7 +1,9 @@
-// Item sheet: big cover, move between Pending and Done, rate when done, remove.
+// Item sheet: big cover, move between Pending, Waiting (series) and Done, drop it, rate when done (and for games,
+// hours played), remove.
 import { sendAction } from '../shared/api.js';
 import { $, escapeHtml } from '../shared/dom.js';
-import { categoryOf } from '../shared/library.js';
+import { formatCount, formatRuntime } from '../shared/format.js';
+import { categoryOf, STATUS_LABELS, statusesFor } from '../shared/library.js';
 import { celebrate } from '../ui/celebrate.js';
 import { coverHtml } from '../ui/cover.js';
 import { icon } from '../ui/icons.js';
@@ -10,7 +12,12 @@ import { previewStars, starInputHtml } from '../ui/stars.js';
 import { toast } from '../ui/toast.js';
 import { cheerFor } from './cheers.js';
 
+const STATUS_ICONS = { pending: 'clock', waiting: 'hourglass', done: 'check' };
+
 const DISARM_MS = 3000;
+
+/** 1 → "1 hour", 42.5 → "42.5 hours". */
+const formatHours = (hours) => `${hours} ${hours === 1 ? 'hour' : 'hours'}`;
 
 /** @param {{ getItem: (id: string) => object | undefined }} options */
 export function createDetails({ getItem }) {
@@ -18,8 +25,7 @@ export function createDetails({ getItem }) {
   const sheet = createSheet($('detailsLayer'), { onClose: () => { itemId = null; } });
 
   let itemId = null;
-  let options = {};                 // how it was opened: { fromSearch, justAdded }
-  let popBanner = false;            // the "Added to …" banner pops in once, when the sheet opens
+  let options = {};                 // how it was opened: { fromSearch }
   let waitingFor = null;            // just added: opens when the item arrives with the next view
   let removeArmed = false;          // remove needs a second tap
   let disarmTimer = null;
@@ -34,37 +40,51 @@ export function createDetails({ getItem }) {
   function render(item) {
     const kind = categoryOf(item.category);
     const meta = [item.year, item.creator].filter(Boolean).map(escapeHtml).join(' · ');
+    // a quieter line under it: how long a movie or book is, how many seasons and episodes of a series are out
+    const facts = [formatRuntime(item.runtime), formatCount(item.seasons, 'season'), formatCount(item.episodes, 'episode'), formatCount(item.pages, 'page')]
+      .filter(Boolean).join(' · ');
     const done = item.status === 'done';
     const glow = item.image
       ? `<div class="details-glow" style="background-image:url('${escapeHtml(item.image)}')"></div>`
       : '<div class="details-glow tint"></div>';
-    const banner = options.justAdded
-      ? `<div class="details-added ${popBanner ? 'pop' : ''}">${icon('check')}Added to ${done ? 'Done' : 'Pending'}</div>` : '';
-    popBanner = false;
 
     panel.dataset.category = item.category;
     panel.innerHTML = `
       ${glow}
       <div class="grabber" data-drag data-close></div>
       <div class="details-bar">
-        ${banner}
         <button type="button" class="details-close" data-close>${options.fromSearch ? 'Back to search' : 'Close'}</button>
       </div>
       <div class="details-content">
         <div data-drag>${coverHtml(item, 'details-cover')}</div>
         <h2 class="details-title">${escapeHtml(item.title)}</h2>
         <div class="details-meta"><span class="kind">${icon(item.category)}${kind.label}</span>${meta ? `<span>· ${meta}</span>` : ''}</div>
+        ${facts ? `<div class="details-facts">${facts}</div>` : ''}
 
         <div class="segmented details-status" role="radiogroup" aria-label="Status">
-          <button type="button" role="radio" data-status="pending" class="${done ? '' : 'selected'}" aria-checked="${!done}">${icon('clock')}Pending</button>
-          <button type="button" role="radio" data-status="done" class="${done ? 'selected' : ''}" aria-checked="${done}">${icon('check')}Done</button>
+          ${statusesFor(item.category).map((status) => `
+            <button type="button" role="radio" data-status="${status}" class="${status === item.status ? 'selected' : ''}"
+              aria-checked="${status === item.status}">${icon(STATUS_ICONS[status])}${STATUS_LABELS[status]}</button>`).join('')}
         </div>
+
+        <button type="button" class="pill details-drop ${item.dropped ? 'on' : ''}" data-drop aria-pressed="${item.dropped}">
+          ${icon('trash')}${item.dropped ? 'Dropped · tap to undo' : 'Dropped it'}
+        </button>
 
         ${done ? `
           <div class="rating">
             <div class="rating-label">${item.rating ? 'Your rating' : 'Rate it (optional)'}</div>
             ${starInputHtml(item.rating)}
           </div>` : ''}
+
+        ${done && item.category === 'game' ? `
+          <form class="hours" data-hours>
+            <label class="rating-label" for="hoursInput">Hours played (optional)</label>
+            <span class="hours-field">
+              <input id="hoursInput" type="text" inputmode="decimal" autocomplete="off" maxlength="8" placeholder="–"
+                value="${item.hoursPlayed ?? ''}"><span aria-hidden="true">h</span>
+            </span>
+          </form>` : ''}
 
         <button type="button" class="pill danger details-remove ${removeArmed ? 'armed' : ''}" data-remove>
           ${removeArmed ? 'Tap again to remove' : 'Remove from library'}
@@ -96,12 +116,23 @@ export function createDetails({ getItem }) {
       return;
     }
 
+    // given up on: it counts as done (no confetti), with a mark on its cover
+    if (e.target.closest('[data-drop]')) {
+      const dropped = !item.dropped;
+      send({ type: 'setDropped', itemId, dropped })
+        .then(() => toast(dropped ? `“${item.title}” dropped` : `“${item.title}” is no longer dropped`, { icon: 'check' }))
+        .catch(() => {});
+      return;
+    }
+
     const starButton = e.target.closest('[data-rate]');
     if (starButton) {
       const stars = Number(starButton.dataset.rate);
       const rating = stars === item.rating ? null : stars;       // tap your rating again to clear it
       previewStars(panel, rating);
-      send({ type: 'rateItem', itemId, rating }).catch(() => render(item));
+      send({ type: 'rateItem', itemId, rating })
+        .then(() => toast(rating ? `Rated “${item.title}” ${rating} of 5` : `Rating of “${item.title}” cleared`, { icon: 'check' }))
+        .catch(() => render(item));
       return;
     }
 
@@ -120,13 +151,35 @@ export function createDetails({ getItem }) {
     }
   });
 
+  // hours played (games): saved when leaving the field or pressing Enter (which also hides the keyboard)
+  panel.addEventListener('submit', (e) => {
+    if (!e.target.closest('[data-hours]')) return;
+    e.preventDefault();
+    $('hoursInput').blur();
+  });
+
+  panel.addEventListener('change', (e) => {
+    if (e.target.id !== 'hoursInput') return;
+    const item = itemId && getItem(itemId);
+    if (!item) return;
+    const text = e.target.value.trim().replace(',', '.');           // "42,5" too, as many phones write it
+    const hours = text === '' ? null : Math.round(Number(text) * 10) / 10;
+    if (hours !== null && !(hours >= 0.1 && hours <= 100_000)) {
+      e.target.value = item.hoursPlayed ?? '';
+      return toast('Type a number, like 42.5', { error: true });
+    }
+    if (hours === item.hoursPlayed) return;
+    send({ type: 'setHours', itemId, hours })
+      .then(() => toast(hours ? `${formatHours(hours)} played on “${item.title}”` : `Hours played on “${item.title}” cleared`, { icon: 'check' }))
+      .catch(() => render(item));
+  });
+
   return {
-    /** @param {{ fromSearch?: boolean, justAdded?: boolean }} [how] */
+    /** @param {{ fromSearch?: boolean }} [how] */
     open(id, how = {}) {
       const item = getItem(id);
       waitingFor = item ? null : id;
       options = how;
-      popBanner = Boolean(how.justAdded);
       if (!item) return;
       itemId = id;
       disarm();
@@ -140,8 +193,9 @@ export function createDetails({ getItem }) {
       if (waitingFor && getItem(waitingFor)) return this.open(waitingFor, options);
       if (!itemId) return;
       const item = getItem(itemId);
-      if (item) render(item);
-      else sheet.close();
+      if (!item) return sheet.close();
+      if (document.activeElement?.id === 'hoursInput') return;   // typing: don't wipe it (it's shown on leaving)
+      render(item);
     },
   };
 }

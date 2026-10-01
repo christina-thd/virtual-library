@@ -14,10 +14,10 @@ const hostOf = (url) => new URL(url).hostname;
  * and errors that name the host but never the full URL (it can contain an API key).
  */
 export function createHttpClient({ fetch = globalThis.fetch, timeoutMs = 8000, userAgent = 'HoardBoard' } = {}) {
-  async function request(url, headers) {
+  async function request(url, headers, timeout = timeoutMs) {
     let res;
     try {
-      res = await fetch(url, { headers: { 'User-Agent': userAgent, ...headers }, signal: AbortSignal.timeout(timeoutMs) });
+      res = await fetch(url, { headers: { 'User-Agent': userAgent, ...headers }, signal: AbortSignal.timeout(timeout) });
     } catch {
       throw new UpstreamError(`${hostOf(url)} did not answer`);
     }
@@ -26,8 +26,9 @@ export function createHttpClient({ fetch = globalThis.fetch, timeoutMs = 8000, u
   }
 
   return {
-    async json(url, { headers = {} } = {}) {
-      const res = await request(url, { Accept: 'application/json', ...headers });
+    /** `timeoutMs` overrides the client's timeout, for requests that are nice to have but mustn't hold things up. */
+    async json(url, { headers = {}, timeoutMs: timeout } = {}) {
+      const res = await request(url, { Accept: 'application/json', ...headers }, timeout);
       try {
         return await res.json();
       } catch {

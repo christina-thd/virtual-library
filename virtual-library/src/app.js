@@ -1,6 +1,7 @@
 import path from 'node:path';
 import { CATEGORIES } from '../public/js/shared/library.js';
 import { SearchError } from './catalog/index.js';
+import { createDetailsSync } from './catalog/details.js';
 import { createCoverSync } from './covers.js';
 import { UpstreamError } from './http-client.js';
 import { ActionError, applyAction } from './library/actions.js';
@@ -63,9 +64,9 @@ function readJsonBody(req) {
  *   GET  /manifest.webmanifest   web app manifest ("Add to Home Screen" opens it like an app)
  *   GET  /css/*, /js/*, /img/*   static files
  *   GET  /covers/<file>    saved cover images
- *   GET  /api/info         { version, categories, credits }
+ *   GET  /api/info         { version, categories, sources }
  *   GET  /api/events       live view (Server-Sent Events)
- *   GET  /api/search?category=movie&q=dune   search a catalog: { results }
+ *   GET  /api/search?category=movie&q=dune[&source=nintendo]   search a catalog: { results }
  *   POST /api/actions      apply one action, e.g. { "type": "setStatus", "itemId": "…", "status": "done" }
  */
 export function createApp({
@@ -80,6 +81,7 @@ export function createApp({
   }
 
   const coverSync = createCoverSync({ state, covers, onChange: changed, logger });
+  const detailsSync = createDetailsSync({ state, catalog, onChange: changed, now, logger });
 
   async function dispatch(req, res) {
     const action = await readJsonBody(req);
@@ -87,10 +89,11 @@ export function createApp({
     changed();
     sendJson(res, 200, result);
     coverSync.sync();
+    detailsSync.sync();
   }
 
   async function search(res, searchParams) {
-    const results = await catalog.search(searchParams.get('category'), searchParams.get('q'));
+    const results = await catalog.search(searchParams.get('category'), searchParams.get('q'), searchParams.get('source'));
     sendJson(res, 200, { results });
   }
 
@@ -116,7 +119,7 @@ export function createApp({
     if (pathname === '/api/events') return hub.connect(req, res, view());
     if (pathname === '/api/search') return search(res, searchParams);
     if (pathname === '/api/info') {
-      return sendJson(res, 200, { version: config.version, categories: CATEGORIES, credits: catalog.credits });
+      return sendJson(res, 200, { version: config.version, categories: CATEGORIES, sources: catalog.sources });
     }
     if (pathname.startsWith('/covers/')) return sendCover(req, res, pathname);
     if (Object.hasOwn(PAGES, pathname)) {
@@ -152,5 +155,5 @@ export function createApp({
     }
   }
 
-  return { handle, hub, syncCovers: () => coverSync.sync() };
+  return { handle, hub, syncCovers: () => coverSync.sync(), syncDetails: () => detailsSync.sync() };
 }

@@ -1,5 +1,19 @@
 # Changelog
 
+## 2.0.0
+- More search sources: Apple Books, GOG and Nintendo games
+- Faster search
+- New **Waiting** tab for series
+- **Dropped it** for things you gave up on
+- Sort by name, rating or length
+- Durations, seasons, episodes and pages on each item
+- Hours played for games
+- Add anything by hand, even when there are results
+- Random covers on the home screen
+- Messages at the top of the screen
+- Title stays visible while scrolling
+- No more accidental zoom on iPhone
+
 ## 1.0.6
 - **+** inside a category only adds to that category ("Add a game"), so nothing lands somewhere you're not looking
 - **+** on the home screen still lets you pick the category

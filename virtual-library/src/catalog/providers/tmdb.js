@@ -21,7 +21,7 @@ function authenticate(apiKey) {
 export function createTmdb(category, apiKey) {
   const kind = KINDS[category];
   const auth = authenticate(apiKey);
-  return {
+  const provider = {
     id: 'tmdb',
     name: 'TMDB',
     url: 'https://www.themoviedb.org/',
@@ -40,4 +40,13 @@ export function createTmdb(category, apiKey) {
       }));
     },
   };
+  /** From the movie's or show's own page (search results don't have these): minutes; seasons and episodes. */
+  provider.details = async (id, http) => {
+    const path = category === 'movie' ? 'movie' : 'tv';
+    const data = await http.json(`${API}/${path}/${encodeURIComponent(id)}?language=en-US${auth.query}`, { headers: auth.headers });
+    return category === 'movie'
+      ? { runtime: data.runtime }
+      : { seasons: data.number_of_seasons, episodes: data.number_of_episodes };
+  };
+  return provider;
 }

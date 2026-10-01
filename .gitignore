@@ -1,0 +1,23 @@
+# Dependencies
+node_modules/
+
+# Local library data (the saved library and cover images, written by the dev server)
+virtual-library/data/
+
+# Secrets (TMDB / RAWG API keys)
+.env
+.env.*
+
+# Logs
+*.log
+npm-debug.log*
+
+# Local tooling
+.claude/
+.vscode/
+.idea/
+
+# OS files
+.DS_Store
+Thumbs.db
+desktop.ini

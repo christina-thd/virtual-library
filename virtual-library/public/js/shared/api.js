@@ -16,12 +16,16 @@ export async function sendAction(action) {
   return readJson(res);
 }
 
-/** { version, categories, credits } */
+/** { version, categories, sources } */
 export const fetchInfo = () => fetch('api/info').then(readJson);
 
-/** Search results for a category; pass an AbortSignal to cancel a search that's been replaced. */
-export async function searchCatalog(category, query, signal) {
+/**
+ * Search results for a category; pass an AbortSignal to cancel a search that's been replaced.
+ * `source` picks one of the category's sources (games: "pc" or "nintendo"); the server's default when null.
+ */
+export async function searchCatalog(category, query, signal, source = null) {
   const params = new URLSearchParams({ category, q: query });
+  if (source) params.set('source', source);
   const { results } = await readJson(await fetch(`api/search?${params}`, { signal }));
   // e.g. a login or error page from a proxy instead of the add-on's answer
   if (!Array.isArray(results)) throw new Error('Search is unavailable right now (unexpected answer)');

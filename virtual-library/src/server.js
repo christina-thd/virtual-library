@@ -25,8 +25,10 @@ server.listen(config.port, config.host, () => {
   console.log(`Hoard Board ${config.version}`);
   console.log(`  Open:     http://localhost:${config.port}/`);
   console.log(`  Library:  ${config.stateFile} (${state.items.length} items)`);
-  console.log(`  Search:   ${Object.entries(catalog.credits).map(([category, c]) => `${category} → ${c.name}`).join(', ')}`);
+  const searchedOn = (s) => (s.label ? `${s.label}: ` : '') + s.credits.map((c) => c.name).join(' / ');
+  console.log(`  Search:   ${Object.entries(catalog.sources).map(([category, list]) => `${category} → ${list.map(searchedOn).join(' · ')}`).join(', ')}`);
   app.syncCovers();                                  // covers that couldn't be saved last time
+  app.syncDetails();                                 // movie durations, series seasons: missing or a week old
 });
 
 // Save anything pending and close connections before exiting (Ctrl+C, add-on stop).

@@ -1,5 +1,5 @@
 import { randomBytes } from 'node:crypto';
-import { CATEGORY_IDS, isRating, MAX_CREATOR, MAX_TITLE, sameSource, STATUSES } from '../../public/js/shared/library.js';
+import { CATEGORY_IDS, isRating, MAX_CREATOR, MAX_TITLE, sameSource, statusesFor } from '../../public/js/shared/library.js';
 
 /**
  * State shape (saved to disk as JSON):
@@ -11,7 +11,13 @@ import { CATEGORY_IDS, isRating, MAX_CREATOR, MAX_TITLE, sameSource, STATUSES } 
  *       source: { provider, id } | null,   where it was found (null: added by hand)
  *       imageUrls: [string],               the catalog's images, best first (the next is tried if one fails)
  *       cover: string | null,              file name of the saved copy (see covers.js)
- *       status ('pending' | 'done'), rating (1–5) | null,
+ *       status ('pending' | 'waiting' (series only) | 'done'), rating (1–5) | null,
+ *       dropped: boolean,                  done, but given up on (it wasn't worth finishing)
+ *       hoursPlayed: number | null,        games: how long you played it, entered when done
+ *       runtime: minutes | null,           how long a movie is
+ *       seasons, episodes: number | null,  how many of a series are out
+ *       pages: number | null,              how long a book is
+ *       detailsAt: ms | null,              when those were last looked up (in the background, see catalog/details.js)
  *       addedAt, finishedAt | null,        ms timestamps
  *     }],
  *   }
@@ -41,6 +47,44 @@ export function parseYear(value) {
   return year >= 1000 && year <= 9999 ? year : null;
 }
 
+/** A count of seasons, episodes or pages: a whole number from 1, or null. */
+export const parseCount = (value) => (Number.isInteger(value) && value > 0 && value < 100_000 ? value : null);
+
+/** Minutes from a number or catalog text ("155 min", "2h 35min"), or null. */
+export function parseMinutes(value) {
+  let minutes = NaN;
+  if (typeof value === 'number') minutes = value;
+  else if (typeof value === 'string') {
+    const hours = /(\d+)\s*h/i.exec(value);
+    const mins = /(\d+)\s*m/i.exec(value) ?? (!hours && /^\s*(\d+)\s*$/.exec(value));
+    if (hours || mins) minutes = Number(hours?.[1] ?? 0) * 60 + Number(mins?.[1] ?? 0);
+  }
+  return Number.isInteger(minutes) && minutes > 0 && minutes <= 24 * 60 ? minutes : null;
+}
+
+/** Hours played, to a tenth of an hour (42.5): from 0.1 up to 100,000, or null. */
+export function parseHours(value) {
+  const hours = typeof value === 'number' && Number.isFinite(value) ? Math.round(value * 10) / 10 : NaN;
+  return hours >= 0.1 && hours <= 100_000 ? hours : null;
+}
+
+// The details each category keeps, read from saved data, a search result or a catalog lookup.
+const DETAIL_READERS = {
+  movie: (raw) => ({ runtime: parseMinutes(raw.runtime) }),
+  series: (raw) => ({ seasons: parseCount(raw.seasons), episodes: parseCount(raw.episodes) }),
+  book: (raw) => ({ pages: parseCount(raw.pages) }),
+};
+const NO_DETAILS = Object.freeze({ runtime: null, seasons: null, episodes: null, pages: null });
+
+/** The details a category keeps, e.g. series: ['seasons', 'episodes']; none for games. */
+export const detailFields = (category) => (DETAIL_READERS[category] ? Object.keys(DETAIL_READERS[category]({})) : []);
+
+/** The category's details found in `raw` (unknown ones null); {} for a category that keeps none. */
+export const readDetails = (category, raw) => DETAIL_READERS[category]?.(raw ?? {}) ?? {};
+
+/** Every detail field, the category's from `raw` and the rest null, as items store them. */
+export const itemDetails = (category, raw) => ({ ...NO_DETAILS, ...readDetails(category, raw) });
+
 /** Distinct https URLs that pass `allowed`, best first. */
 export function parseImageUrls(urls, allowed = () => true) {
   const valid = urls.filter((url) => typeof url === 'string' && url.startsWith('https://') && url.length < 500 && allowed(url));
@@ -59,7 +103,7 @@ function normalizeItem(raw, now) {
   if (!raw || typeof raw !== 'object') return null;
   const title = toText(raw.title, MAX_TITLE);
   if (!title || !CATEGORY_IDS.includes(raw.category)) return null;   // nothing useful to show
-  const status = STATUSES.includes(raw.status) ? raw.status : 'pending';
+  const status = statusesFor(raw.category).includes(raw.status) ? raw.status : 'pending';
   const addedAt = toTime(raw.addedAt, now);
   return {
     id: /^[a-f0-9]{1,32}$/.test(raw.id) ? raw.id : newId(),
@@ -72,6 +116,10 @@ function normalizeItem(raw, now) {
     cover: COVER_FILE.test(raw.cover) ? raw.cover : null,
     status,
     rating: status === 'done' && isRating(raw.rating) ? raw.rating : null,
+    dropped: status === 'done' && raw.dropped === true,
+    hoursPlayed: raw.category === 'game' ? parseHours(raw.hoursPlayed) : null,   // kept if moved back from done
+    ...itemDetails(raw.category, raw),
+    detailsAt: Number.isFinite(raw.detailsAt) && raw.detailsAt > 0 ? raw.detailsAt : null,
     addedAt,
     finishedAt: status === 'done' ? toTime(raw.finishedAt, addedAt) : null,
   };

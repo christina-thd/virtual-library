@@ -104,6 +104,190 @@ describe('keyless catalogs', () => {
   });
 });
 
+describe('details: movie durations, series seasons and episodes, book pages', () => {
+  test('books: pages come with Open Library search results, and can be looked up by work; Apple Books has none', async () => {
+    const { results, calls } = await search(chooseProviders(), {
+      'https://openlibrary.org/search.json': { docs: [{ key: '/works/OL27482W', title: 'The Hobbit', number_of_pages_median: 310 }, { key: '/works/OL1W', title: 'Thin' }] },
+    }, 'book', 'hobbit');
+    assert.match(calls[0].url, /fields=[^&]*number_of_pages_median/);
+    assert.deepEqual(results.map((r) => r.pages), [310, undefined]);
+
+    const http = fakeHttp({ 'https://openlibrary.org/search.json?q=key%3A%22%2Fworks%2FOL27482W%22': { docs: [{ number_of_pages_median: 310 }] } });
+    const catalog = createCatalog({ http, providers: chooseProviders() });
+    assert.deepEqual(await catalog.detailsOf('book', { provider: 'openlibrary', id: '/works/OL27482W' }), { pages: 310 });
+    assert.equal(await catalog.detailsOf('book', { provider: 'applebooks', id: '1' }), null);
+  });
+
+  test('a duration is kept from search results when the catalog includes it (Cinemeta only sometimes does)', async () => {
+    const { results } = await search(chooseProviders(), {
+      'https://v3-cinemeta.strem.io/catalog/movie/top/search=': { metas: [{ imdb_id: 'tt1', name: 'Dune', runtime: '155 min' }, { imdb_id: 'tt2', name: 'Dune 2' }] },
+    }, 'movie', 'dune');
+    assert.deepEqual(results.map((r) => r.runtime), [155, undefined]);
+  });
+
+  test('movies: from the full entry on Cinemeta, or TMDB with a key', async () => {
+    const http = fakeHttp({
+      'https://v3-cinemeta.strem.io/meta/movie/tt15239678.json': { meta: { runtime: '167 min' } },
+      'https://api.themoviedb.org/3/movie/693134': { runtime: 166 },
+    });
+    const keyless = createCatalog({ http, providers: chooseProviders() });
+    assert.deepEqual(await keyless.detailsOf('movie', { provider: 'cinemeta', id: 'tt15239678' }), { runtime: 167 });
+    const tmdb = createCatalog({ http, providers: chooseProviders({ tmdbApiKey: 'k' }) });
+    assert.deepEqual(await tmdb.detailsOf('movie', { provider: 'tmdb', id: '693134' }), { runtime: 166 });
+    assert.match(http.calls.at(-1).url, /\/movie\/693134\?language=en-US&api_key=k$/);
+  });
+
+  test('series: seasons and episodes out so far (not announced ones, not specials), on TVmaze, Cinemeta or TMDB', async () => {
+    const http = fakeHttp({
+      'https://api.tvmaze.com/shows/44933/episodes': [
+        { season: 1, airstamp: '2022-02-18T02:00:00+00:00' }, { season: 1, airstamp: '2022-02-25T02:00:00+00:00' },
+        { season: 2, airdate: '2025-01-17' }, { season: 3, airdate: '2999-01-01' }, { season: 3, airdate: null },
+      ],
+      'https://v3-cinemeta.strem.io/meta/series/tt5753856.json': { meta: { videos: [
+        { season: 0, released: '2017-01-01T00:00:00Z' }, { season: 1, released: '2017-12-01T12:00:00Z' },
+        { season: 2, firstAired: '2019-06-21T12:00:00Z' },
+      ] } },
+      'https://api.themoviedb.org/3/tv/70523': { number_of_seasons: 3, number_of_episodes: 26 },
+    });
+    const keyless = createCatalog({ http, providers: chooseProviders() });
+    assert.deepEqual(await keyless.detailsOf('series', { provider: 'tvmaze', id: '44933' }), { seasons: 2, episodes: 3 });
+    assert.deepEqual(await keyless.detailsOf('series', { provider: 'cinemeta', id: 'tt5753856' }), { seasons: 2, episodes: 2 });
+    const tmdb = createCatalog({ http, providers: chooseProviders({ tmdbApiKey: 'k' }) });
+    assert.deepEqual(await tmdb.detailsOf('series', { provider: 'tmdb', id: '70523' }), { seasons: 3, episodes: 26 });
+  });
+
+  test('nothing for catalogs that do not know, or items typed by hand', async () => {
+    const catalog = createCatalog({ http: fakeHttp({}), providers: chooseProviders() });
+    assert.equal(await catalog.detailsOf('game', { provider: 'steam', id: '1' }), null);
+    assert.equal(await catalog.detailsOf('movie', null), null);
+  });
+});
+
+describe('fallback catalogs (asked when the one before finds nothing)', () => {
+  const providers = chooseProviders();
+
+  test('series: Cinemeta when TVmaze finds nothing', async () => {
+    const { results, calls } = await search(providers, {
+      'https://api.tvmaze.com/search/shows': [],
+      'https://v3-cinemeta.strem.io/catalog/series/top/search=': {
+        metas: [{ imdb_id: 'tt19231492', name: 'Dark Matter', releaseInfo: '2024-', poster: 'https://m.media-amazon.com/images/M/MV5BN2U._V1_SX250.jpg' }],
+      },
+    }, 'series', 'dark matter');
+    assert.equal(calls.length, 2);
+    assert.deepEqual(results[0], {
+      category: 'series', title: 'Dark Matter', year: 2024, creator: null,
+      source: { provider: 'cinemeta', id: 'tt19231492' },
+      coverUrl: 'https://m.media-amazon.com/images/M/MV5BN2U._V1_SX600.jpg',
+      thumbUrl: 'https://m.media-amazon.com/images/M/MV5BN2U._V1_SX250.jpg',
+    });
+  });
+
+  test('books: Apple Books when Open Library finds nothing, covers in portrait sizes', async () => {
+    const { results, calls } = await search(providers, {
+      'https://openlibrary.org/search.json': { docs: [] },
+      'https://itunes.apple.com/search': {
+        results: [{ trackId: 1602694961, trackName: 'The Hobbit', artistName: 'J. R. R. Tolkien', releaseDate: '2012-02-15T08:00:00Z',
+          artworkUrl100: 'https://is1-ssl.mzstatic.com/image/thumb/Publication122/v4/8a/9780547951973.jpg/100x100bb.jpg' }],
+      },
+    }, 'book', 'hobbit');
+    assert.match(calls[1].url, /term=hobbit&media=ebook/);
+    assert.deepEqual(results[0], {
+      category: 'book', title: 'The Hobbit', year: 2012, creator: 'J. R. R. Tolkien',
+      source: { provider: 'applebooks', id: '1602694961' },
+      coverUrl: 'https://is1-ssl.mzstatic.com/image/thumb/Publication122/v4/8a/9780547951973.jpg/600x900bb.jpg',
+      thumbUrl: 'https://is1-ssl.mzstatic.com/image/thumb/Publication122/v4/8a/9780547951973.jpg/200x300bb.jpg',
+    });
+  });
+
+  test('games: GOG when Steam is down', async () => {
+    const { results, calls } = await search(providers, {
+      'https://catalog.gog.com/v1/catalog': {
+        products: [{ id: '1207664663', title: 'The Witcher 3: Wild Hunt', releaseDate: '2015.05.18', developers: ['CD PROJEKT RED'],
+          coverVertical: 'https://images.gog-statics.com/abc.jpg' }],
+      },
+    }, 'game', 'witcher 3');
+    assert.match(calls.at(-1).url, /query=like:witcher%203&/);
+    assert.deepEqual(results[0], {
+      category: 'game', title: 'The Witcher 3: Wild Hunt', year: 2015, creator: 'CD PROJEKT RED',
+      source: { provider: 'gog', id: '1207664663' },
+      coverUrl: 'https://images.gog-statics.com/abc.jpg',
+      thumbUrl: 'https://images.gog-statics.com/abc.jpg',
+    });
+  });
+
+  test('the first catalog with results wins: later ones are not asked', async () => {
+    const { calls } = await search(providers, { 'https://openlibrary.org/search.json': { docs: [{ key: '/works/OL1W', title: 'Dune' }] } }, 'book', 'dune');
+    assert.equal(calls.length, 1);
+  });
+
+  test('nothing anywhere is an empty answer; an error only when no catalog answered', async () => {
+    const fake = (id, answer) => ({ id, name: id, url: 'https://x.example/', imageHosts: [], search: answer });
+    const down = (message) => async () => { throw new Error(message); };
+    const empty = async () => [];
+    const run = (...list) => createCatalog({ http: fakeHttp({}), providers: { movie: list } }).search('movie', 'x');
+    assert.deepEqual(await run(fake('a', down('a is down')), fake('b', empty)), []);
+    assert.deepEqual(await run(fake('a', empty), fake('b', down('b is down'))), []);
+    await assert.rejects(run(fake('a', down('a is down')), fake('b', down('b is down'))), /a is down/);
+  });
+
+  test('credits list every catalog of a category, in the order they are asked', () => {
+    const { sources } = createCatalog({ http: fakeHttp({}), providers });
+    assert.deepEqual(sources.book, [{ id: 'all', label: null, icon: null, credits: [
+      { id: 'openlibrary', name: 'Open Library', url: 'https://openlibrary.org/' },
+      { id: 'applebooks', name: 'Apple Books', url: 'https://www.apple.com/apple-books/' },
+    ] }]);
+    assert.deepEqual(sources.game[0].credits[1], { id: 'gog', name: 'GOG', url: 'https://www.gog.com/' });
+  });
+});
+
+describe('games: PC or Nintendo, picked on the search screen', () => {
+  const providers = chooseProviders();
+  const nintendoAnswer = {
+    response: { docs: [{
+      fs_id: '1173281', title: 'Mario Kart 8 Deluxe', dates_released_dts: ['2017-04-28T00:00:00Z'], system_names_txt: ['Nintendo Switch'],
+      image_url: 'https://www.nintendo.com/eu/media/images/05_packshots/PS_NSwitch_MarioKart8Deluxe_image500w.jpg',
+      image_url_sq_s: 'https://www.nintendo.com/eu/media/images/11_square_images/SQ_NSwitch_MarioKart8Deluxe_image500w.jpg',
+    }] },
+  };
+
+  test('the two switch choices, PC first', () => {
+    const { sources } = createCatalog({ http: fakeHttp({}), providers });
+    assert.deepEqual(sources.game.map((s) => [s.id, s.label]), [['pc', 'PC & Steam Deck'], ['nintendo', 'Nintendo']]);
+    const rawg = createCatalog({ http: fakeHttp({}), providers: chooseProviders({ rawgApiKey: 'k' }) });
+    assert.equal(rawg.sources.game[0].label, 'All platforms');   // RAWG knows consoles too
+  });
+
+  test('Nintendo: the store search, box art as the cover, consoles as the line under the title', async () => {
+    const http = fakeHttp({ 'https://searching.nintendo-europe.com/en/select': nintendoAnswer });
+    const results = await createCatalog({ http, providers }).search('game', 'mario kart 8', 'nintendo');
+    assert.match(http.calls[0].url, /\?q=mario%20kart%208&fq=type:GAME&/);
+    assert.equal(http.calls.length, 1);                // Steam isn't asked
+    assert.deepEqual(results[0], {
+      category: 'game', title: 'Mario Kart 8 Deluxe', year: 2017, creator: 'Nintendo Switch',
+      source: { provider: 'nintendo', id: '1173281' },
+      coverUrl: 'https://www.nintendo.com/eu/media/images/05_packshots/PS_NSwitch_MarioKart8Deluxe_image500w.jpg',
+      thumbUrl: 'https://www.nintendo.com/eu/media/images/11_square_images/SQ_NSwitch_MarioKart8Deluxe_image500w.jpg',
+    });
+  });
+
+  test('PC is the default, and each choice is remembered separately', async () => {
+    const http = fakeHttp({
+      'https://store.steampowered.com/api/storesearch/': { items: [{ type: 'app', id: 1145360, name: 'Hades' }] },
+      'https://searching.nintendo-europe.com/en/select': { response: { docs: [{ fs_id: '1', title: 'Hades' }] } },
+    });
+    const catalog = createCatalog({ http, providers });
+    assert.equal((await catalog.search('game', 'hades'))[0].source.provider, 'steam');
+    assert.equal((await catalog.search('game', 'hades', 'nintendo'))[0].source.provider, 'nintendo');
+    assert.equal((await catalog.search('game', 'hades', 'pc'))[0].source.provider, 'steam');   // from memory
+  });
+
+  test('an unknown choice is refused', async () => {
+    const catalog = createCatalog({ http: fakeHttp({}), providers });
+    await assert.rejects(catalog.search('game', 'x', 'xbox'), (err) => err instanceof SearchError && /pc, nintendo/.test(err.message));
+    await assert.rejects(catalog.search('movie', 'x', 'nintendo'), SearchError);
+  });
+});
+
 describe('catalogs with an API key', () => {
   test('a TMDB key switches movies and series to TMDB', async () => {
     const providers = chooseProviders({ tmdbApiKey: 'short-v3-key' });
@@ -137,8 +321,18 @@ describe('catalogs with an API key', () => {
     assert.equal(results[0].year, 2013);
   });
 
-  test('books stay on Open Library', () => {
-    assert.equal(chooseProviders({ tmdbApiKey: 'a', rawgApiKey: 'b' }).book.id, 'openlibrary');
+  test('a key puts its catalog first; the keyless ones stay as fallbacks', () => {
+    // category → source → catalogs asked, in order
+    const ids = (providers) => Object.fromEntries(Object.entries(createCatalog({ http: fakeHttp({}), providers }).sources)
+      .map(([c, list]) => [c, Object.fromEntries(list.map((s) => [s.id, s.credits.map((p) => p.id)]))]));
+    assert.deepEqual(ids(chooseProviders()), {
+      movie: { all: ['cinemeta'] }, series: { all: ['tvmaze', 'cinemeta'] }, book: { all: ['openlibrary', 'applebooks'] },
+      game: { pc: ['steam', 'gog'], nintendo: ['nintendo'] },
+    });
+    assert.deepEqual(ids(chooseProviders({ tmdbApiKey: 'a', rawgApiKey: 'b' })), {
+      movie: { all: ['tmdb', 'cinemeta'] }, series: { all: ['tmdb', 'tvmaze', 'cinemeta'] }, book: { all: ['openlibrary', 'applebooks'] },
+      game: { pc: ['rawg', 'steam', 'gog'], nintendo: ['nintendo'] },
+    });
   });
 });
 
@@ -176,8 +370,45 @@ describe('createCatalog', () => {
     ]);
   });
 
+  describe('remembers recent searches', () => {
+    function counting({ fail = false } = {}) {
+      const provider = {
+        id: 'fake', name: 'Fake', url: 'https://fake.example/', imageHosts: [], calls: 0,
+        search: async (query) => {
+          provider.calls += 1;
+          if (fail && provider.calls === 1) throw new Error('down');
+          return [{ id: 1, title: query }];
+        },
+      };
+      return provider;
+    }
+
+    test('the same search (any case or spacing) asks the catalog once, even when asked at the same time', async () => {
+      const provider = counting();
+      const catalog = createCatalog({ http: fakeHttp({}), providers: { movie: provider, book: provider } });
+      const [a, b] = await Promise.all([catalog.search('movie', 'Dune'), catalog.search('movie', 'dune')]);
+      assert.deepEqual(a, b);
+      await catalog.search('movie', '  DUNE ');
+      assert.equal(provider.calls, 1);
+      await catalog.search('book', 'dune');           // another category is another search
+      assert.equal(provider.calls, 2);
+    });
+
+    test('asks again once the answer is old, or after a failure', async () => {
+      let time = 0;
+      const provider = counting({ fail: true });
+      const catalog = createCatalog({ http: fakeHttp({}), providers: { movie: provider }, now: () => time });
+      await assert.rejects(catalog.search('movie', 'dune'));
+      await catalog.search('movie', 'dune');
+      assert.equal(provider.calls, 2);
+      time += 11 * 60 * 1000;
+      await catalog.search('movie', 'dune');
+      assert.equal(provider.calls, 3);
+    });
+  });
+
   test('lists who searches each category, for the credits line', () => {
-    assert.deepEqual(Object.keys(catalog.credits).sort(), ['book', 'game', 'movie', 'series']);
-    assert.equal(catalog.credits.series.name, 'TVmaze');
+    assert.deepEqual(Object.keys(catalog.sources).sort(), ['book', 'game', 'movie', 'series']);
+    assert.equal(catalog.sources.series[0].credits[0].name, 'TVmaze');
   });
 });

@@ -34,16 +34,25 @@
 
   <!-- ===== one category: Pending / Done ===== -->
   <div class="view category-view" id="categoryView" hidden>
-    <header class="top category-top">
-      <button type="button" class="icon-button back-button" id="backButton" aria-label="Back to all categories"></button>
-      <h1 id="categoryTitle"></h1>
-    </header>
-    <nav class="filters" id="filters">
-      <div class="status-tabs" id="statusTabs" role="tablist">
-        <button type="button" role="tab" data-status="pending">Pending <span class="count"></span></button>
-        <button type="button" role="tab" data-status="done">Done <span class="count"></span></button>
-      </div>
-    </nav>
+    <div class="head-sentinel" id="headSentinel" aria-hidden="true"></div>
+    <div class="category-head" id="categoryHead">
+      <header class="top category-top">
+        <button type="button" class="icon-button back-button" id="backButton" aria-label="Back to all categories"></button>
+        <h1 id="categoryTitle"></h1>
+      </header>
+      <nav class="filters" id="filters">
+        <div class="status-tabs" id="statusTabs" role="tablist">
+          <button type="button" role="tab" data-status="pending">Pending <span class="count"></span></button>
+          <button type="button" role="tab" data-status="waiting" hidden>Waiting <span class="count"></span></button>
+          <button type="button" role="tab" data-status="done">Done <span class="count"></span></button>
+        </div>
+        <label class="sort-picker" id="sortPicker">
+          <span class="sort-icon" aria-hidden="true"></span>
+          <span class="sort-label" id="sortLabel" aria-hidden="true"></span>
+          <select id="sortSelect" aria-label="Sort by"></select>
+        </label>
+      </nav>
+    </div>
     <main class="shelf" id="shelf" aria-live="polite"></main>
     <div class="empty" id="empty" hidden></div>
   </div>
@@ -65,6 +74,7 @@
           <span class="search-icon" aria-hidden="true"></span>
           <input type="search" id="searchInput" enterkeyhint="search" maxlength="100" spellcheck="false">
           <button type="button" class="icon-button" id="searchClear" aria-label="Clear" hidden></button>
+          <div class="segmented source-picker" id="searchSources" role="radiogroup" aria-label="Which store?" hidden></div>
         </form>
       </div>
       <div class="search-body" id="searchBody"></div>

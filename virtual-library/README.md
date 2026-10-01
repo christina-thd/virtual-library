@@ -7,7 +7,7 @@ A personal library of movies, series, books and games. Search for something, add
 
 - Movies, series, books and games in one place, each with its cover
 - Search built in: no account or API key needed
-- Two lists: **Pending** and **Done**
+- Two lists: **Pending** and **Done** (series also **Waiting**, for a new season)
 - Optional 5-star rating for finished things
 
 ## Installation

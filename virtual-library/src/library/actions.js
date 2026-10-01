@@ -1,5 +1,5 @@
-import { CATEGORY_IDS, isRating, MAX_CREATOR, MAX_TITLE, STATUSES } from '../../public/js/shared/library.js';
-import { findBySource, findItem, newId, parseImageUrls, parseSource, parseYear } from './state.js';
+import { CATEGORY_IDS, isRating, MAX_CREATOR, MAX_TITLE, statusesFor } from '../../public/js/shared/library.js';
+import { findBySource, findItem, itemDetails, newId, parseHours, parseImageUrls, parseSource, parseYear } from './state.js';
 
 /** A rejected action. `status` is the HTTP status the API answers with. */
 export class ActionError extends Error {
@@ -39,15 +39,16 @@ function getItem(state, itemId) {
 // `ctx` is { now, allowImage(url) } — only images from the search catalog are kept.
 
 const handlers = {
-  /** Adds a search result (or a title typed by hand) as pending or done. */
+  /** Adds a search result (or a title typed by hand) as pending, done, or (series) waiting. */
   addItem(state, action, ctx) {
     const category = oneOf(action.category, CATEGORY_IDS, 'category');
     const title = text(action.title, MAX_TITLE);
     if (!title) throw new ActionError('title is required');
-    const status = oneOf(action.status ?? 'pending', STATUSES, 'status');
+    const status = oneOf(action.status ?? 'pending', statusesFor(category), 'status');
     const source = parseSource(action.source);
     const existing = source && findBySource(state, source);
     if (existing) throw new ActionError(`"${existing.title}" is already in your library`, 409);
+    const details = itemDetails(category, action);
 
     const item = {
       id: newId(),
@@ -60,6 +61,11 @@ const handlers = {
       cover: null,
       status,
       rating: status === 'done' ? rating(action.rating) : null,
+      dropped: false,
+      hoursPlayed: null,
+      // from the search result when it has them (a movie's runtime, a book's pages); else looked up after adding
+      ...details,
+      detailsAt: Object.values(details).some((v) => v != null) ? ctx.now : null,
       addedAt: ctx.now,
       finishedAt: status === 'done' ? ctx.now : null,
     };
@@ -67,20 +73,45 @@ const handlers = {
     return { itemId: item.id };
   },
 
-  /** Moving back to pending clears the rating: ratings belong to finished things. */
+  /** Moving away from done clears the rating (ratings belong to finished things) and the dropped mark. */
   setStatus(state, { itemId, status }, ctx) {
     const item = getItem(state, itemId);
-    oneOf(status, STATUSES, 'status');
+    oneOf(status, statusesFor(item.category), 'status');
     if (item.status === status) return;
     item.status = status;
     item.finishedAt = status === 'done' ? ctx.now : null;
     item.rating = null;
+    item.dropped = false;
+  },
+
+  /**
+   * Dropped: given up on, it wasn't worth finishing. It counts as done (it's off the pending list, and can still
+   * be rated), with a mark on its cover. Undropping keeps it done.
+   */
+  setDropped(state, { itemId, dropped }, ctx) {
+    const item = getItem(state, itemId);
+    if (typeof dropped !== 'boolean') throw new ActionError('dropped must be true or false');
+    if (dropped && item.status !== 'done') {
+      item.status = 'done';
+      item.finishedAt = ctx.now;
+      item.rating = null;
+    }
+    item.dropped = dropped;
   },
 
   rateItem(state, { itemId, rating: stars }) {
     const item = getItem(state, itemId);
     if (item.status !== 'done') throw new ActionError('Only finished items can be rated');
     item.rating = rating(stars);
+  },
+
+  /** How long you played a game you finished, in hours (half hours are fine); null clears it. */
+  setHours(state, { itemId, hours }) {
+    const item = getItem(state, itemId);
+    if (item.category !== 'game') throw new ActionError('Only games have hours played');
+    if (item.status !== 'done') throw new ActionError('Hours played are for finished games');
+    if (hours != null && parseHours(hours) == null) throw new ActionError('hours must be a number from 0.1 to 100000, or null');
+    item.hoursPlayed = parseHours(hours);
   },
 
   removeItem(state, { itemId }) {

@@ -1,13 +1,13 @@
 import assert from 'node:assert/strict';
 import { describe, test } from 'node:test';
-import { createInitialState, normalizeState, parseImageUrls, parseYear, SCHEMA_VERSION, toView } from '../src/library/state.js';
+import { createInitialState, normalizeState, parseImageUrls, parseMinutes, parseYear, SCHEMA_VERSION, toView } from '../src/library/state.js';
 
 const NOW = 1_700_000_000_000;
 
 const item = (overrides = {}) => ({
   id: 'abc123', category: 'movie', title: 'Dune', year: 2021, creator: 'Denis Villeneuve',
   source: { provider: 'cinemeta', id: 'tt1160419' }, imageUrls: ['https://images.metahub.space/poster/medium/tt1160419/img'],
-  cover: null, status: 'done', rating: 5, addedAt: NOW - 1000, finishedAt: NOW, ...overrides,
+  cover: null, status: 'done', rating: 5, dropped: false, hoursPlayed: null, runtime: 155, seasons: null, episodes: null, pages: null, detailsAt: NOW, addedAt: NOW - 1000, finishedAt: NOW, ...overrides,
 });
 
 describe('normalizeState', () => {
@@ -40,6 +40,29 @@ describe('normalizeState', () => {
     assert.deepEqual(fixed.imageUrls, []);
   });
 
+  test('waiting is kept for series only; anything else waiting becomes pending', () => {
+    const [series, movie] = normalizeState({ items: [
+      item({ id: 'a1', category: 'series', status: 'waiting', rating: 4 }),
+      item({ id: 'b2', status: 'waiting' }),
+    ] }, NOW).items;
+    assert.deepEqual([series.status, series.rating, series.finishedAt], ['waiting', null, null]);
+    assert.equal(movie.status, 'pending');
+  });
+
+  test('only a done item can be dropped', () => {
+    const [done, pending, odd] = normalizeState({ items: [
+      item({ id: 'a1', dropped: true }), item({ id: 'b2', status: 'pending', dropped: true }), item({ id: 'c3', dropped: 'yes' }),
+    ] }, NOW).items;
+    assert.deepEqual([done.dropped, pending.dropped, odd.dropped], [true, false, false]);
+  });
+
+  test('only games keep hours played', () => {
+    const [game, movie] = normalizeState({ items: [
+      item({ id: 'a1', category: 'game', status: 'pending', hoursPlayed: 12.25 }), item({ id: 'b2', hoursPlayed: 3 }),
+    ] }, NOW).items;
+    assert.deepEqual([game.hoursPlayed, movie.hoursPlayed], [12.3, null]);
+  });
+
   test('a rating only survives on finished items', () => {
     const [pending] = normalizeState({ items: [item({ status: 'pending', rating: 4 })] }, NOW).items;
     assert.equal(pending.rating, null);
@@ -51,6 +74,20 @@ describe('normalizeState', () => {
 });
 
 describe('helpers', () => {
+  test('parseMinutes reads durations from numbers and catalog text', () => {
+    assert.deepEqual(['155 min', '2h 35min', '1h', 90, ' 45 ', 'soon', 0, -5, 3000, 1.5, null].map(parseMinutes),
+      [155, 155, 60, 90, 45, null, null, null, null, null, null]);
+  });
+
+  test('only movies keep a duration, only series seasons and episodes', () => {
+    const [movie, series] = normalizeState({ items: [
+      item({ id: 'a1', runtime: '2h', seasons: 3 }),
+      item({ id: 'b2', category: 'series', runtime: 50, seasons: 3, episodes: 26.5, detailsAt: 'x' }),
+    ] }, NOW).items;
+    assert.deepEqual([movie.runtime, movie.seasons], [120, null]);
+    assert.deepEqual([series.runtime, series.seasons, series.episodes, series.detailsAt], [null, 3, null, null]);
+  });
+
   test('parseYear reads years from numbers and dates', () => {
     assert.equal(parseYear(2021), 2021);
     assert.equal(parseYear('2021-10-22'), 2021);

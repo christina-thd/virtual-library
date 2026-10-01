@@ -2,7 +2,7 @@
 import { searchCatalog, sendAction } from '../shared/api.js';
 import { $, escapeHtml } from '../shared/dom.js';
 import { metaLine } from '../shared/format.js';
-import { CATEGORIES, CATEGORY_IDS, categoryOf, sameSource } from '../shared/library.js';
+import { CATEGORIES, CATEGORY_IDS, categoryOf, sameSource, STATUS_LABELS } from '../shared/library.js';
 import { storage } from '../shared/storage.js';
 import { coverHtml } from '../ui/cover.js';
 import { icon } from '../ui/icons.js';
@@ -10,27 +10,38 @@ import { createSheet } from '../ui/sheet.js';
 import { toast } from '../ui/toast.js';
 
 const CATEGORY_KEY = 'searchCategory';
-const DEBOUNCE_MS = 350;
+const DEBOUNCE_MS = 250;
+const CACHE_SIZE = 50;
 const MIN_QUERY = 2;
 
-const STATUS_LABEL = { pending: 'Pending', done: 'Done' };
 
 /**
  * @param {object} options
  * @param {() => object[]} options.getItems    the library, to mark results that are already in it
- * @param {(itemId: string, how: { fromSearch?: boolean, justAdded?: boolean }) => void} options.openItem
+ * @param {(itemId: string, how: { fromSearch?: boolean }) => void} options.openItem
  */
 export function createSearch({ getItems, openItem }) {
   const sheet = createSheet($('searchLayer'));
   const body = $('searchBody');
   const input = $('searchInput');
   const picker = $('searchCategories');
+  const sourcePicker = $('searchSources');
 
   // the category picked on the home screen's search, remembered on this phone
   const homeCategory = () => (CATEGORY_IDS.includes(storage.get(CATEGORY_KEY)) ? storage.get(CATEGORY_KEY) : 'movie');
   let category = homeCategory();
   let locked = false;               // opened from a category: only that category can be added
-  let credits = {};
+  // category → [{ id, label, credits }], from the server. Several for a category is a switch (games: PC / Nintendo)
+  let sources = {};
+  const sourcesOf = (id) => sources[id] ?? [];
+  // category → the source picked on the switch. Not remembered: each time the search opens it's back to the
+  // first one (games: PC)
+  const picked = new Map();
+  /** The source picked for the category, else its first one. */
+  function currentSource() {
+    const list = sourcesOf(category);
+    return list.find((s) => s.id === picked.get(category)) ?? list[0] ?? null;
+  }
   // idle | loading | results | error
   let phase = 'idle';
   let results = [];
@@ -38,6 +49,9 @@ export function createSearch({ getItems, openItem }) {
   let searched = '';
   let controller = null;
   let timer = null;
+  // results already fetched since the page loaded (category + query → results): shown again without asking
+  const cache = new Map();
+  const cacheKey = (query) => `${category}\0${currentSource()?.id ?? ''}\0${query.toLowerCase().replace(/\s+/g, ' ')}`;
   // what was added from this search (key → { itemId, status, fresh, seen }): its row says "Added to …" until
   // the next search, even before the library update arrives; `fresh` plays the badge's pop once
   const added = new Map();
@@ -62,10 +76,19 @@ export function createSearch({ getItems, openItem }) {
     const { signal } = controller;
     if (query !== searched) added.clear();
     searched = query;
+    const key = cacheKey(query);
+    if (cache.has(key)) {
+      results = cache.get(key);
+      phase = 'results';
+      return render();
+    }
     phase = 'loading';
     render();
     try {
-      results = await searchCatalog(category, query, signal);
+      const source = sourcesOf(category).length > 1 ? currentSource().id : null;   // only sent when there's a choice
+      results = await searchCatalog(category, query, signal, source);
+      cache.set(key, results);
+      if (cache.size > CACHE_SIZE) cache.delete(cache.keys().next().value);
       phase = 'results';
     } catch (err) {
       if (signal.aborted) return;                  // replaced by a newer search
@@ -84,14 +107,35 @@ export function createSearch({ getItems, openItem }) {
       button.classList.toggle('selected', selected);
       button.setAttribute('aria-checked', selected);
     }
-    showCredits();
+    showSources();
     run();
   }
 
+  /** The PC / Nintendo switch, for a category that has more than one source. */
+  function showSources() {
+    const list = sourcesOf(category);
+    sourcePicker.hidden = list.length < 2;
+    if (sourcePicker.hidden) return;
+    const current = currentSource();
+    // an icon when there is one (the label is then its name), else the label
+    sourcePicker.innerHTML = list.map((s) => `
+      <button type="button" role="radio" data-source="${escapeHtml(s.id)}" class="${s === current ? 'selected' : ''}"
+        aria-checked="${s === current}" ${s.icon ? `aria-label="${escapeHtml(s.label)}" title="${escapeHtml(s.label)}"` : ''}>
+        ${s.icon ? icon(s.icon) : escapeHtml(s.label)}</button>`).join('');
+  }
+
+  function setSource(id) {
+    picked.set(category, id);
+    showSources();
+    run();
+  }
+
+  /** The catalog that found the results shown, or every catalog asked for this source, in order. */
   function showCredits() {
-    const credit = credits[category];
-    $('searchCredits').innerHTML = credit
-      ? `Search by <a href="${escapeHtml(credit.url)}" target="_blank" rel="noopener">${escapeHtml(credit.name)}</a>` : '';
+    const list = currentSource()?.credits ?? [];
+    const answered = phase === 'results' && list.find((c) => c.id === results[0]?.source?.provider);
+    const link = (c) => `<a href="${escapeHtml(c.url)}" target="_blank" rel="noopener">${escapeHtml(c.name)}</a>`;
+    $('searchCredits').innerHTML = list.length ? `Search by ${(answered ? [answered] : list).map(link).join(', then ')}` : '';
   }
 
   // ----- rendering -----
@@ -108,7 +152,7 @@ export function createSearch({ getItems, openItem }) {
     if (mine) mine.fresh = false;
     if (item) {
       if (mine) mine.seen = true;
-      return { itemId: item.id, status: item.status, recent: Boolean(mine), fresh };
+      return { itemId: item.id, status: item.dropped ? 'dropped' : item.status, recent: Boolean(mine), fresh };
     }
     if (mine && !mine.seen) return { ...mine, recent: true, fresh };  // just added: the library update is on its way
     if (mine) added.delete(key);                        // removed from the library since
@@ -117,7 +161,8 @@ export function createSearch({ getItems, openItem }) {
 
   /** "✓ Added to Done" when added from this search, "✓ In your library · Done" otherwise. Tap to open it. */
   function ownedHtml({ itemId, status, recent, fresh }) {
-    const text = recent ? `Added to ${STATUS_LABEL[status]}` : `In your library · ${STATUS_LABEL[status]}`;
+    const label = status === 'dropped' ? 'Dropped' : STATUS_LABELS[status];
+    const text = recent ? `Added to ${label}` : `In your library · ${label}`;
     return `<button type="button" class="in-library ${recent ? 'just-added' : ''} ${fresh ? 'pop' : ''}" data-open="${itemId}">
       <span class="in-library-check">${icon('check')}</span><span>${text}</span><span class="in-library-open">Open</span></button>`;
   }
@@ -143,11 +188,15 @@ export function createSearch({ getItems, openItem }) {
       </li>`;
   }
 
-  /** Adding by hand, for things the catalog doesn't know. Index -1 means "the typed title". */
-  function manualHtml(query) {
+  /**
+   * Adding by hand, for things the catalog doesn't know (or doesn't list the way you want).
+   * Index -1 means "the typed title". `ask` is the question before it: "Add “Dune” anyway?"
+   */
+  function manualHtml(query, ask = (title) => `Add ${title} anyway?`) {
     const owned = ownedBy({ category, title: query });
+    const title = `<strong>“${escapeHtml(query)}”</strong>`;
     return `<div class="manual">
-      <p>${owned ? `<strong>“${escapeHtml(query)}”</strong>` : `Add <strong>“${escapeHtml(query)}”</strong> anyway?`}</p>
+      <p>${owned ? title : ask(title)}</p>
       ${owned ? ownedHtml(owned) : addButtons(-1)}
     </div>`;
   }
@@ -158,6 +207,7 @@ export function createSearch({ getItems, openItem }) {
 
   function render() {
     $('searchClear').hidden = !input.value;
+    showCredits();
     if (phase === 'idle') {
       body.innerHTML = messageHtml('search', `<p>Find a ${categoryOf(category).label.toLowerCase()} by its title.</p>`);
     } else if (phase === 'loading') {
@@ -168,7 +218,9 @@ export function createSearch({ getItems, openItem }) {
     } else if (!results.length) {
       body.innerHTML = messageHtml('search', `<p>Nothing found for <strong>“${escapeHtml(searched)}”</strong>.</p>${manualHtml(searched)}`);
     } else {
-      body.innerHTML = `<ul class="results">${results.map(resultHtml).join('')}</ul>`;
+      // after the results, so a title the catalogs list differently (or not at all) can still be added as typed
+      body.innerHTML = `<ul class="results">${results.map(resultHtml).join('')}</ul>
+        <div class="manual-end">${manualHtml(searched, (title) => `Not in the list? Add ${title} as you typed it`)}</div>`;
     }
   }
 
@@ -183,8 +235,8 @@ export function createSearch({ getItems, openItem }) {
       const { itemId } = await sendAction({ type: 'addItem', ...entry, status });
       added.set(keyOf(entry), { itemId, status, fresh: true });
       render();
-      toast(`“${entry.title}” added to ${STATUS_LABEL[status]}`, { icon: 'check' });
-      if (status === 'done') openItem(itemId, { fromSearch: true, justAdded: true });   // to rate it, if you like
+      toast(`“${entry.title}” added to ${STATUS_LABELS[status]}`, { icon: 'check' });
+      if (status === 'done') openItem(itemId, { fromSearch: true });   // to rate it, if you like
     } catch (err) {
       toast(err.message, { error: true });
       for (const b of button.parentElement.children) b.disabled = false;
@@ -196,6 +248,11 @@ export function createSearch({ getItems, openItem }) {
   picker.addEventListener('click', (e) => {
     const button = e.target.closest('[data-category]');
     if (button && button.dataset.category !== category) setCategory(button.dataset.category);
+  });
+
+  sourcePicker.addEventListener('click', (e) => {
+    const button = e.target.closest('[data-source]');
+    if (button && button.dataset.source !== currentSource()?.id) setSource(button.dataset.source);
   });
 
   input.addEventListener('input', () => {
@@ -243,7 +300,13 @@ export function createSearch({ getItems, openItem }) {
      * @param {string|null} onlyCategory  the category shown on screen (only it can be added), or null on home
      */
     open(onlyCategory) {
+      const switched = picked.size > 0;
+      picked.clear();                                // games: back to PC
       lockTo(CATEGORY_IDS.includes(onlyCategory) ? onlyCategory : null);
+      if (switched) {
+        showSources();
+        run();                                       // the kept search text, on PC again
+      }
       sheet.open();
       // in the tap's handler, so phones show the keyboard; without scrolling, because the sheet is still
       // below the screen (sliding in) and the phone would pan the whole page down to "show" the field
@@ -251,9 +314,12 @@ export function createSearch({ getItems, openItem }) {
       input.select();
     },
 
-    setCredits(value) {
-      credits = value;
-      showCredits();
+    /** What each category searches (from /api/info): credits, and the platform switch for games. */
+    setSources(value) {
+      sources = value ?? {};
+      showSources();
+      if (sourcesOf(category).length > 1) run();       // a search made before this went to the default source
+      else showCredits();
     },
 
     /** The library changed: update the "In your library" marks. */
