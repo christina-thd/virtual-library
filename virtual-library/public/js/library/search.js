@@ -21,7 +21,14 @@ const MIN_QUERY = 2;
  * @param {(itemId: string, how: { fromSearch?: boolean }) => void} options.openItem
  */
 export function createSearch({ getItems, openItem }) {
-  const sheet = createSheet($('searchLayer'));
+  // closing clears the search, once it has slid away (so its results don't change while you watch it go)
+  const sheet = createSheet($('searchLayer'), {
+    onClose: () => setTimeout(() => {
+      if (sheet.isOpen) return;                     // opened again meanwhile
+      input.value = '';
+      run();
+    }, 400),
+  });
   const body = $('searchBody');
   const input = $('searchInput');
   const picker = $('searchCategories');
@@ -296,7 +303,7 @@ export function createSearch({ getItems, openItem }) {
 
   return {
     /**
-     * Opens the search, keeping the last search text.
+     * Opens the search (empty: closing it clears what was typed).
      * @param {string|null} onlyCategory  the category shown on screen (only it can be added), or null on home
      */
     open(onlyCategory) {
