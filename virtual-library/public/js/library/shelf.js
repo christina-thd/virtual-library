@@ -6,6 +6,24 @@ import { coverHtml } from '../ui/cover.js';
 import { icon } from '../ui/icons.js';
 import { starsHtml } from '../ui/stars.js';
 
+/** "The Witcher" sorts under W, and "Part 2" before "Part 10". */
+const sortTitle = (title) => title.toLocaleLowerCase().replace(/^(the|a|an)\s+/, '');
+const byTitle = (a, b) => sortTitle(a.title).localeCompare(sortTitle(b.title), undefined, { numeric: true, sensitivity: 'base' });
+
+/**
+ * How a shelf can be sorted. `label` is shown on the button, `name` in the list; `doneOnly` ones need
+ * a rating, so they're offered on the Done tab only.
+ */
+export const SORTS = [
+  { id: 'recent', label: 'Recent', name: 'Recently added or finished', compare: byRecent },
+  { id: 'title', label: 'A–Z', name: 'Name (A–Z)', compare: byTitle },
+  { id: 'rating', label: 'Rating', name: 'Rating (highest first)', doneOnly: true,
+    compare: (a, b) => (b.rating ?? 0) - (a.rating ?? 0) || byRecent(a, b) },
+];
+
+/** The sorts offered on a tab. */
+export const sortsFor = (status) => SORTS.filter((s) => !s.doneOnly || status === 'done');
+
 function cardHtml(item, index) {
   const meta = item.rating ? starsHtml(item.rating) : escapeHtml(item.year ?? '');
   return `
@@ -27,13 +45,14 @@ function emptyHtml({ category, status, inCategory }) {
 }
 
 /**
- * Renders `items` (one category and status), newest first.
- * `animate` plays the cards' entrance, when the shelf is opened and when the tab changes.
+ * Renders `items` (one category and status), in the order of `context.sort` (an id from SORTS; newest first by default).
+ * `animate` plays the cards' entrance, when the shelf is opened and when the tab or the order changes.
  */
 export function renderShelf(items, context, { animate = false } = {}) {
   const shelf = $('shelf');
   const empty = $('empty');
-  const sorted = [...items].sort(byRecent);
+  const sort = SORTS.find((s) => s.id === context.sort) ?? SORTS[0];
+  const sorted = [...items].sort(sort.compare);
 
   shelf.innerHTML = sorted.map(cardHtml).join('');
   shelf.classList.toggle('still', !animate);

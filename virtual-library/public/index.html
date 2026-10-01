@@ -43,6 +43,11 @@
         <button type="button" role="tab" data-status="pending">Pending <span class="count"></span></button>
         <button type="button" role="tab" data-status="done">Done <span class="count"></span></button>
       </div>
+      <label class="sort-picker" id="sortPicker">
+        <span class="sort-icon" aria-hidden="true"></span>
+        <span class="sort-label" id="sortLabel" aria-hidden="true"></span>
+        <select id="sortSelect" aria-label="Sort by"></select>
+      </label>
     </nav>
     <main class="shelf" id="shelf" aria-live="polite"></main>
     <div class="empty" id="empty" hidden></div>

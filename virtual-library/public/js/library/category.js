@@ -1,19 +1,30 @@
-// One category: its title, the Pending / Done tabs and the shelf. It always opens on Pending.
-import { $ } from '../shared/dom.js';
+// One category: its title, the Pending / Done tabs, the sort button and the shelf. It always opens on Pending;
+// each tab starts in its own order (Pending: recent first, Done: best rated first), whatever was picked before.
+import { $, escapeHtml } from '../shared/dom.js';
 import { categoryOf } from '../shared/library.js';
 import { icon } from '../ui/icons.js';
-import { renderShelf } from './shelf.js';
+import { renderShelf, SORTS, sortsFor } from './shelf.js';
+
+// the order each tab starts in
+const START_SORT = { pending: 'recent', done: 'rating' };
 
 export function createCategoryView({ onBack }) {
   let category = null;
   let status = 'pending';
+  // the order on each tab, while it's shown
+  const sorts = { ...START_SORT };
   let library = [];
 
   const view = $('categoryView');
   const tabs = $('statusTabs');
+  const sortSelect = $('sortSelect');
   tabs.classList.add('segmented');
   $('backButton').innerHTML = icon('back');
   $('backButton').addEventListener('click', onBack);
+  $('sortPicker').querySelector('.sort-icon').innerHTML = icon('sort');
+
+  /** The order used on this tab. */
+  const currentSort = () => sortsFor(status).find((s) => s.id === sorts[status]) ?? SORTS[0];
 
   function markSelected() {
     for (const button of tabs.querySelectorAll('[data-status]')) {
@@ -21,6 +32,11 @@ export function createCategoryView({ onBack }) {
       button.classList.toggle('selected', selected);
       button.setAttribute('aria-selected', selected);
     }
+    // the phone's own list (a wheel on iPhone) opens on tap; the button shows the short name
+    const current = currentSort();
+    sortSelect.innerHTML = sortsFor(status).map((s) => `<option value="${s.id}">${escapeHtml(s.name)}</option>`).join('');
+    sortSelect.value = current.id;
+    $('sortLabel').textContent = current.label;
   }
 
   function render({ animate = false } = {}) {
@@ -30,13 +46,21 @@ export function createCategoryView({ onBack }) {
       const count = inCategory.filter((i) => i.status === button.dataset.status).length;
       button.querySelector('.count').textContent = count || '';
     }
-    renderShelf(inCategory.filter((i) => i.status === status), { category, status, inCategory: inCategory.length }, { animate });
+    const context = { category, status, inCategory: inCategory.length, sort: currentSort().id };
+    renderShelf(inCategory.filter((i) => i.status === status), context, { animate });
   }
 
   tabs.addEventListener('click', (e) => {
     const button = e.target.closest('[data-status]');
     if (!button || button.dataset.status === status) return;
     status = button.dataset.status;
+    sorts[status] = START_SORT[status];
+    markSelected();
+    render({ animate: true });
+  });
+
+  sortSelect.addEventListener('change', () => {
+    sorts[status] = sortSelect.value;
     markSelected();
     render({ animate: true });
   });
@@ -57,6 +81,7 @@ export function createCategoryView({ onBack }) {
       category = id;
       view.dataset.category = id;
       status = 'pending';                          // always opens on Pending
+      Object.assign(sorts, START_SORT);
       markSelected();
       $('categoryTitle').innerHTML = `${icon(id)}<span>${categoryOf(id).plural}</span>`;
       render({ animate: true });

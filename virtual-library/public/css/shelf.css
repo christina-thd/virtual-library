@@ -60,6 +60,39 @@
 }
 .status-tabs .count { font-weight: 500; opacity: 0.7; font-variant-numeric: tabular-nums; }
 
+/* tabs and the sort button side by side */
+.filters { display: flex; align-items: center; gap: 8px; }
+.status-tabs { flex: 1; min-width: 0; }
+
+/* looks like a button; the invisible <select> on top opens the phone's own list */
+.sort-picker {
+  position: relative;
+  flex: none;
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  height: 46px;
+  padding: 0 14px 0 12px;
+  border-radius: 999px;
+  background: var(--surface);
+  border: 1px solid var(--line);
+  color: var(--muted);
+  font-weight: 600;
+  font-size: 13px;
+  white-space: nowrap;
+}
+.sort-icon { display: grid; }
+.sort-icon svg.icon { width: 16px; height: 16px; stroke-width: 2; }
+.sort-picker select {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  opacity: 0;
+  font-size: 16px;                               /* iPhone zooms into form fields with smaller text */
+  cursor: pointer;
+}
+.sort-picker:has(select:focus-visible) { outline: 2px solid var(--accent); outline-offset: 2px; }
+
 /* ----- grid ----- */
 
 .shelf {
