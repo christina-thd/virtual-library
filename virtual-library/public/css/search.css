@@ -134,6 +134,10 @@
 .manual { margin-top: 26px; padding-top: 22px; border-top: 1px solid var(--line); }
 .manual p { margin: 0; }
 .manual .result-actions { justify-content: center; margin-top: 12px; }
+/* the same, below a list of results */
+.manual-end { padding: 0 32px 28px; text-align: center; color: var(--muted); font-size: 14px; }
+.manual-end strong { color: var(--ink); font-weight: 600; }
+.manual-end .manual { margin-top: 10px; }
 
 /* loading placeholders */
 .skeleton .cover, .skeleton .bar { background: linear-gradient(90deg, var(--surface-2), var(--surface-3), var(--surface-2)) 0 0 / 200% 100%; animation: shimmer 1.2s linear infinite; }

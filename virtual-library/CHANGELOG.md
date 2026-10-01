@@ -3,6 +3,7 @@
 ## Unreleased
 - Search asks a second catalog when the first finds nothing or is down: Cinemeta for series, Apple Books for books,
   GOG for games (no account needed). With an API key, TMDB / RAWG go first and the free ones stay as fallbacks
+- Anything can be added as typed, also when there are results: "Not in the list?" below them
 - Faster search: recent searches come back instantly, and slow Steam cover lookups no longer hold up game results
 - No more zooming in on iPhone when tapping a button twice quickly (e.g. "Tap again to remove")
 

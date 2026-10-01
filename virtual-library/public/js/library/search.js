@@ -156,11 +156,15 @@ export function createSearch({ getItems, openItem }) {
       </li>`;
   }
 
-  /** Adding by hand, for things the catalog doesn't know. Index -1 means "the typed title". */
-  function manualHtml(query) {
+  /**
+   * Adding by hand, for things the catalog doesn't know (or doesn't list the way you want).
+   * Index -1 means "the typed title". `ask` is the question before it: "Add “Dune” anyway?"
+   */
+  function manualHtml(query, ask = (title) => `Add ${title} anyway?`) {
     const owned = ownedBy({ category, title: query });
+    const title = `<strong>“${escapeHtml(query)}”</strong>`;
     return `<div class="manual">
-      <p>${owned ? `<strong>“${escapeHtml(query)}”</strong>` : `Add <strong>“${escapeHtml(query)}”</strong> anyway?`}</p>
+      <p>${owned ? title : ask(title)}</p>
       ${owned ? ownedHtml(owned) : addButtons(-1)}
     </div>`;
   }
@@ -182,7 +186,9 @@ export function createSearch({ getItems, openItem }) {
     } else if (!results.length) {
       body.innerHTML = messageHtml('search', `<p>Nothing found for <strong>“${escapeHtml(searched)}”</strong>.</p>${manualHtml(searched)}`);
     } else {
-      body.innerHTML = `<ul class="results">${results.map(resultHtml).join('')}</ul>`;
+      // after the results, so a title the catalogs list differently (or not at all) can still be added as typed
+      body.innerHTML = `<ul class="results">${results.map(resultHtml).join('')}</ul>
+        <div class="manual-end">${manualHtml(searched, (title) => `Not in the list? Add ${title} as you typed it`)}</div>`;
     }
   }
 
