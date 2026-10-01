@@ -21,12 +21,20 @@ export const tvmaze = {
       creator: show.network?.name ?? show.webChannel?.name ?? null,
       thumbUrl: show.image?.medium,
       coverUrl: show.externals?.imdb ? `${POSTERS}/${show.externals.imdb}/img` : show.image?.medium,
+      genres: show.genres,
     }));
   },
 
-  /** How many seasons and episodes are out, from the show's episode list (its season list also has announced ones). */
+  /**
+   * How many seasons and episodes are out, from the show's episode list (its season list also has announced
+   * ones), and its genres: the show with its episodes, in one request.
+   */
   async details(id, http) {
-    const episodes = await http.json(`${API}/shows/${encodeURIComponent(id)}/episodes`);
-    return airedCounts((Array.isArray(episodes) ? episodes : []).map((e) => ({ season: e.season, date: e.airstamp ?? e.airdate })));
+    const show = await http.json(`${API}/shows/${encodeURIComponent(id)}?embed=episodes`);
+    const episodes = show?._embedded?.episodes;
+    return {
+      ...airedCounts((Array.isArray(episodes) ? episodes : []).map((e) => ({ season: e.season, date: e.airstamp ?? e.airdate }))),
+      genres: show?.genres ?? [],
+    };
   },
 };

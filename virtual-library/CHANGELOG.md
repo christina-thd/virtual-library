@@ -1,5 +1,9 @@
 # Changelog
 
+## 3.0.0
+- **Stats**: finished per month, top genres, time spent, ratings and backlog
+- Genres for movies, series, books and games (filled in for your library too)
+
 ## 2.1.0
 - Messages always in the same place, never over buttons
 - Home screen covers: only items with a cover

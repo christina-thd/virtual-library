@@ -17,6 +17,7 @@ import { CATEGORY_IDS, isRating, MAX_CREATOR, MAX_TITLE, sameSource, statusesFor
  *       runtime: minutes | null,           how long a movie is
  *       seasons, episodes: number | null,  how many of a series are out
  *       pages: number | null,              how long a book is
+ *       genres: [string] | null,           up to three, for the stats (null: not looked up yet)
  *       detailsAt: ms | null,              when those were last looked up (in the background, see catalog/details.js)
  *       addedAt, finishedAt | null,        ms timestamps
  *     }],
@@ -70,13 +71,21 @@ export function parseHours(value) {
 
 // The details each category keeps, read from saved data, a search result or a catalog lookup.
 const DETAIL_READERS = {
-  movie: (raw) => ({ runtime: parseMinutes(raw.runtime) }),
-  series: (raw) => ({ seasons: parseCount(raw.seasons), episodes: parseCount(raw.episodes) }),
-  book: (raw) => ({ pages: parseCount(raw.pages) }),
+  movie: (raw) => ({ runtime: parseMinutes(raw.runtime), genres: parseGenres(raw.genres) }),
+  series: (raw) => ({ seasons: parseCount(raw.seasons), episodes: parseCount(raw.episodes), genres: parseGenres(raw.genres) }),
+  book: (raw) => ({ pages: parseCount(raw.pages), genres: parseGenres(raw.genres) }),
+  game: (raw) => ({ genres: parseGenres(raw.genres) }),
 };
-const NO_DETAILS = Object.freeze({ runtime: null, seasons: null, episodes: null, pages: null });
+const NO_DETAILS = Object.freeze({ runtime: null, seasons: null, episodes: null, pages: null, genres: null });
 
-/** The details a category keeps, e.g. series: ['seasons', 'episodes']; none for games. */
+/** Up to three genre names, or null when they haven't been looked up ([] when the catalog has none). */
+export function parseGenres(value) {
+  if (!Array.isArray(value)) return null;
+  const names = value.filter((g) => typeof g === 'string').map((g) => g.trim()).filter((g) => g && g.length <= 30);
+  return [...new Set(names)].slice(0, 3);
+}
+
+/** The details a category keeps, e.g. series: ['seasons', 'episodes', 'genres']. */
 export const detailFields = (category) => (DETAIL_READERS[category] ? Object.keys(DETAIL_READERS[category]({})) : []);
 
 /** The category's details found in `raw` (unknown ones null); {} for a category that keeps none. */

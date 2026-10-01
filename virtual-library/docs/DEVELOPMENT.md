@@ -38,6 +38,7 @@ src/                      server (Node, no framework, no dependencies)
   catalog/index.js        search: picks a provider per category, cleans up results, image allow-list
   catalog/providers/      one file per catalog: cinemeta, tvmaze, open-library, apple-books, steam, gog, nintendo, tmdb, rawg
   covers.js               saved cover images (CoverStore) and keeping them in step with the library
+  catalog/genres.js       makes the catalogs' genres comparable (aliases; book genres picked out of subjects)
   catalog/details.js      looks up details in the background (provider.details), like covers: movie durations,
                           series seasons and episodes (again weekly for series not done yet), book pages
   http-client.js          fetch with a timeout and a User-Agent, for catalogs and images
@@ -51,12 +52,13 @@ public/                   browser (plain ES modules, no build step)
   img/logo.svg            app logo and browser icon; icon-*.png home-screen icons
   manifest.webmanifest    web app manifest ("Add to Home Screen")
   js/app.js               entry: keeps the latest library, hands it to the views, switches home ↔ category
-  js/shared/              library.js (categories and rules, also used by the server), api, dom, format, storage
+  js/shared/              library.js (categories and rules, also used by the server), stats (the Stats numbers),
+                          api, dom, format, storage
   js/ui/                  reusable pieces: back (phone back button), sheet (bottom sheets, swipe to close),
                           viewport (keeps sheets above the keyboard), celebrate (confetti + message),
                           toast, cover, stars, icons
   js/library/             the views: home (category tiles), category (title + Pending / (Waiting) / Done tabs, sort), shelf (grid),
-                          search (add), details (one item), cheers (the lines said when you finish something)
+                          search (add), details (one item), stats (the Stats page), cheers (the lines said when you finish something)
 
 test/                     node:test suites
 ```

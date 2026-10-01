@@ -4,6 +4,7 @@ import { createCategoryView } from './library/category.js';
 import { createDetails } from './library/details.js';
 import { onTileTap, renderHome, reshuffleHome } from './library/home.js';
 import { createSearch } from './library/search.js';
+import { createStatsView } from './library/stats.js';
 import { fetchInfo, subscribe } from './shared/api.js';
 import { $ } from './shared/dom.js';
 import { goBack, pushBack } from './ui/back.js';
@@ -18,8 +19,9 @@ const getItem = (id) => items.find((i) => i.id === id);
 const categoryView = createCategoryView({ onBack: goBack });
 const details = createDetails({ getItem });
 const search = createSearch({ getItems: () => items, openItem: (id, how) => details.open(id, how) });
+const statsView = createStatsView({ onBack: goBack, onOpenItem: (id) => details.open(id) });
 
-// ----- home ↔ category -----
+// ----- home ↔ category, stats -----
 
 function showView(id) {
   for (const view of document.querySelectorAll('.view')) {
@@ -27,6 +29,7 @@ function showView(id) {
     view.hidden = !shown;
     view.classList.toggle('entering', shown);
   }
+  $('addButton').hidden = id === 'statsView';      // nothing to add on the stats
   window.scrollTo(0, 0);
 }
 
@@ -36,14 +39,23 @@ function openCategory(id) {
   pushBack(showHome);                              // back (button or phone) returns home
 }
 
+function openStats() {
+  statsView.show();
+  showView('statsView');
+  pushBack(showHome);
+}
+
 function showHome() {
   categoryView.hide();
+  statsView.hide();
   reshuffleHome();                                 // new random covers each time you come back
   renderHome(items);
   showView('homeView');
 }
 
 onTileTap(openCategory);
+$('statsButton').innerHTML = icon('chart');
+$('statsButton').addEventListener('click', openStats);
 
 // ----- start -----
 
@@ -63,6 +75,7 @@ subscribe((view) => {
   items = view.items;
   renderHome(items);
   categoryView.update(items);
+  statsView.update(items);
   details.refresh();
   search.refresh();
 });

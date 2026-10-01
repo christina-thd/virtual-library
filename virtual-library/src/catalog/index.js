@@ -1,5 +1,6 @@
 import { CATEGORY_IDS, MAX_CREATOR, MAX_QUERY, MAX_TITLE } from '../../public/js/shared/library.js';
 import { parseYear, readDetails } from '../library/state.js';
+import { cleanGenres } from './genres.js';
 import { appleBooks } from './providers/apple-books.js';
 import { createCinemeta } from './providers/cinemeta.js';
 import { gog } from './providers/gog.js';
@@ -45,12 +46,17 @@ export function chooseProviders({ tmdbApiKey = null, rawgApiKey = null } = {}) {
   };
 }
 
+/** Details as a catalog gave them, its genres named the way every catalog's are (genres.js). */
+const catalogDetails = (category, raw) =>
+  readDetails(category, raw && { ...raw, genres: raw.genres == null ? undefined : cleanGenres(category, raw.genres) });
+
 const clean = (value, max) => (typeof value === 'string' || typeof value === 'number' ? String(value).trim().slice(0, max) : '');
 
 /**
  * Search across the catalogs. Every provider has the same shape:
  *   { id, name, url, imageHosts: [hostname], search(query, http) → [{ id, title, year, creator, coverUrl, thumbUrl?, ...details? }],
- *     details?(id, http) → movies { runtime: minutes or "155 min" }, series { seasons, episodes }, books { pages } }
+ *     details?(id, http) → movies { runtime: minutes or "155 min" }, series { seasons, episodes }, books { pages },
+ *       and genres: [name] for any of them }
  * (search results may include some details already: Cinemeta movies sometimes the runtime, Open Library the pages)
  * and this turns its results into what screens show and send back with `addItem`.
  * `providers` maps each category to a list of them, best first (or to just one), or to a list of
@@ -134,7 +140,7 @@ export function createCatalog({ http, providers = chooseProviders(), now = Date.
         source: { provider: provider.id, id: clean(r.id, 100) },
         coverUrl: image(r.coverUrl),
         thumbUrl: image(r.thumbUrl) ?? image(r.coverUrl),
-        ...Object.fromEntries(Object.entries(readDetails(category, r)).filter(([, value]) => value != null)),
+        ...Object.fromEntries(Object.entries(catalogDetails(category, r)).filter(([, value]) => value != null)),
       }))
       .filter((r) => r.title && r.source.id)
       .slice(0, MAX_RESULTS);
@@ -149,12 +155,12 @@ export function createCatalog({ http, providers = chooseProviders(), now = Date.
 
   /**
    * Details from the catalog an item was found in: movies { runtime } (minutes), series { seasons, episodes }
-   * (out so far), books { pages }. Null when that catalog can't tell; a field it doesn't know is null.
+   * (out so far), books { pages }, and genres. Null when that catalog can't tell; a field it doesn't know is null.
    */
   async function detailsOf(category, source) {
     const provider = (sourcesOf[category] ?? []).flatMap((s) => s.providers).find((p) => p.id === source?.provider);
     if (!provider?.details) return null;
-    return readDetails(category, await provider.details(source.id, http));
+    return catalogDetails(category, await provider.details(source.id, http));
   }
 
   return { search, isAllowedImage, sources, detailsOf };

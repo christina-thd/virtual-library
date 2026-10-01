@@ -15,6 +15,7 @@ export const gog = {
       year: game.releaseDate,                        // "2015.05.18"
       creator: Array.isArray(game.developers) ? game.developers[0] : null,
       coverUrl: game.coverVertical,
+      genres: game.genres,                           // [{ name, slug }]
     }));
   },
 };

@@ -23,6 +23,7 @@ export function createRawg(apiKey) {
         year: game.released,
         creator: game.platforms?.map((p) => p.platform?.name).filter(Boolean).slice(0, 3).join(', ') || null,
         coverUrl: portrait(game.background_image),
+        genres: game.genres,                         // [{ name }]
       }));
     },
   };

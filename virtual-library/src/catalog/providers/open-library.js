@@ -22,9 +22,10 @@ export const openLibrary = {
     }));
   },
 
-  /** How many pages, for books added before pages were kept. */
+  /** How many pages (for books added before pages were kept), and its subjects, where the genres are picked out from. */
   async details(id, http) {
-    const data = await http.json(`${API}/search.json?q=${encodeURIComponent(`key:"${id}"`)}&fields=key,number_of_pages_median`);
-    return { pages: data.docs?.[0]?.number_of_pages_median };
+    const data = await http.json(`${API}/search.json?q=${encodeURIComponent(`key:"${id}"`)}&fields=key,number_of_pages_median,subject`);
+    const book = data.docs?.[0];
+    return { pages: book?.number_of_pages_median, genres: book?.subject ?? [] };
   },
 };

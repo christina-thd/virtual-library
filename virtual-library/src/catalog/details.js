@@ -3,7 +3,7 @@ import { detailFields } from '../library/state.js';
 const WEEK = 7 * 24 * 60 * 60 * 1000;
 
 /**
- * Keeps items' details (a movie's runtime, a series' seasons and episodes, a book's pages) filled in: looks them
+ * Keeps items' details (a movie's runtime, a series' seasons and episodes, a book's pages, genres) filled in: looks them
  * up in the catalog each item was found in (one at a time, in the background), for items added without them,
  * including ones added before details were kept. A series you
  * haven't finished is looked up again once a week, as new episodes come out. Items typed in by hand have no
@@ -15,7 +15,7 @@ export function createDetailsSync({ state, catalog, onChange, now = Date.now, lo
 
   function needsLookUp(item) {
     if (!item.source || !detailFields(item.category).length || tried.has(item.id)) return false;
-    if (item.detailsAt == null) return true;
+    if (item.detailsAt == null || item.genres == null) return true;     // genres: looked up before they were kept
     return item.category === 'series' && item.status !== 'done' && now() - item.detailsAt > WEEK;
   }
 
@@ -31,6 +31,7 @@ export function createDetailsSync({ state, catalog, onChange, now = Date.now, lo
       }
       if (!state.items.includes(item)) continue;       // removed meanwhile
       for (const field of detailFields(item.category)) item[field] = details?.[field] ?? item[field] ?? null;
+      item.genres ??= [];                              // looked up: none known (not "not looked up yet")
       item.detailsAt = now();
       onChange();
     }

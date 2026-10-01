@@ -1,5 +1,5 @@
 import { CATEGORY_IDS, isRating, MAX_CREATOR, MAX_TITLE, statusesFor } from '../../public/js/shared/library.js';
-import { findBySource, findItem, itemDetails, newId, parseHours, parseImageUrls, parseSource, parseYear } from './state.js';
+import { detailFields, findBySource, findItem, itemDetails, newId, parseHours, parseImageUrls, parseSource, parseYear } from './state.js';
 
 /** A rejected action. `status` is the HTTP status the API answers with. */
 export class ActionError extends Error {
@@ -65,7 +65,8 @@ const handlers = {
       hoursPlayed: null,
       // from the search result when it has them (a movie's runtime, a book's pages); else looked up after adding
       ...details,
-      detailsAt: Object.values(details).some((v) => v != null) ? ctx.now : null,
+      // looked up already when the search result had them all (else the rest is looked up after adding)
+      detailsAt: detailFields(category).every((field) => details[field] != null) ? ctx.now : null,
       addedAt: ctx.now,
       finishedAt: status === 'done' ? ctx.now : null,
     };

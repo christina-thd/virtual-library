@@ -2,6 +2,15 @@
 const API = 'https://api.themoviedb.org/3';
 const IMAGES = 'https://image.tmdb.org/t/p';
 
+/** TMDB's genre ids (search results only have the ids; the list is fixed): movies and TV share some. */
+const GENRES = {
+  28: 'Action', 12: 'Adventure', 16: 'Animation', 35: 'Comedy', 80: 'Crime', 99: 'Documentary', 18: 'Drama',
+  10751: 'Family', 14: 'Fantasy', 36: 'History', 27: 'Horror', 10402: 'Music', 9648: 'Mystery', 10749: 'Romance',
+  878: 'Science Fiction', 10770: 'TV Movie', 53: 'Thriller', 10752: 'War', 37: 'Western',
+  10759: 'Action & Adventure', 10762: 'Kids', 10763: 'News', 10764: 'Reality', 10765: 'Sci-Fi & Fantasy',
+  10766: 'Soap', 10767: 'Talk', 10768: 'War & Politics',
+};
+
 const KINDS = {
   movie: { path: 'search/movie', title: 'title', date: 'release_date' },
   series: { path: 'search/tv', title: 'name', date: 'first_air_date' },
@@ -37,6 +46,7 @@ export function createTmdb(category, apiKey) {
         creator: null,                               // not in search results
         thumbUrl: r.poster_path ? `${IMAGES}/w185${r.poster_path}` : null,
         coverUrl: r.poster_path ? `${IMAGES}/w500${r.poster_path}` : null,
+        genres: Array.isArray(r.genre_ids) ? r.genre_ids.map((id) => GENRES[id]).filter(Boolean) : undefined,
       }));
     },
   };
@@ -44,9 +54,10 @@ export function createTmdb(category, apiKey) {
   provider.details = async (id, http) => {
     const path = category === 'movie' ? 'movie' : 'tv';
     const data = await http.json(`${API}/${path}/${encodeURIComponent(id)}?language=en-US${auth.query}`, { headers: auth.headers });
+    const genres = data.genres ?? [];
     return category === 'movie'
-      ? { runtime: data.runtime }
-      : { seasons: data.number_of_seasons, episodes: data.number_of_episodes };
+      ? { runtime: data.runtime, genres }
+      : { seasons: data.number_of_seasons, episodes: data.number_of_episodes, genres };
   };
   return provider;
 }

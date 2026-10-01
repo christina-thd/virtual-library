@@ -10,6 +10,7 @@ finished things an optional 5-star rating. Every item shows its cover. Made for 
   <img src="images/category.jpg" alt="Movies, Done: best rated first, and the ones you dropped" width="200">
   <img src="images/search.jpg" alt="Adding a game: searching Nintendo&#39;s store" width="200">
   <img src="images/details.jpg" alt="Finishing a game: confetti and a congratulation" width="200">
+  <img src="images/stats.jpg" alt="Stats: finished per month, by category, and time spent" width="200">
 </p>
 
 ## Installation
@@ -31,6 +32,7 @@ Keep track of what you've watched, read and played, and what's still pending.
 - Movies, series, books and games in one place, each with its cover
 - Search built in, no account or API key needed
 - A home screen per kind, Pending and Done lists (series also Waiting, for a new season), and an optional 5-star rating
+- Stats: what you finished each month, your top genres, time spent and more
 
 [Documentation →](./virtual-library/README.md)
 

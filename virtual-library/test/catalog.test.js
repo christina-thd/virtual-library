@@ -112,9 +112,11 @@ describe('details: movie durations, series seasons and episodes, book pages', ()
     assert.match(calls[0].url, /fields=[^&]*number_of_pages_median/);
     assert.deepEqual(results.map((r) => r.pages), [310, undefined]);
 
-    const http = fakeHttp({ 'https://openlibrary.org/search.json?q=key%3A%22%2Fworks%2FOL27482W%22': { docs: [{ number_of_pages_median: 310 }] } });
+    const http = fakeHttp({ 'https://openlibrary.org/search.json?q=key%3A%22%2Fworks%2FOL27482W%22': { docs: [{
+      number_of_pages_median: 310, subject: ['Fantasy', 'Arkenstone', 'hobbits', 'Juvenile fiction', 'Fantasy fiction', 'Classics'],
+    }] } });
     const catalog = createCatalog({ http, providers: chooseProviders() });
-    assert.deepEqual(await catalog.detailsOf('book', { provider: 'openlibrary', id: '/works/OL27482W' }), { pages: 310 });
+    assert.deepEqual(await catalog.detailsOf('book', { provider: 'openlibrary', id: '/works/OL27482W' }), { pages: 310, genres: ['Fantasy', "Children's", 'Classics'] });
     assert.equal(await catalog.detailsOf('book', { provider: 'applebooks', id: '1' }), null);
   });
 
@@ -127,38 +129,38 @@ describe('details: movie durations, series seasons and episodes, book pages', ()
 
   test('movies: from the full entry on Cinemeta, or TMDB with a key', async () => {
     const http = fakeHttp({
-      'https://v3-cinemeta.strem.io/meta/movie/tt15239678.json': { meta: { runtime: '167 min' } },
-      'https://api.themoviedb.org/3/movie/693134': { runtime: 166 },
+      'https://v3-cinemeta.strem.io/meta/movie/tt15239678.json': { meta: { runtime: '167 min', genres: ['Action', 'Science Fiction'] } },
+      'https://api.themoviedb.org/3/movie/693134': { runtime: 166, genres: [{ id: 878, name: 'Science Fiction' }] },
     });
     const keyless = createCatalog({ http, providers: chooseProviders() });
-    assert.deepEqual(await keyless.detailsOf('movie', { provider: 'cinemeta', id: 'tt15239678' }), { runtime: 167 });
+    assert.deepEqual(await keyless.detailsOf('movie', { provider: 'cinemeta', id: 'tt15239678' }), { runtime: 167, genres: ['Action', 'Sci-Fi'] });
     const tmdb = createCatalog({ http, providers: chooseProviders({ tmdbApiKey: 'k' }) });
-    assert.deepEqual(await tmdb.detailsOf('movie', { provider: 'tmdb', id: '693134' }), { runtime: 166 });
+    assert.deepEqual(await tmdb.detailsOf('movie', { provider: 'tmdb', id: '693134' }), { runtime: 166, genres: ['Sci-Fi'] });
     assert.match(http.calls.at(-1).url, /\/movie\/693134\?language=en-US&api_key=k$/);
   });
 
   test('series: seasons and episodes out so far (not announced ones, not specials), on TVmaze, Cinemeta or TMDB', async () => {
     const http = fakeHttp({
-      'https://api.tvmaze.com/shows/44933/episodes': [
+      'https://api.tvmaze.com/shows/44933?embed=episodes': { genres: ['Drama', 'Science-Fiction', 'Thriller'], _embedded: { episodes: [
         { season: 1, airstamp: '2022-02-18T02:00:00+00:00' }, { season: 1, airstamp: '2022-02-25T02:00:00+00:00' },
         { season: 2, airdate: '2025-01-17' }, { season: 3, airdate: '2999-01-01' }, { season: 3, airdate: null },
-      ],
+      ] } },
       'https://v3-cinemeta.strem.io/meta/series/tt5753856.json': { meta: { videos: [
         { season: 0, released: '2017-01-01T00:00:00Z' }, { season: 1, released: '2017-12-01T12:00:00Z' },
         { season: 2, firstAired: '2019-06-21T12:00:00Z' },
       ] } },
-      'https://api.themoviedb.org/3/tv/70523': { number_of_seasons: 3, number_of_episodes: 26 },
+      'https://api.themoviedb.org/3/tv/70523': { number_of_seasons: 3, number_of_episodes: 26, genres: [{ name: 'Sci-Fi & Fantasy' }, { name: 'Drama' }] },
     });
     const keyless = createCatalog({ http, providers: chooseProviders() });
-    assert.deepEqual(await keyless.detailsOf('series', { provider: 'tvmaze', id: '44933' }), { seasons: 2, episodes: 3 });
-    assert.deepEqual(await keyless.detailsOf('series', { provider: 'cinemeta', id: 'tt5753856' }), { seasons: 2, episodes: 2 });
+    assert.deepEqual(await keyless.detailsOf('series', { provider: 'tvmaze', id: '44933' }), { seasons: 2, episodes: 3, genres: ['Drama', 'Sci-Fi', 'Thriller'] });
+    assert.deepEqual(await keyless.detailsOf('series', { provider: 'cinemeta', id: 'tt5753856' }), { seasons: 2, episodes: 2, genres: [] });
     const tmdb = createCatalog({ http, providers: chooseProviders({ tmdbApiKey: 'k' }) });
-    assert.deepEqual(await tmdb.detailsOf('series', { provider: 'tmdb', id: '70523' }), { seasons: 3, episodes: 26 });
+    assert.deepEqual(await tmdb.detailsOf('series', { provider: 'tmdb', id: '70523' }), { seasons: 3, episodes: 26, genres: ['Sci-Fi', 'Fantasy', 'Drama'] });
   });
 
   test('nothing for catalogs that do not know, or items typed by hand', async () => {
     const catalog = createCatalog({ http: fakeHttp({}), providers: chooseProviders() });
-    assert.equal(await catalog.detailsOf('game', { provider: 'steam', id: '1' }), null);
+    assert.equal(await catalog.detailsOf('book', { provider: 'applebooks', id: '1' }), null);
     assert.equal(await catalog.detailsOf('movie', null), null);
   });
 });
@@ -187,6 +189,7 @@ describe('fallback catalogs (asked when the one before finds nothing)', () => {
       'https://openlibrary.org/search.json': { docs: [] },
       'https://itunes.apple.com/search': {
         results: [{ trackId: 1602694961, trackName: 'The Hobbit', artistName: 'J. R. R. Tolkien', releaseDate: '2012-02-15T08:00:00Z',
+          genres: ['Fantasy', 'Books', 'Sci-Fi & Fantasy', 'Classics'],
           artworkUrl100: 'https://is1-ssl.mzstatic.com/image/thumb/Publication122/v4/8a/9780547951973.jpg/100x100bb.jpg' }],
       },
     }, 'book', 'hobbit');
@@ -196,6 +199,7 @@ describe('fallback catalogs (asked when the one before finds nothing)', () => {
       source: { provider: 'applebooks', id: '1602694961' },
       coverUrl: 'https://is1-ssl.mzstatic.com/image/thumb/Publication122/v4/8a/9780547951973.jpg/600x900bb.jpg',
       thumbUrl: 'https://is1-ssl.mzstatic.com/image/thumb/Publication122/v4/8a/9780547951973.jpg/200x300bb.jpg',
+      genres: ['Fantasy', 'Sci-Fi', 'Classics'],
     });
   });
 
@@ -247,6 +251,7 @@ describe('games: PC or Nintendo, picked on the search screen', () => {
       fs_id: '1173281', title: 'Mario Kart 8 Deluxe', dates_released_dts: ['2017-04-28T00:00:00Z'], system_names_txt: ['Nintendo Switch'],
       image_url: 'https://www.nintendo.com/eu/media/images/05_packshots/PS_NSwitch_MarioKart8Deluxe_image500w.jpg',
       image_url_sq_s: 'https://www.nintendo.com/eu/media/images/11_square_images/SQ_NSwitch_MarioKart8Deluxe_image500w.jpg',
+      pretty_game_categories_txt: ['Racing'],
     }] },
   };
 
@@ -267,6 +272,7 @@ describe('games: PC or Nintendo, picked on the search screen', () => {
       source: { provider: 'nintendo', id: '1173281' },
       coverUrl: 'https://www.nintendo.com/eu/media/images/05_packshots/PS_NSwitch_MarioKart8Deluxe_image500w.jpg',
       thumbUrl: 'https://www.nintendo.com/eu/media/images/11_square_images/SQ_NSwitch_MarioKart8Deluxe_image500w.jpg',
+      genres: ['Racing'],
     });
   });
 
