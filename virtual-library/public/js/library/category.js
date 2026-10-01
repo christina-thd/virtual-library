@@ -1,15 +1,12 @@
-// One category: its title, the Pending / Done tabs and the shelf. The tab is remembered on this phone.
+// One category: its title, the Pending / Done tabs and the shelf. It always opens on Pending.
 import { $ } from '../shared/dom.js';
-import { categoryOf, STATUSES } from '../shared/library.js';
-import { storage } from '../shared/storage.js';
+import { categoryOf } from '../shared/library.js';
 import { icon } from '../ui/icons.js';
 import { renderShelf } from './shelf.js';
 
-const STATUS_KEY = 'status';
-
 export function createCategoryView({ onBack }) {
   let category = null;
-  let status = STATUSES.includes(storage.get(STATUS_KEY)) ? storage.get(STATUS_KEY) : 'pending';
+  let status = 'pending';
   let library = [];
 
   const view = $('categoryView');
@@ -40,7 +37,6 @@ export function createCategoryView({ onBack }) {
     const button = e.target.closest('[data-status]');
     if (!button || button.dataset.status === status) return;
     status = button.dataset.status;
-    storage.set(STATUS_KEY, status);
     markSelected();
     render({ animate: true });
   });
@@ -60,6 +56,8 @@ export function createCategoryView({ onBack }) {
     show(id) {
       category = id;
       view.dataset.category = id;
+      status = 'pending';                          // always opens on Pending
+      markSelected();
       $('categoryTitle').innerHTML = `${icon(id)}<span>${categoryOf(id).plural}</span>`;
       render({ animate: true });
     },
