@@ -11,7 +11,8 @@
   and is left out of the home screen covers
 - Series have a third tab, **Waiting**, for series you've caught up on that are waiting for a new season
 - Categories always open on Pending, and the title and back button stay at the top with the tabs while scrolling
-- Sort a shelf by recent, name (A–Z) or rating, with the button next to Pending / Done; Pending always starts newest first, Done best rated first
+- Sort a shelf by recent, name (A–Z), rating or length (movies: duration, series: seasons, books: pages,
+  games: hours played), with the button next to Pending / Done; Pending always starts newest first, Done best rated first
 - Home screen tiles show random covers from each category (new ones each time you come back to the home screen), not only the newest
 - Anything can be added as typed, also when there are results: "Not in the list?" below them
 - Faster search: recent searches come back instantly, and slow Steam cover lookups no longer hold up game results

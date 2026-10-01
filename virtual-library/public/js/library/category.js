@@ -24,7 +24,7 @@ export function createCategoryView({ onBack }) {
   $('sortPicker').querySelector('.sort-icon').innerHTML = icon('sort');
 
   /** The order used on this tab. */
-  const currentSort = () => sortsFor(status).find((s) => s.id === sorts[status]) ?? SORTS[0];
+  const currentSort = () => sortsFor(category, status).find((s) => s.id === sorts[status]) ?? SORTS[0];
 
   function markSelected() {
     for (const button of tabs.querySelectorAll('[data-status]')) {
@@ -34,7 +34,7 @@ export function createCategoryView({ onBack }) {
     }
     // the phone's own list (a wheel on iPhone) opens on tap; the button shows the short name
     const current = currentSort();
-    sortSelect.innerHTML = sortsFor(status).map((s) => `<option value="${s.id}">${escapeHtml(s.name)}</option>`).join('');
+    sortSelect.innerHTML = sortsFor(category, status).map((s) => `<option value="${s.id}">${escapeHtml(s.name)}</option>`).join('');
     sortSelect.value = current.id;
     $('sortLabel').textContent = current.label;
   }

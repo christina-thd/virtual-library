@@ -17,7 +17,8 @@ and what's still pending.
   and done, and a few random covers. Tap a tile to open it; the back button (or ‹) returns home.
 - In each kind, **Pending** is everything you haven't seen, read or played yet, or haven't finished.
   **Done** is everything you've finished. Each kind opens on Pending, newest first; Done starts with your best rated.
-  Use the sort button next to the tabs for A–Z (or rating, on Done).
+  Use the sort button next to the tabs for A–Z, rating (on Done) or length: a movie's duration, a series' seasons,
+  a book's pages, or the hours you played a game (on Done).
 - **Series** have a third tab, **Waiting**: series you've caught up on, waiting for a new season. Move a series there
   from its page; when the new season is out, move it back to Pending.
 - Tap a cover to open it: move it between Pending, (Waiting) and Done, rate it, or remove it. A finished game also

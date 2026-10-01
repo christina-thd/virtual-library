@@ -123,6 +123,7 @@
   line-height: 1.25;
 }
 .card-meta { margin-top: 3px; color: var(--faint); font-size: 12px; min-height: 15px; }
+.card-fact { margin-top: 1px; color: var(--faint); font-size: 11.5px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
 
 /* ----- empty shelf ----- */
 
