@@ -11,3 +11,6 @@ export function formatRuntime(minutes) {
 
 /** Newest first: finished items by when they were finished, pending ones by when they were added. */
 export const byRecent = (a, b) => (b.finishedAt ?? b.addedAt) - (a.finishedAt ?? a.addedAt);
+
+/** 3 → "3 seasons", 1 → "1 episode"; nothing when it isn't known. */
+export const formatCount = (count, word) => (count ? `${count} ${word}${count === 1 ? '' : 's'}` : '');

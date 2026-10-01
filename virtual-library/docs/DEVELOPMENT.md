@@ -38,7 +38,8 @@ src/                      server (Node, no framework, no dependencies)
   catalog/index.js        search: picks a provider per category, cleans up results, image allow-list
   catalog/providers/      one file per catalog: cinemeta, tvmaze, open-library, apple-books, steam, gog, nintendo, tmdb, rawg
   covers.js               saved cover images (CoverStore) and keeping them in step with the library
-  catalog/runtimes.js     looks up movie durations in the background (provider.runtime), like covers
+  catalog/details.js      looks up details in the background (provider.details), like covers: movie durations,
+                          series seasons and episodes (again weekly for series not done yet)
   http-client.js          fetch with a timeout and a User-Agent, for catalogs and images
   store.js                JSON file storage: debounced, atomic writes
   sse.js                  Server-Sent Events hub for live updates

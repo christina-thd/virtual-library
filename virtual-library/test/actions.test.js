@@ -118,11 +118,13 @@ describe('setStatus', () => {
   });
 });
 
-describe('runtime', () => {
-  test('a movie keeps the duration from its search result; others never get one', () => {
-    assert.equal(itemOf(add({ category: 'movie', source: null, title: 'Dune', runtime: 155 })).runtime, 155);
-    assert.equal(itemOf(add({ category: 'movie', source: null, title: 'Cats' })).runtime, null);
-    assert.equal(itemOf(add({ runtime: 50 })).runtime, null);      // a series
+describe('details', () => {
+  test('a movie keeps the duration from its search result (no lookup needed); the rest is looked up later', () => {
+    const dune = itemOf(add({ category: 'movie', source: null, title: 'Dune', runtime: 155 }));
+    assert.deepEqual([dune.runtime, dune.detailsAt], [155, NOW]);
+    assert.equal(itemOf(add({ category: 'movie', source: null, title: 'Cats' })).detailsAt, null);
+    const dark = itemOf(add({ runtime: 50 }));                       // a series
+    assert.deepEqual([dark.runtime, dark.seasons, dark.episodes, dark.detailsAt], [null, null, null, null]);
   });
 });
 

@@ -1,4 +1,6 @@
 // Movies and series, no API key needed. Cinemeta is the public catalog behind Stremio (IMDb data).
+import { airedCounts } from './aired.js';
+
 const API = 'https://v3-cinemeta.strem.io';
 
 /** Posters come small; both image hosts serve bigger versions from a predictable URL. */
@@ -30,9 +32,12 @@ export function createCinemeta(type) {
       }));
     },
   };
-  if (type === 'movie') {
-    /** How long the movie is, e.g. "155 min" (the full entry always has it). */
-    provider.runtime = async (id, http) => (await http.json(`${API}/meta/movie/${encodeURIComponent(id)}.json`)).meta?.runtime ?? null;
-  }
+  /** From the full entry: how long a movie is ("155 min"); how many seasons and episodes of a series are out. */
+  provider.details = async (id, http) => {
+    const { meta } = await http.json(`${API}/meta/${type}/${encodeURIComponent(id)}.json`);
+    return type === 'movie'
+      ? { runtime: meta?.runtime }
+      : airedCounts((meta?.videos ?? []).map((v) => ({ season: v.season, date: v.released ?? v.firstAired })));
+  };
   return provider;
 }

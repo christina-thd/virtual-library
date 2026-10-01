@@ -66,7 +66,9 @@ For games, pick **PC** or **Nintendo** in the search field under the Game tab; e
 The next catalog is also asked when one doesn't answer, so search keeps working if a website is down.
 The line under the results says which catalog found them.
 
-Movies also show how long they are on their page (e.g. 2h 35m), looked up in the background after adding.
+An item's page also shows how long a movie is (e.g. 2h 35m), and how many seasons and episodes of a series are out
+(e.g. 3 seasons · 26 episodes). They're looked up in the background after adding; a series you haven't finished
+is checked again every week, as new episodes come out.
 
 The add-on needs internet access to search. When you add something, it saves a copy of the cover,
 so the library keeps its pictures even if a website changes.

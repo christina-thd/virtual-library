@@ -13,7 +13,9 @@ import { CATEGORY_IDS, isRating, MAX_CREATOR, MAX_TITLE, sameSource, statusesFor
  *       cover: string | null,              file name of the saved copy (see covers.js)
  *       status ('pending' | 'waiting' (series only) | 'done'), rating (1–5) | null,
  *       dropped: boolean,                  done, but given up on (it wasn't worth finishing)
- *       runtime: minutes | null,           how long a movie is (looked up in the background, see catalog/runtimes.js)
+ *       runtime: minutes | null,           how long a movie is
+ *       seasons, episodes: number | null,  how many of a series are out
+ *       detailsAt: ms | null,              when those were last looked up (in the background, see catalog/details.js)
  *       addedAt, finishedAt | null,        ms timestamps
  *     }],
  *   }
@@ -42,6 +44,9 @@ export function parseYear(value) {
   const year = match ? Number(match[1]) : NaN;
   return year >= 1000 && year <= 9999 ? year : null;
 }
+
+/** A count of seasons or episodes: a whole number from 1, or null. */
+export const parseCount = (value) => (Number.isInteger(value) && value > 0 && value < 100_000 ? value : null);
 
 /** Minutes from a number or catalog text ("155 min", "2h 35min"), or null. */
 export function parseMinutes(value) {
@@ -88,6 +93,9 @@ function normalizeItem(raw, now) {
     rating: status === 'done' && isRating(raw.rating) ? raw.rating : null,
     dropped: status === 'done' && raw.dropped === true,
     runtime: raw.category === 'movie' ? parseMinutes(raw.runtime) : null,
+    seasons: raw.category === 'series' ? parseCount(raw.seasons) : null,
+    episodes: raw.category === 'series' ? parseCount(raw.episodes) : null,
+    detailsAt: Number.isFinite(raw.detailsAt) && raw.detailsAt > 0 ? raw.detailsAt : null,
     addedAt,
     finishedAt: status === 'done' ? toTime(raw.finishedAt, addedAt) : null,
   };

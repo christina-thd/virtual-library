@@ -1,5 +1,5 @@
 import { CATEGORY_IDS, MAX_CREATOR, MAX_QUERY, MAX_TITLE } from '../../public/js/shared/library.js';
-import { parseMinutes, parseYear } from '../library/state.js';
+import { parseCount, parseMinutes, parseYear } from '../library/state.js';
 import { appleBooks } from './providers/apple-books.js';
 import { createCinemeta } from './providers/cinemeta.js';
 import { gog } from './providers/gog.js';
@@ -50,7 +50,7 @@ const clean = (value, max) => (typeof value === 'string' || typeof value === 'nu
 /**
  * Search across the catalogs. Every provider has the same shape:
  *   { id, name, url, imageHosts: [hostname], search(query, http) → [{ id, title, year, creator, coverUrl, thumbUrl?, runtime? }],
- *     runtime?(id, http) → minutes or text like "155 min" }   (runtime: movies only)
+ *     details?(id, http) → movies { runtime: minutes or "155 min" }, series { seasons, episodes } }
  * and this turns its results into what screens show and send back with `addItem`.
  * `providers` maps each category to a list of them, best first (or to just one), or to a list of
  * sources to pick from: [{ id, label, providers: [...] }].
@@ -146,11 +146,18 @@ export function createCatalog({ http, providers = chooseProviders(), now = Date.
   const sources = Object.fromEntries(Object.entries(sourcesOf).map(([category, list]) =>
     [category, list.map((s) => ({ id: s.id, label: s.label, icon: s.icon ?? null, credits: s.providers.map((p) => ({ id: p.id, name: p.name, url: p.url })) }))]));
 
-  /** How long a movie is, in minutes, from the catalog it was found in; null when that catalog can't tell. */
-  async function runtimeOf(category, source) {
+  /**
+   * Details from the catalog an item was found in: movies { runtime } (minutes), series { seasons, episodes }
+   * (out so far). Null when that catalog can't tell; a field it doesn't know is null.
+   */
+  async function detailsOf(category, source) {
     const provider = (sourcesOf[category] ?? []).flatMap((s) => s.providers).find((p) => p.id === source?.provider);
-    return provider?.runtime ? parseMinutes(await provider.runtime(source.id, http)) : null;
+    if (!provider?.details) return null;
+    const raw = (await provider.details(source.id, http)) ?? {};
+    return category === 'movie'
+      ? { runtime: parseMinutes(raw.runtime) }
+      : { seasons: parseCount(raw.seasons), episodes: parseCount(raw.episodes) };
   }
 
-  return { search, isAllowedImage, sources, runtimeOf };
+  return { search, isAllowedImage, sources, detailsOf };
 }

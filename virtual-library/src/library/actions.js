@@ -61,7 +61,11 @@ const handlers = {
       status,
       rating: status === 'done' ? rating(action.rating) : null,
       dropped: false,
-      runtime: category === 'movie' ? parseMinutes(action.runtime) : null,   // else looked up after adding
+      // the rest of the details are looked up after adding (catalog/details.js)
+      runtime: category === 'movie' ? parseMinutes(action.runtime) : null,
+      seasons: null,
+      episodes: null,
+      detailsAt: category === 'movie' && parseMinutes(action.runtime) ? ctx.now : null,
       addedAt: ctx.now,
       finishedAt: status === 'done' ? ctx.now : null,
     };

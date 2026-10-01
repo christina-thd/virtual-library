@@ -104,29 +104,49 @@ describe('keyless catalogs', () => {
   });
 });
 
-describe('movie durations', () => {
-  test('kept from search results when the catalog includes them (Cinemeta only sometimes does)', async () => {
+describe('details: movie durations, series seasons and episodes', () => {
+  test('a duration is kept from search results when the catalog includes it (Cinemeta only sometimes does)', async () => {
     const { results } = await search(chooseProviders(), {
       'https://v3-cinemeta.strem.io/catalog/movie/top/search=': { metas: [{ imdb_id: 'tt1', name: 'Dune', runtime: '155 min' }, { imdb_id: 'tt2', name: 'Dune 2' }] },
     }, 'movie', 'dune');
     assert.deepEqual(results.map((r) => r.runtime), [155, undefined]);
   });
 
-  test('looked up from the movie’s full entry: Cinemeta, or TMDB with a key', async () => {
+  test('movies: from the full entry on Cinemeta, or TMDB with a key', async () => {
     const http = fakeHttp({
       'https://v3-cinemeta.strem.io/meta/movie/tt15239678.json': { meta: { runtime: '167 min' } },
       'https://api.themoviedb.org/3/movie/693134': { runtime: 166 },
     });
-    assert.equal(await createCatalog({ http, providers: chooseProviders() }).runtimeOf('movie', { provider: 'cinemeta', id: 'tt15239678' }), 167);
+    const keyless = createCatalog({ http, providers: chooseProviders() });
+    assert.deepEqual(await keyless.detailsOf('movie', { provider: 'cinemeta', id: 'tt15239678' }), { runtime: 167 });
     const tmdb = createCatalog({ http, providers: chooseProviders({ tmdbApiKey: 'k' }) });
-    assert.equal(await tmdb.runtimeOf('movie', { provider: 'tmdb', id: '693134' }), 166);
+    assert.deepEqual(await tmdb.detailsOf('movie', { provider: 'tmdb', id: '693134' }), { runtime: 166 });
     assert.match(http.calls.at(-1).url, /\/movie\/693134\?language=en-US&api_key=k$/);
   });
 
-  test('nothing for catalogs that do not know it, or items typed by hand', async () => {
+  test('series: seasons and episodes out so far (not announced ones, not specials), on TVmaze, Cinemeta or TMDB', async () => {
+    const http = fakeHttp({
+      'https://api.tvmaze.com/shows/44933/episodes': [
+        { season: 1, airstamp: '2022-02-18T02:00:00+00:00' }, { season: 1, airstamp: '2022-02-25T02:00:00+00:00' },
+        { season: 2, airdate: '2025-01-17' }, { season: 3, airdate: '2999-01-01' }, { season: 3, airdate: null },
+      ],
+      'https://v3-cinemeta.strem.io/meta/series/tt5753856.json': { meta: { videos: [
+        { season: 0, released: '2017-01-01T00:00:00Z' }, { season: 1, released: '2017-12-01T12:00:00Z' },
+        { season: 2, firstAired: '2019-06-21T12:00:00Z' },
+      ] } },
+      'https://api.themoviedb.org/3/tv/70523': { number_of_seasons: 3, number_of_episodes: 26 },
+    });
+    const keyless = createCatalog({ http, providers: chooseProviders() });
+    assert.deepEqual(await keyless.detailsOf('series', { provider: 'tvmaze', id: '44933' }), { seasons: 2, episodes: 3 });
+    assert.deepEqual(await keyless.detailsOf('series', { provider: 'cinemeta', id: 'tt5753856' }), { seasons: 2, episodes: 2 });
+    const tmdb = createCatalog({ http, providers: chooseProviders({ tmdbApiKey: 'k' }) });
+    assert.deepEqual(await tmdb.detailsOf('series', { provider: 'tmdb', id: '70523' }), { seasons: 3, episodes: 26 });
+  });
+
+  test('nothing for catalogs that do not know, or items typed by hand', async () => {
     const catalog = createCatalog({ http: fakeHttp({}), providers: chooseProviders() });
-    assert.equal(await catalog.runtimeOf('series', { provider: 'tvmaze', id: '1' }), null);
-    assert.equal(await catalog.runtimeOf('movie', null), null);
+    assert.equal(await catalog.detailsOf('book', { provider: 'openlibrary', id: '/works/OL1W' }), null);
+    assert.equal(await catalog.detailsOf('movie', null), null);
   });
 });
 

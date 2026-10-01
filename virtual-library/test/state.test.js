@@ -7,7 +7,7 @@ const NOW = 1_700_000_000_000;
 const item = (overrides = {}) => ({
   id: 'abc123', category: 'movie', title: 'Dune', year: 2021, creator: 'Denis Villeneuve',
   source: { provider: 'cinemeta', id: 'tt1160419' }, imageUrls: ['https://images.metahub.space/poster/medium/tt1160419/img'],
-  cover: null, status: 'done', rating: 5, dropped: false, runtime: 155, addedAt: NOW - 1000, finishedAt: NOW, ...overrides,
+  cover: null, status: 'done', rating: 5, dropped: false, runtime: 155, seasons: null, episodes: null, detailsAt: NOW, addedAt: NOW - 1000, finishedAt: NOW, ...overrides,
 });
 
 describe('normalizeState', () => {
@@ -72,9 +72,13 @@ describe('helpers', () => {
       [155, 155, 60, 90, 45, null, null, null, null, null, null]);
   });
 
-  test('only movies keep a duration', () => {
-    const [movie, series] = normalizeState({ items: [item({ id: 'a1', runtime: '2h' }), item({ id: 'b2', category: 'series', runtime: 50 })] }, NOW).items;
-    assert.deepEqual([movie.runtime, series.runtime], [120, null]);
+  test('only movies keep a duration, only series seasons and episodes', () => {
+    const [movie, series] = normalizeState({ items: [
+      item({ id: 'a1', runtime: '2h', seasons: 3 }),
+      item({ id: 'b2', category: 'series', runtime: 50, seasons: 3, episodes: 26.5, detailsAt: 'x' }),
+    ] }, NOW).items;
+    assert.deepEqual([movie.runtime, movie.seasons], [120, null]);
+    assert.deepEqual([series.runtime, series.seasons, series.episodes, series.detailsAt], [null, 3, null, null]);
   });
 
   test('parseYear reads years from numbers and dates', () => {

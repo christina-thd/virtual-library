@@ -1,7 +1,7 @@
 // Item sheet: big cover, move between Pending, Waiting (series) and Done, drop it, rate when done, remove.
 import { sendAction } from '../shared/api.js';
 import { $, escapeHtml } from '../shared/dom.js';
-import { formatRuntime } from '../shared/format.js';
+import { formatCount, formatRuntime } from '../shared/format.js';
 import { categoryOf, STATUS_LABELS, statusesFor } from '../shared/library.js';
 import { celebrate } from '../ui/celebrate.js';
 import { coverHtml } from '../ui/cover.js';
@@ -35,7 +35,10 @@ export function createDetails({ getItem }) {
 
   function render(item) {
     const kind = categoryOf(item.category);
-    const meta = [item.year, item.creator, formatRuntime(item.runtime)].filter(Boolean).map(escapeHtml).join(' · ');   // runtime: movies
+    const meta = [item.year, item.creator].filter(Boolean).map(escapeHtml).join(' · ');
+    // a quieter line under it: how long a movie is, how many seasons and episodes of a series are out
+    const facts = [formatRuntime(item.runtime), formatCount(item.seasons, 'season'), formatCount(item.episodes, 'episode')]
+      .filter(Boolean).join(' · ');
     const done = item.status === 'done';
     const glow = item.image
       ? `<div class="details-glow" style="background-image:url('${escapeHtml(item.image)}')"></div>`
@@ -52,6 +55,7 @@ export function createDetails({ getItem }) {
         <div data-drag>${coverHtml(item, 'details-cover')}</div>
         <h2 class="details-title">${escapeHtml(item.title)}</h2>
         <div class="details-meta"><span class="kind">${icon(item.category)}${kind.label}</span>${meta ? `<span>· ${meta}</span>` : ''}</div>
+        ${facts ? `<div class="details-facts">${facts}</div>` : ''}
 
         <div class="segmented details-status" role="radiogroup" aria-label="Status">
           ${statusesFor(item.category).map((status) => `

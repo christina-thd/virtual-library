@@ -74,6 +74,7 @@
   color: var(--muted);
   font-size: 14px;
 }
+.details-facts { margin-top: 4px; color: var(--faint); font-size: 13px; }
 .details-meta .kind { display: inline-flex; align-items: center; gap: 5px; color: var(--tint); font-weight: 600; }
 .details-meta .kind svg.icon { width: 15px; height: 15px; }
 

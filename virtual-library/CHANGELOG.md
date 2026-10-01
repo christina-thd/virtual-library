@@ -4,7 +4,8 @@
 - Search asks a second catalog when the first finds nothing or is down: Cinemeta for series, Apple Books for books,
   GOG for games (no account needed). With an API key, TMDB / RAWG go first and the free ones stay as fallbacks
 - Nintendo games: pick PC or Nintendo when searching games (Switch, 3DS, Wii U, Wii and the classics, with box art)
-- Movies show their duration on their page (e.g. 2h 35m); movies already in the library get it after an update
+- An item's page shows how long a movie is (e.g. 2h 35m), and how many seasons and episodes of a series are out
+  (checked again weekly while you're still watching); items already in the library get them after an update
 - **Dropped it**: mark something you gave up on. It goes to Done, greyed out with a red "Dropped" band on its cover,
   and is left out of the home screen covers
 - Series have a third tab, **Waiting**, for series you've caught up on that are waiting for a new season
