@@ -75,8 +75,8 @@ function emptyHtml({ category, status, inCategory }) {
 }
 
 /**
- * Renders `items` (one category and status), in the order of `context.sort` (an id from SORTS; newest first by default).
- * `animate` plays the cards' entrance, when the shelf is opened and when the tab or the order changes.
+ * Renders `items` (one category and status) in the order `context.sort` names (a SORTS id; recent by default).
+ * `animate` plays the cards' entrance: when the shelf opens and when the tab or the order changes.
  */
 export function renderShelf(items, context, { animate = false } = {}) {
   const shelf = $('shelf');

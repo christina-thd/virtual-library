@@ -3,13 +3,10 @@ import { detailFields } from '../library/state.js';
 const WEEK = 7 * 24 * 60 * 60 * 1000;
 
 /**
- * Keeps items' details (a movie's runtime, a series' seasons and episodes, a book's pages, genres) filled in: looks them
- * up in the catalog each item was found in (one at a time, in the background), for items added without them,
- * including ones added before details were kept. A series you
- * haven't finished is looked up again once a week, as new episodes come out. Items typed in by hand have no
- * catalog entry, so they stay without.
- * @param {{ state: any, catalog: { detailsOf(category: string, source: object): Promise<object | null> }, onChange: () => void,
- *   now?: () => number, logger?: { warn(message: string): void } }} options
+ * Keeps items' details (runtime, seasons and episodes, pages, genres) filled in from the catalog each was found
+ * in: in the background, one at a time, also for items from before a detail was kept. A series not finished yet
+ * is looked up again weekly, as episodes come out. Items typed in by hand have no catalog entry.
+ * @param {{ state: any, catalog: any, onChange: () => void, now?: () => number, logger?: Pick<Console, 'warn'> }} options
  */
 export function createDetailsSync({ state, catalog, onChange, now = Date.now, logger = console }) {
   const tried = new Set();          // once per run of the add-on: a catalog that fails or doesn't know won't soon

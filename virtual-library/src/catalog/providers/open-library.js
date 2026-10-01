@@ -22,7 +22,7 @@ export const openLibrary = {
     }));
   },
 
-  /** How many pages (for books added before pages were kept), and its subjects, where the genres are picked out from. */
+  /** Pages (for books added before they were kept) and subjects, which the genres are picked out of. */
   async details(id, http) {
     const data = await http.json(`${API}/search.json?q=${encodeURIComponent(`key:"${id}"`)}&fields=key,number_of_pages_median,subject`);
     const book = data.docs?.[0];

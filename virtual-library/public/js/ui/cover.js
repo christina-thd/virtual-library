@@ -42,6 +42,7 @@ export function installCoverFallback() {
   document.addEventListener('error', (e) => {
     const img = e.target instanceof HTMLImageElement ? e.target : null;
     const frame = img?.parentElement;
-    if (frame?.classList.contains('cover')) img.outerHTML = generatedHtml(frame.dataset.category, frame.dataset.title);   // keeps the badge
+    // only the image is replaced, so a "Dropped" band stays
+    if (frame?.classList.contains('cover')) img.outerHTML = generatedHtml(frame.dataset.category, frame.dataset.title);
   }, true);   // error events don't bubble, so listen while capturing
 }

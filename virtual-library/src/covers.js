@@ -57,10 +57,9 @@ export class CoverStore {
 }
 
 /**
- * Keeps every item's cover saved: downloads missing ones (one at a time, in the background) and
- * deletes the files of removed items. `sync()` is safe to call after every change.
- * Each of an item's image URLs is tried in turn. If none works, it's retried on the next start.
- * @param {{ state: any, covers: CoverStore, onChange: () => void, logger?: { warn(message: string): void } }} options
+ * Keeps every item's cover saved: downloads missing ones in the background, one at a time, trying each of
+ * the item's images; deletes the files of removed items. `sync()` is safe to call after every change.
+ * @param {{ state: any, covers: CoverStore, onChange: () => void, logger?: Pick<Console, 'warn'> }} options
  */
 export function createCoverSync({ state, covers, onChange, logger = console }) {
   const failed = new Set();

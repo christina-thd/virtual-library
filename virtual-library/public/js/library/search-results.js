@@ -38,10 +38,10 @@ const SKELETON_ROW = '<li class="result skeleton"><div class="cover"></div><div>
  * @property {string} category           the category searched
  */
 
-/** @param {{ getItems: () => import('../shared/library.js').Item[] }} options  the library, to mark results that are already in it */
+/** @param {{ getItems: () => import('../shared/library.js').Item[] }} options  the library, to mark what's in it */
 export function createResults({ getItems }) {
-  // what was added from this search (key → { itemId, status, fresh, seen }): its row says "Added to …" until
-  // the next search, even before the library update arrives; `fresh` plays the badge's pop once
+  // added from this search (key → { itemId, status, fresh, seen }): says "Added to …" even before the library
+  // update arrives; `fresh` plays the badge's pop once
   const added = new Map();
 
   /** The item this entry became, if it's in the library: { itemId, status, recent, fresh }. */

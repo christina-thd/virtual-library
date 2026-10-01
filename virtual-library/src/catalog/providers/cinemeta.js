@@ -33,7 +33,7 @@ export function createCinemeta(type) {
       }));
     },
   };
-  /** From the full entry: how long a movie is ("155 min"); how many seasons and episodes of a series are out. */
+  /** From the full entry: a movie's runtime ("155 min"), or a series' seasons and episodes out so far. */
   provider.details = async (id, http) => {
     const { meta } = await http.json(`${API}/meta/${type}/${encodeURIComponent(id)}.json`);
     const genres = meta?.genres ?? meta?.genre ?? [];

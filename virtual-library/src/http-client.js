@@ -27,9 +27,8 @@ export function createHttpClient({ fetch = globalThis.fetch, timeoutMs = 8000, u
 
   return {
     /**
-     * `timeoutMs` overrides the client's timeout, for requests that are nice to have but mustn't hold things up.
      * @param {string} url
-     * @param {{ headers?: Record<string, string>, timeoutMs?: number }} [options]
+     * @param {{ headers?: Record<string, string>, timeoutMs?: number }} [options]  timeoutMs: shorter, for nice-to-haves
      */
     async json(url, { headers = {}, timeoutMs: timeout } = {}) {
       const res = await request(url, { Accept: 'application/json', ...headers }, timeout);

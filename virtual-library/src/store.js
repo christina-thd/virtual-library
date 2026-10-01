@@ -2,11 +2,9 @@ import fs from 'node:fs';
 import path from 'node:path';
 
 /**
- * Keeps one JSON document on disk.
- * - save() is debounced, so a burst of taps is one write.
- * - Writes go to a temp file that is then renamed over the real one, so a crash or
- *   power cut mid-write can never leave a half-written file.
- * - A file that can't be parsed is kept aside as `<name>.corrupt-<time>` instead of being lost.
+ * Keeps one JSON document on disk. save() is debounced, so a burst of taps is one write; writes go to a temp
+ * file renamed over the real one, so a crash mid-write can't leave a half-written file; a file that can't be
+ * parsed is kept aside as `<name>.corrupt-<time>`, not lost.
  */
 export class JsonFileStore {
   #file;
@@ -17,7 +15,7 @@ export class JsonFileStore {
 
   /**
    * @param {string} file
-   * @param {{ debounceMs?: number, logger?: { warn(message: string): void } }} [options]
+   * @param {{ debounceMs?: number, logger?: Pick<Console, 'warn'> }} [options]
    */
   constructor(file, { debounceMs = 300, logger = console } = {}) {
     this.#file = file;

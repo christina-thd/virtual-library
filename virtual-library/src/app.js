@@ -70,7 +70,7 @@ function readJsonBody(req) {
  *   POST /api/actions      apply one action, e.g. { "type": "setStatus", "itemId": "…", "status": "done" }
  *
  * @param {{ config: any, state: any, store: any, catalog: any, covers: any, hub?: SseHub, now?: () => number,
- *   logger?: { warn(message: string): void, error(error: unknown): void } }} options
+ *   logger?: Pick<Console, 'warn' | 'error'> }} options
  */
 export function createApp({
   config, state, store, catalog, covers,

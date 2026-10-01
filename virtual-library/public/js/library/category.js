@@ -1,5 +1,5 @@
-// One category: its title, the Pending / (series: Waiting /) Done tabs, the sort button and the shelf. It always opens
-// on Pending; each tab starts in its own order (Pending, Waiting: recent first, Done: best rated first), whatever was picked before.
+// One category: its title, the Pending / (Waiting /) Done tabs, the sort button and the shelf. It always opens
+// on Pending, and each tab starts in its own order (Done: best rated first).
 import { $, closest, escapeHtml } from '../shared/dom.js';
 import { categoryOf, statusesFor } from '../shared/library.js';
 import { icon } from '../ui/icons.js';
@@ -67,7 +67,7 @@ export function createCategoryView({ onBack }) {
     render({ animate: true });
   });
 
-  // the title, back button and tabs always stay at the top; they get a background once the shelf scrolls under them
+  // the title and tabs stay at the top; they get a background once the shelf scrolls under them
   new IntersectionObserver(([entry]) => $('categoryHead').classList.toggle('stuck', !entry.isIntersecting))
     .observe($('headSentinel'));
 
@@ -82,10 +82,10 @@ export function createCategoryView({ onBack }) {
     show(id) {
       category = id;
       view.dataset.category = id;
-      status = 'pending';                          // always opens on Pending
+      status = 'pending';
       // only series have Waiting (caught up, waiting for a new season)
       for (const button of tabButtons()) button.hidden = !statusesFor(id).includes(button.dataset.status);
-      $('filters').classList.toggle('three-tabs', statusesFor(id).length > 2);   // room for them: the sort button is an icon
+      $('filters').classList.toggle('three-tabs', statusesFor(id).length > 2);   // sort button: icon only
       Object.assign(sorts, START_SORT);
       markSelected();
       $('categoryTitle').innerHTML = `${icon(id)}<span>${categoryOf(id).plural}</span>`;

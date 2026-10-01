@@ -1,5 +1,5 @@
-// Stats: what you finished per month, your genres, time spent, ratings and backlog, for the whole library or one
-// category (the switch at the top). The numbers come from shared/stats.js.
+// Stats page: finished per month, genres, time spent, ratings and backlog, for the whole library or one
+// category. The numbers come from shared/stats.js.
 import { $, closest, escapeHtml } from '../shared/dom.js';
 import { CATEGORIES, categoryOf } from '../shared/library.js';
 import { libraryStats } from '../shared/stats.js';

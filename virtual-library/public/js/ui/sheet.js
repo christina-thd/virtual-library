@@ -1,7 +1,7 @@
 // Bottom sheets. The page needs, per sheet:
 //   <div class="layer" hidden><div class="backdrop" data-close></div><section class="sheet">…</section></div>
 // Sheets can stack (the item sheet opens on top of search); the back button closes the top one.
-// Tapping [data-close] closes the sheet; dragging [data-drag] (its top) down far enough, or flicking it, does too.
+// [data-close] closes it on tap; dragging [data-drag] (its top) down far enough, or flicking it, does too.
 import { closest } from '../shared/dom.js';
 import { goBack, pushBack } from './back.js';
 

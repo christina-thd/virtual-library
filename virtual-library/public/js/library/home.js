@@ -6,8 +6,8 @@ import { icon } from '../ui/icons.js';
 
 const TILE_COVERS = 3;
 
-// category → ids of the items on its tile. Kept until coming back to the home screen (reshuffleHome), so the
-// tiles don't reshuffle every time the library changes; an item that's removed is replaced by another random one.
+// category → ids of the items on its tile. Kept until coming back home (reshuffleHome), so the tiles don't
+// reshuffle on every library change; a removed item is replaced by another random one.
 const picked = new Map();
 
 /** New random covers on the next render. */
@@ -24,7 +24,7 @@ function shuffled(list) {
   return copy;
 }
 
-/** Up to TILE_COVERS random items of a category that have a picture (not a made-up cover), and aren't dropped. */
+/** Up to TILE_COVERS random items of the category with a real picture, not dropped. */
 function tileItems(categoryId, items) {
   const byId = new Map(items.filter((item) => item.image && !item.dropped).map((item) => [item.id, item]));
   const kept = (picked.get(categoryId) ?? []).filter((id) => byId.has(id));

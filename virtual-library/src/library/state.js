@@ -2,27 +2,12 @@ import { randomBytes } from 'node:crypto';
 import { CATEGORY_IDS, isRating, MAX_CREATOR, MAX_TITLE, sameSource, statusesFor } from '../../public/js/shared/library.js';
 
 /**
- * State shape (saved to disk as JSON):
- *
- *   {
- *     schema: 1,
- *     statsSince: ms,                      when the stats start counting (what was finished before isn't dated)
- *     items: [{
- *       id, category ('movie' | 'series' | 'book' | 'game'), title, year | null, creator | null,
- *       source: { provider, id } | null,   where it was found (null: added by hand)
- *       imageUrls: [string],               the catalog's images, best first (the next is tried if one fails)
- *       cover: string | null,              file name of the saved copy (see covers.js)
- *       status ('pending' | 'waiting' (series only) | 'done'), rating (1–5) | null,
- *       dropped: boolean,                  done, but given up on (it wasn't worth finishing)
- *       hoursPlayed: number | null,        games: how long you played it, entered when done
- *       runtime: minutes | null,           how long a movie is
- *       seasons, episodes: number | null,  how many of a series are out
- *       pages: number | null,              how long a book is
- *       genres: [string] | null,           up to three, for the stats (null: not looked up yet)
- *       detailsAt: ms | null,              when those were last looked up (in the background, see catalog/details.js)
- *       addedAt, finishedAt | null,        ms timestamps
- *     }],
- *   }
+ * What's saved to disk (JSON): { schema, statsSince, items }.
+ *   statsSince   when the stats started counting (what was finished before has no real date)
+ * Each item is an Item (public/js/shared/library.js) with, instead of `image`:
+ *   imageUrls    the catalog's images, best first (the next is tried if one fails)
+ *   cover        file name of the saved copy (covers.js)
+ *   detailsAt    when runtime / seasons / pages / genres were last looked up (catalog/details.js)
  */
 export const SCHEMA_VERSION = 1;
 

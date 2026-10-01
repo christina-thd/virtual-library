@@ -16,7 +16,7 @@ const MIN_QUERY = 2;
 
 /**
  * @param {object} options
- * @param {() => import('../shared/library.js').Item[]} options.getItems    the library, to mark results that are already in it
+ * @param {() => import('../shared/library.js').Item[]} options.getItems    the library, to mark what's in it
  * @param {(itemId: string, how: { fromSearch?: boolean }) => void} options.openItem
  */
 export function createSearch({ getItems, openItem }) {
@@ -38,7 +38,7 @@ export function createSearch({ getItems, openItem }) {
   const homeCategory = () => (CATEGORY_IDS.includes(storage.get(CATEGORY_KEY)) ? storage.get(CATEGORY_KEY) : 'movie');
   let category = homeCategory();
   let locked = false;               // opened from a category: only that category can be added
-  // category → [{ id, label, credits }], from the server. Several for a category is a switch (games: PC / Nintendo)
+  // category → [{ id, label, credits }], from the server; several make a switch (games: PC / Nintendo)
   let sources = {};
   const sourcesOf = (id) => sources[id] ?? [];
   // category → the source picked on the switch. Not remembered: each time the search opens it's back to the
@@ -152,7 +152,7 @@ export function createSearch({ getItems, openItem }) {
 
   // ----- adding -----
 
-  /** @param {HTMLElement} button  a Pending / Done button: data-add is the result's index, or -1 for the typed title */
+  /** @param {HTMLElement} button  Pending or Done; data-add: the result's index, or -1 for the typed title */
   async function add(button) {
     const index = Number(button.dataset.add);
     const status = button.dataset.status;

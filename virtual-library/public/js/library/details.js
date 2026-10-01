@@ -1,5 +1,4 @@
-// Item sheet: big cover, move between Pending, Waiting (series) and Done, drop it, rate when done (and for games,
-// hours played), remove.
+// Item sheet: the cover, its status, drop it, rate it (games: hours played), remove it.
 import { sendAction } from '../shared/api.js';
 import { $, closest, escapeHtml } from '../shared/dom.js';
 import { formatCount, formatRuntime } from '../shared/format.js';
