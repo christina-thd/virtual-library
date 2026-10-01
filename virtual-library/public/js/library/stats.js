@@ -8,6 +8,7 @@ import { icon, star } from '../ui/icons.js';
 
 const SHORT_MONTH = new Intl.DateTimeFormat('en', { month: 'short' });
 const MONTH_YEAR = new Intl.DateTimeFormat('en', { month: 'short', year: 'numeric' });
+const DAY = new Intl.DateTimeFormat('en', { day: 'numeric', month: 'short', year: 'numeric' });
 const number = (n) => n.toLocaleString('en');
 const monthName = (m) => SHORT_MONTH.format(new Date(m.year, m.month, 1));
 const monthAndYear = (m) => MONTH_YEAR.format(new Date(m.year, m.month, 1));
@@ -45,9 +46,10 @@ function monthsHtml(s, category) {
   }).join('');
   const legend = category ? '' : `<div class="stats-legend">${CATEGORIES.map((c) =>
     `<span data-category="${c.id}"><i></i>${c.plural}</span>`).join('')}</div>`;
-  // the busiest month, when one stands out
-  const foot = !s.busiest ? 'Nothing finished in the last year yet'
-    : s.busiest.total > 1 ? `Busiest: ${monthAndYear(s.busiest)} · ${s.busiest.total}` : '';
+  // the busiest month, when one stands out; and since when it counts (what was finished before has no date)
+  const counting = s.since ? `Counting since ${DAY.format(new Date(s.since))}` : '';
+  const busiest = s.busiest?.total > 1 ? `Busiest: ${monthAndYear(s.busiest)} · ${s.busiest.total}` : '';
+  const foot = [busiest, counting].filter(Boolean).join(' · ');
   return section('Finished per month', `<div class="stats-bars">${bars}</div>${legend}${foot ? `<p class="stats-foot">${foot}</p>` : ''}`);
 }
 
@@ -98,7 +100,7 @@ function ratingsHtml(s, category, items) {
       <span class="genre-count">${r.stars[n]}</span>
     </div>`).join('');
   const perCategory = category ? '' : `<div class="stats-averages">${CATEGORIES.map((c) => {
-    const { average } = libraryStats(items, { category: c.id }).ratings;
+    const { average } = libraryStats(items, { category: c.id }).ratings;   // all time: no dates needed
     return average ? `<span data-category="${c.id}">${icon(c.id)}${average.toFixed(1)}</span>` : '';
   }).join('')}</div>`;
   return section('Ratings', `
@@ -128,6 +130,7 @@ export function createStatsView({ onBack, onOpenItem }) {
   const filter = $('statsFilter');
   let category = null;              // null: the whole library
   let library = [];
+  let since = 0;                    // when the stats started counting (from the server)
   let shown = false;
 
   $('statsBack').innerHTML = icon('back');
@@ -145,7 +148,7 @@ export function createStatsView({ onBack, onOpenItem }) {
       button.setAttribute('aria-selected', selected);
     }
     view.dataset.category = category ?? '';
-    const s = libraryStats(library, { category });
+    const s = libraryStats(library, { category, since });
     body.innerHTML = s.total
       ? summaryHtml(s) + monthsHtml(s, category) + timeHtml(s, category) + genresHtml(s, category)
         + ratingsHtml(s, category, library) + backlogHtml(s)
@@ -177,8 +180,10 @@ export function createStatsView({ onBack, onOpenItem }) {
     hide() {
       shown = false;
     },
-    update(items) {
+    /** @param {object[]} items  @param {number} statsSince  when the stats started counting */
+    update(items, statsSince = 0) {
       library = items;
+      since = statsSince;
       render();
     },
   };

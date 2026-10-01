@@ -75,7 +75,7 @@ subscribe((view) => {
   items = view.items;
   renderHome(items);
   categoryView.update(items);
-  statsView.update(items);
+  statsView.update(items, view.statsSince);
   details.refresh();
   search.refresh();
 });

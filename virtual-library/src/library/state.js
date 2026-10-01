@@ -6,6 +6,7 @@ import { CATEGORY_IDS, isRating, MAX_CREATOR, MAX_TITLE, sameSource, statusesFor
  *
  *   {
  *     schema: 1,
+ *     statsSince: ms,                      when the stats start counting (what was finished before isn't dated)
  *     items: [{
  *       id, category ('movie' | 'series' | 'book' | 'game'), title, year | null, creator | null,
  *       source: { provider, id } | null,   where it was found (null: added by hand)
@@ -31,8 +32,8 @@ export const MAX_IMAGE_URLS = 3;
 
 export const newId = () => randomBytes(6).toString('hex');
 
-export function createInitialState() {
-  return { schema: SCHEMA_VERSION, items: [] };
+export function createInitialState(now = Date.now()) {
+  return { schema: SCHEMA_VERSION, statsSince: now, items: [] };
 }
 
 export const findItem = (state, itemId) => state.items.find((i) => i.id === itemId);
@@ -136,10 +137,12 @@ function normalizeItem(raw, now) {
 
 /** Turns whatever was read from disk into a valid current-schema state (unusable items are dropped). */
 export function normalizeState(raw, now = Date.now()) {
-  if (!raw || typeof raw !== 'object' || !Array.isArray(raw.items)) return createInitialState();
+  if (!raw || typeof raw !== 'object' || !Array.isArray(raw.items)) return createInitialState(now);
   const items = raw.items.map((i) => normalizeItem(i, now)).filter(Boolean);
   const unique = [...new Map(items.map((i) => [i.id, i])).values()];
-  return { schema: SCHEMA_VERSION, items: unique };
+  // a library from before the stats: they count from now on, not from when it was filled in
+  const statsSince = Number.isFinite(raw.statsSince) && raw.statsSince > 0 && raw.statsSince <= now ? raw.statsSince : now;
+  return { schema: SCHEMA_VERSION, statsSince, items: unique };
 }
 
 /** An item as screens see it: `image` is the saved cover when there is one, else the catalog's. */
@@ -149,5 +152,5 @@ function itemView({ cover, imageUrls, ...item }) {
 
 /** What every screen receives. */
 export function toView(state, appVersion) {
-  return { version: appVersion, items: state.items.map(itemView) };
+  return { version: appVersion, statsSince: state.statsSince, items: state.items.map(itemView) };
 }

@@ -32,7 +32,8 @@ and what's still pending.
 - **Stats** (the chart button at the top of the home screen): what you finished each month over the last year,
   your top genres, time spent (hours of movies, episodes, pages, hours played), ratings, and the oldest thing
   still pending. For the whole library or one kind. Dropped things are counted on their own, not as finished;
-  moving something back to Pending takes it out of the month it was finished in.
+  moving something back to Pending takes it out of the month it was finished in. The monthly and this-year numbers
+  count from the day you updated to 3.0.0 (shown under the chart), so a library filled in all at once doesn't skew them.
 
 ### Ratings
 

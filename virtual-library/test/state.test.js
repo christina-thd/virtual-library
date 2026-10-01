@@ -13,13 +13,20 @@ const item = (overrides = {}) => ({
 describe('normalizeState', () => {
   test('nothing saved yet gives an empty library', () => {
     for (const raw of [null, undefined, 'nope', {}, { items: 'x' }]) {
-      assert.deepEqual(normalizeState(raw, NOW), createInitialState());
+      assert.deepEqual(normalizeState(raw, NOW), createInitialState(NOW));
     }
   });
 
   test('keeps a valid item as it is', () => {
     const state = normalizeState({ schema: SCHEMA_VERSION, items: [item()] }, NOW);
     assert.deepEqual(state.items, [item()]);
+  });
+
+  test('the stats start counting when a library is first loaded with them; that date is then kept', () => {
+    assert.equal(normalizeState({ items: [item()] }, NOW).statsSince, NOW);                       // a library from before
+    assert.equal(normalizeState({ statsSince: NOW - 5000, items: [] }, NOW).statsSince, NOW - 5000);
+    assert.equal(normalizeState({ statsSince: NOW + 5000, items: [] }, NOW).statsSince, NOW);     // not in the future
+    assert.equal(createInitialState(NOW).statsSince, NOW);
   });
 
   test('drops items without a title or with an unknown category', () => {

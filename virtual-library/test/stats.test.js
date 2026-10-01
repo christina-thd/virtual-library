@@ -40,6 +40,14 @@ test('finished per month: the last 12 months, by category; older and dropped one
   assert.deepEqual([busiest.year, busiest.month, busiest.total], [2026, 2, 2]);   // the first of the busiest
 });
 
+test('only what was finished since the stats started is dated: per month and this year; totals are all time', () => {
+  const since = on(2026, 8, 1);                                  // 1 September 2026
+  const stats = libraryStats(library, { now: NOW, since });
+  assert.deepEqual(stats.months.map((m) => [m.month, m.total]), [[8, 1], [9, 2]]);   // from September: just two bars
+  assert.deepEqual([stats.finishedThisYear, stats.finished, stats.time.movieMinutes], [3, 7, 465]);
+  assert.equal(libraryStats(library, { now: NOW, since: NOW }).months.length, 1);       // started today: this month
+});
+
 test('moving an item back to pending (no finish date any more) takes it out of its month', () => {
   const undone = library.map((i) => (i.id === library[0].id ? { ...i, status: 'pending', finishedAt: null } : i));
   assert.equal(libraryStats(undone, { now: NOW }).months[11].total, 1);

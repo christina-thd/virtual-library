@@ -11,7 +11,10 @@ import { JsonFileStore } from './store.js';
 
 const config = loadConfig();
 const store = new JsonFileStore(config.stateFile);
-const state = normalizeState(store.load());
+const saved = store.load();
+const state = normalizeState(saved);
+// the stats' start date is set on the first run with stats: save it now, so a restart doesn't move it
+if (saved && saved.statsSince !== state.statsSince) store.save(state);
 
 const client = createHttpClient({ userAgent: `HoardBoard/${config.version} (Home Assistant add-on)` });
 const providers = chooseProviders({ tmdbApiKey: config.tmdbApiKey, rawgApiKey: config.rawgApiKey });
