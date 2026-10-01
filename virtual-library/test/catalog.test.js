@@ -176,6 +176,43 @@ describe('createCatalog', () => {
     ]);
   });
 
+  describe('remembers recent searches', () => {
+    function counting({ fail = false } = {}) {
+      const provider = {
+        id: 'fake', name: 'Fake', url: 'https://fake.example/', imageHosts: [], calls: 0,
+        search: async (query) => {
+          provider.calls += 1;
+          if (fail && provider.calls === 1) throw new Error('down');
+          return [{ id: 1, title: query }];
+        },
+      };
+      return provider;
+    }
+
+    test('the same search (any case or spacing) asks the catalog once, even when asked at the same time', async () => {
+      const provider = counting();
+      const catalog = createCatalog({ http: fakeHttp({}), providers: { movie: provider, book: provider } });
+      const [a, b] = await Promise.all([catalog.search('movie', 'Dune'), catalog.search('movie', 'dune')]);
+      assert.deepEqual(a, b);
+      await catalog.search('movie', '  DUNE ');
+      assert.equal(provider.calls, 1);
+      await catalog.search('book', 'dune');           // another category is another search
+      assert.equal(provider.calls, 2);
+    });
+
+    test('asks again once the answer is old, or after a failure', async () => {
+      let time = 0;
+      const provider = counting({ fail: true });
+      const catalog = createCatalog({ http: fakeHttp({}), providers: { movie: provider }, now: () => time });
+      await assert.rejects(catalog.search('movie', 'dune'));
+      await catalog.search('movie', 'dune');
+      assert.equal(provider.calls, 2);
+      time += 11 * 60 * 1000;
+      await catalog.search('movie', 'dune');
+      assert.equal(provider.calls, 3);
+    });
+  });
+
   test('lists who searches each category, for the credits line', () => {
     assert.deepEqual(Object.keys(catalog.credits).sort(), ['book', 'game', 'movie', 'series']);
     assert.equal(catalog.credits.series.name, 'TVmaze');

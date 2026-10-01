@@ -8,6 +8,9 @@ import { createTmdb } from './providers/tmdb.js';
 import { tvmaze } from './providers/tvmaze.js';
 
 const MAX_RESULTS = 20;
+// Recent searches are answered from memory: typing back, switching categories and reopening the search are instant.
+const CACHE_TTL_MS = 10 * 60 * 1000;
+const CACHE_SIZE = 200;
 
 /** A search that can't be run (bad category or query). Answered as 400. */
 export class SearchError extends Error {
@@ -35,7 +38,7 @@ const clean = (value, max) => (typeof value === 'string' || typeof value === 'nu
  *   { id, name, url, imageHosts: [hostname], search(query, http) → [{ id, title, year, creator, coverUrl, thumbUrl? }] }
  * and this turns its results into what screens show and send back with `addItem`.
  */
-export function createCatalog({ http, providers = chooseProviders() }) {
+export function createCatalog({ http, providers = chooseProviders(), now = Date.now }) {
   const imageHosts = new Set(Object.values(providers).flatMap((p) => p.imageHosts));
 
   /** Only https images from the catalogs' own image servers are shown and downloaded. */
@@ -49,11 +52,32 @@ export function createCatalog({ http, providers = chooseProviders() }) {
   }
   const image = (url) => (typeof url === 'string' && isAllowedImage(url) ? url : null);
 
-  async function search(category, rawQuery) {
-    if (!CATEGORY_IDS.includes(category)) throw new SearchError(`category must be one of: ${CATEGORY_IDS.join(', ')}`);
-    const query = clean(rawQuery, MAX_QUERY);
-    if (!query) throw new SearchError('Type something to search for');
+  // key → { at, results: Promise }. Holds searches still running too, so the same search asked twice
+  // at once goes out once. Failures are dropped, to be tried again.
+  const cache = new Map();
 
+  function search(category, rawQuery) {
+    if (!CATEGORY_IDS.includes(category)) return Promise.reject(new SearchError(`category must be one of: ${CATEGORY_IDS.join(', ')}`));
+    const query = clean(rawQuery, MAX_QUERY);
+    if (!query) return Promise.reject(new SearchError('Type something to search for'));
+
+    const key = `${category}\0${query.toLowerCase().replace(/\s+/g, ' ')}`;
+    const hit = cache.get(key);
+    cache.delete(key);                             // re-added below: most recently used last
+    if (hit && now() - hit.at < CACHE_TTL_MS) {
+      cache.set(key, hit);
+      return hit.results;
+    }
+    const results = ask(category, query);
+    cache.set(key, { at: now(), results });
+    if (cache.size > CACHE_SIZE) cache.delete(cache.keys().next().value);
+    results.catch(() => {
+      if (cache.get(key)?.results === results) cache.delete(key);
+    });
+    return results;
+  }
+
+  async function ask(category, query) {
     const provider = providers[category];
     const found = await provider.search(query, http);
     return found

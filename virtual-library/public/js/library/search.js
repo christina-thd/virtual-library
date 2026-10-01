@@ -10,7 +10,8 @@ import { createSheet } from '../ui/sheet.js';
 import { toast } from '../ui/toast.js';
 
 const CATEGORY_KEY = 'searchCategory';
-const DEBOUNCE_MS = 350;
+const DEBOUNCE_MS = 250;
+const CACHE_SIZE = 50;
 const MIN_QUERY = 2;
 
 const STATUS_LABEL = { pending: 'Pending', done: 'Done' };
@@ -38,6 +39,9 @@ export function createSearch({ getItems, openItem }) {
   let searched = '';
   let controller = null;
   let timer = null;
+  // results already fetched since the page loaded (category + query → results): shown again without asking
+  const cache = new Map();
+  const cacheKey = (query) => `${category}\0${query.toLowerCase().replace(/\s+/g, ' ')}`;
   // what was added from this search (key → { itemId, status, fresh, seen }): its row says "Added to …" until
   // the next search, even before the library update arrives; `fresh` plays the badge's pop once
   const added = new Map();
@@ -62,10 +66,18 @@ export function createSearch({ getItems, openItem }) {
     const { signal } = controller;
     if (query !== searched) added.clear();
     searched = query;
+    const key = cacheKey(query);
+    if (cache.has(key)) {
+      results = cache.get(key);
+      phase = 'results';
+      return render();
+    }
     phase = 'loading';
     render();
     try {
       results = await searchCatalog(category, query, signal);
+      cache.set(key, results);
+      if (cache.size > CACHE_SIZE) cache.delete(cache.keys().next().value);
       phase = 'results';
     } catch (err) {
       if (signal.aborted) return;                  // replaced by a newer search

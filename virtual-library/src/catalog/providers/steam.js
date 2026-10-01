@@ -2,6 +2,8 @@
 const STORE = 'https://store.steampowered.com/api';
 const WEB_API = 'https://api.steampowered.com';
 const ASSETS = 'https://shared.akamai.steamstatic.com/store_item_assets';
+// the asset list only improves some covers: when it's slow, the results go out with the classic addresses
+const PORTRAITS_TIMEOUT_MS = 2500;
 
 /**
  * Portrait box art for each app. Newer games keep their images under hashed folders, so the
@@ -16,7 +18,7 @@ async function portraits(appIds, http) {
   };
   const found = new Map();
   try {
-    const data = await http.json(`${WEB_API}/IStoreBrowseService/GetItems/v1/?input_json=${encodeURIComponent(JSON.stringify(input))}`);
+    const data = await http.json(`${WEB_API}/IStoreBrowseService/GetItems/v1/?input_json=${encodeURIComponent(JSON.stringify(input))}`, { timeoutMs: PORTRAITS_TIMEOUT_MS });
     for (const item of data.response?.store_items ?? []) {
       const { asset_url_format: format, library_capsule: file } = item.assets ?? {};
       if (format && file) found.set(item.appid, `${ASSETS}/${format.replace('${FILENAME}', file)}`);
