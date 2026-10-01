@@ -118,6 +118,37 @@ describe('setStatus', () => {
   });
 });
 
+describe('setDropped', () => {
+  test('dropping a pending item makes it done (and new items are not dropped)', () => {
+    const id = add();
+    assert.equal(itemOf(id).dropped, false);
+    apply({ type: 'setDropped', itemId: id, dropped: true }, { ...ctx, now: NOW + 3 });
+    assert.deepEqual([itemOf(id).status, itemOf(id).dropped, itemOf(id).finishedAt], ['done', true, NOW + 3]);
+    apply({ type: 'rateItem', itemId: id, rating: 1 });               // it can still get a (bad) rating
+    assert.equal(itemOf(id).rating, 1);
+  });
+
+  test('dropping a done item keeps its finish date and rating; undropping keeps it done', () => {
+    const id = add({ status: 'done', rating: 2 });
+    apply({ type: 'setDropped', itemId: id, dropped: true }, { ...ctx, now: NOW + 9 });
+    assert.deepEqual([itemOf(id).finishedAt, itemOf(id).rating, itemOf(id).dropped], [NOW, 2, true]);
+    apply({ type: 'setDropped', itemId: id, dropped: false });
+    assert.deepEqual([itemOf(id).status, itemOf(id).dropped, itemOf(id).rating], ['done', false, 2]);
+  });
+
+  test('moving it back to pending (or waiting) clears the mark', () => {
+    const id = add();
+    apply({ type: 'setDropped', itemId: id, dropped: true });
+    apply({ type: 'setStatus', itemId: id, status: 'waiting' });
+    assert.deepEqual([itemOf(id).status, itemOf(id).dropped], ['waiting', false]);
+  });
+
+  test('rejects unknown items and anything but true or false', () => {
+    rejects({ type: 'setDropped', itemId: 'ghost', dropped: true }, 404);
+    rejects({ type: 'setDropped', itemId: add(), dropped: 'yes' }, 400);
+  });
+});
+
 describe('rateItem', () => {
   test('rates 1–5 and clears with null', () => {
     const id = add({ status: 'done' });
@@ -156,6 +187,6 @@ describe('applyAction', () => {
   });
 
   test('lists every action', () => {
-    assert.deepEqual([...ACTION_TYPES].sort(), ['addItem', 'rateItem', 'removeItem', 'setStatus']);
+    assert.deepEqual([...ACTION_TYPES].sort(), ['addItem', 'rateItem', 'removeItem', 'setDropped', 'setStatus']);
   });
 });

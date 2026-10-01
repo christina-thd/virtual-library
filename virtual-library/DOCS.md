@@ -21,6 +21,8 @@ and what's still pending.
 - **Series** have a third tab, **Waiting**: series you've caught up on, waiting for a new season. Move a series there
   from its page; when the new season is out, move it back to Pending.
 - Tap a cover to open it: move it between Pending, (Waiting) and Done, rate it, or remove it.
+- Gave up on something because it wasn't worth finishing? Tap **Dropped it** on its page. It goes to Done (no confetti),
+  greyed out with a red **Dropped** band across its cover. Tap it again to undo, or move it back to Pending.
 - **+** inside a kind adds to that kind only (e.g. "Add a game"). **+** on the home screen lets you pick the kind
   (it starts on the one you picked last).
 - To close the search or an item, tap **Close** (or **Back to search**), swipe it down from the top, or use your phone's back button.

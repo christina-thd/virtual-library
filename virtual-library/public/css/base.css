@@ -301,6 +301,27 @@ body:has(#searchLayer:not([hidden])):not(:has(#detailsLayer:not([hidden]))) .toa
   box-shadow: 0 10px 24px -14px rgb(0 0 0 / 0.9), inset 0 0 0 1px rgb(255 255 255 / 0.05);
 }
 .cover img { display: block; width: 100%; height: 100%; object-fit: cover; }
+/* dropped (given up on): greyed out, with a red band across the bottom; sized from the cover's width (cqw), so
+   it suits every size, and only the icon on small covers (home tiles) */
+.cover.dropped img, .cover.dropped .cover-generated { filter: grayscale(1) brightness(0.45); }
+.cover-dropped {
+  position: absolute;
+  inset: auto 0 0;
+  z-index: 1;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 4cqw;
+  padding: 5cqw 0;
+  background: rgb(185 28 28 / 0.92);
+  color: #fff1f1;
+  font-size: clamp(9px, 11cqw, 15px);
+  font-weight: 800;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+}
+.cover-dropped svg.icon { width: 1.3em; height: 1.3em; stroke-width: 2.4; }
+@container (max-width: 70px) { .cover-dropped span { display: none; } }
 .cover::after {
   content: "";
   position: absolute;

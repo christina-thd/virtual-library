@@ -60,6 +60,7 @@ const handlers = {
       cover: null,
       status,
       rating: status === 'done' ? rating(action.rating) : null,
+      dropped: false,
       addedAt: ctx.now,
       finishedAt: status === 'done' ? ctx.now : null,
     };
@@ -67,7 +68,7 @@ const handlers = {
     return { itemId: item.id };
   },
 
-  /** Moving away from done clears the rating: ratings belong to finished things. */
+  /** Moving away from done clears the rating (ratings belong to finished things) and the dropped mark. */
   setStatus(state, { itemId, status }, ctx) {
     const item = getItem(state, itemId);
     oneOf(status, statusesFor(item.category), 'status');
@@ -75,6 +76,22 @@ const handlers = {
     item.status = status;
     item.finishedAt = status === 'done' ? ctx.now : null;
     item.rating = null;
+    item.dropped = false;
+  },
+
+  /**
+   * Dropped: given up on, it wasn't worth finishing. It counts as done (it's off the pending list, and can still
+   * be rated), with a mark on its cover. Undropping keeps it done.
+   */
+  setDropped(state, { itemId, dropped }, ctx) {
+    const item = getItem(state, itemId);
+    if (typeof dropped !== 'boolean') throw new ActionError('dropped must be true or false');
+    if (dropped && item.status !== 'done') {
+      item.status = 'done';
+      item.finishedAt = ctx.now;
+      item.rating = null;
+    }
+    item.dropped = dropped;
   },
 
   rateItem(state, { itemId, rating: stars }) {

@@ -7,7 +7,7 @@ const NOW = 1_700_000_000_000;
 const item = (overrides = {}) => ({
   id: 'abc123', category: 'movie', title: 'Dune', year: 2021, creator: 'Denis Villeneuve',
   source: { provider: 'cinemeta', id: 'tt1160419' }, imageUrls: ['https://images.metahub.space/poster/medium/tt1160419/img'],
-  cover: null, status: 'done', rating: 5, addedAt: NOW - 1000, finishedAt: NOW, ...overrides,
+  cover: null, status: 'done', rating: 5, dropped: false, addedAt: NOW - 1000, finishedAt: NOW, ...overrides,
 });
 
 describe('normalizeState', () => {
@@ -47,6 +47,13 @@ describe('normalizeState', () => {
     ] }, NOW).items;
     assert.deepEqual([series.status, series.rating, series.finishedAt], ['waiting', null, null]);
     assert.equal(movie.status, 'pending');
+  });
+
+  test('only a done item can be dropped', () => {
+    const [done, pending, odd] = normalizeState({ items: [
+      item({ id: 'a1', dropped: true }), item({ id: 'b2', status: 'pending', dropped: true }), item({ id: 'c3', dropped: 'yes' }),
+    ] }, NOW).items;
+    assert.deepEqual([done.dropped, pending.dropped, odd.dropped], [true, false, false]);
   });
 
   test('a rating only survives on finished items', () => {

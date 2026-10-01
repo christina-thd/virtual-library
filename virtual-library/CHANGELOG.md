@@ -4,6 +4,8 @@
 - Search asks a second catalog when the first finds nothing or is down: Cinemeta for series, Apple Books for books,
   GOG for games (no account needed). With an API key, TMDB / RAWG go first and the free ones stay as fallbacks
 - Nintendo games: pick PC or Nintendo when searching games (Switch, 3DS, Wii U, Wii and the classics, with box art)
+- **Dropped it**: mark something you gave up on. It goes to Done, greyed out with a red "Dropped" band on its cover,
+  and is left out of the home screen covers
 - Series have a third tab, **Waiting**, for series you've caught up on that are waiting for a new season
 - Categories always open on Pending, and the title and back button stay at the top with the tabs while scrolling
 - Sort a shelf by recent, name (A–Z) or rating, with the button next to Pending / Done; Pending always starts newest first, Done best rated first

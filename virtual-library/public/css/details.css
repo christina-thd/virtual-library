@@ -78,6 +78,10 @@
 .details-meta .kind svg.icon { width: 15px; height: 15px; }
 
 .details-status { margin: 24px auto 0; max-width: 300px; }
+/* "Dropped it": quiet until it's on */
+.details-drop { display: flex; margin: 14px auto 0; min-height: 34px; padding: 0 14px; border: 1px solid var(--line); background: transparent; color: var(--muted); font-size: 13px; }
+.details-drop svg.icon { width: 15px; height: 15px; }
+.details-drop.on { border-color: rgb(248 113 113 / 0.45); background: rgb(248 113 113 / 0.12); color: var(--danger); }
 
 .rating { margin-top: 22px; }
 .rating-label { color: var(--muted); font-size: 13px; }

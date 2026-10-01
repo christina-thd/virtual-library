@@ -25,18 +25,22 @@ const generatedHtml = (category, title) => `
     <span class="generated-title">${escapeHtml(title)}</span>
   </div>`;
 
-/** A cover image in a 2:3 frame, or a generated cover when there's no image (or it fails to load). */
-export function coverHtml({ image, title, category }, className = '') {
+/**
+ * A cover image in a 2:3 frame, or a generated cover when there's no image (or it fails to load).
+ * A dropped item (given up on) is greyed out, with a red "Dropped" band across the bottom.
+ */
+export function coverHtml({ image, title, category, dropped = false }, className = '') {
   const inner = image
     ? `<img src="${escapeHtml(image)}" alt="" loading="lazy" decoding="async" referrerpolicy="no-referrer">`
     : generatedHtml(category, title);
-  return `<div class="cover ${className}" data-category="${category}" data-title="${escapeHtml(title)}">${inner}</div>`;
+  const badge = dropped ? `<span class="cover-dropped">${icon('trash')}<span>Dropped</span></span>` : '';
+  return `<div class="cover ${className} ${dropped ? 'dropped' : ''}" data-category="${category}" data-title="${escapeHtml(title)}">${inner}${badge}</div>`;
 }
 
 /** Swaps images that fail to load for a generated cover. Call once. */
 export function installCoverFallback() {
   document.addEventListener('error', (e) => {
     const frame = e.target instanceof HTMLImageElement && e.target.parentElement;
-    if (frame?.classList.contains('cover')) frame.innerHTML = generatedHtml(frame.dataset.category, frame.dataset.title);
+    if (frame?.classList.contains('cover')) e.target.outerHTML = generatedHtml(frame.dataset.category, frame.dataset.title);   // keeps the badge
   }, true);   // error events don't bubble, so listen while capturing
 }

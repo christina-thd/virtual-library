@@ -12,6 +12,7 @@ import { CATEGORY_IDS, isRating, MAX_CREATOR, MAX_TITLE, sameSource, statusesFor
  *       imageUrls: [string],               the catalog's images, best first (the next is tried if one fails)
  *       cover: string | null,              file name of the saved copy (see covers.js)
  *       status ('pending' | 'waiting' (series only) | 'done'), rating (1–5) | null,
+ *       dropped: boolean,                  done, but given up on (it wasn't worth finishing)
  *       addedAt, finishedAt | null,        ms timestamps
  *     }],
  *   }
@@ -72,6 +73,7 @@ function normalizeItem(raw, now) {
     cover: COVER_FILE.test(raw.cover) ? raw.cover : null,
     status,
     rating: status === 'done' && isRating(raw.rating) ? raw.rating : null,
+    dropped: status === 'done' && raw.dropped === true,
     addedAt,
     finishedAt: status === 'done' ? toTime(raw.finishedAt, addedAt) : null,
   };

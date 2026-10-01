@@ -152,7 +152,7 @@ export function createSearch({ getItems, openItem }) {
     if (mine) mine.fresh = false;
     if (item) {
       if (mine) mine.seen = true;
-      return { itemId: item.id, status: item.status, recent: Boolean(mine), fresh };
+      return { itemId: item.id, status: item.dropped ? 'dropped' : item.status, recent: Boolean(mine), fresh };
     }
     if (mine && !mine.seen) return { ...mine, recent: true, fresh };  // just added: the library update is on its way
     if (mine) added.delete(key);                        // removed from the library since
@@ -161,7 +161,8 @@ export function createSearch({ getItems, openItem }) {
 
   /** "✓ Added to Done" when added from this search, "✓ In your library · Done" otherwise. Tap to open it. */
   function ownedHtml({ itemId, status, recent, fresh }) {
-    const text = recent ? `Added to ${STATUS_LABELS[status]}` : `In your library · ${STATUS_LABELS[status]}`;
+    const label = status === 'dropped' ? 'Dropped' : STATUS_LABELS[status];
+    const text = recent ? `Added to ${label}` : `In your library · ${label}`;
     return `<button type="button" class="in-library ${recent ? 'just-added' : ''} ${fresh ? 'pop' : ''}" data-open="${itemId}">
       <span class="in-library-check">${icon('check')}</span><span>${text}</span><span class="in-library-open">Open</span></button>`;
   }

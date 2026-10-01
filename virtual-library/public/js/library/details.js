@@ -1,4 +1,4 @@
-// Item sheet: big cover, move between Pending, Waiting (series) and Done, rate when done, remove.
+// Item sheet: big cover, move between Pending, Waiting (series) and Done, drop it, rate when done, remove.
 import { sendAction } from '../shared/api.js';
 import { $, escapeHtml } from '../shared/dom.js';
 import { categoryOf, STATUS_LABELS, statusesFor } from '../shared/library.js';
@@ -58,6 +58,10 @@ export function createDetails({ getItem }) {
               aria-checked="${status === item.status}">${icon(STATUS_ICONS[status])}${STATUS_LABELS[status]}</button>`).join('')}
         </div>
 
+        <button type="button" class="pill details-drop ${item.dropped ? 'on' : ''}" data-drop aria-pressed="${item.dropped}">
+          ${icon('trash')}${item.dropped ? 'Dropped · tap to undo' : 'Dropped it'}
+        </button>
+
         ${done ? `
           <div class="rating">
             <div class="rating-label">${item.rating ? 'Your rating' : 'Rate it (optional)'}</div>
@@ -90,6 +94,15 @@ export function createDetails({ getItem }) {
       const status = statusButton.dataset.status;
       send({ type: 'setStatus', itemId, status })
         .then(() => { if (status === 'done') celebrateFinishing(item); })
+        .catch(() => {});
+      return;
+    }
+
+    // given up on: it counts as done (no confetti), with a mark on its cover
+    if (e.target.closest('[data-drop]')) {
+      const dropped = !item.dropped;
+      send({ type: 'setDropped', itemId, dropped })
+        .then(() => toast(dropped ? `“${item.title}” dropped` : `“${item.title}” is no longer dropped`, { icon: 'check' }))
         .catch(() => {});
       return;
     }
