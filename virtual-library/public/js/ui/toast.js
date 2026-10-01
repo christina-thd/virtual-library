@@ -4,7 +4,8 @@ import { icon as iconHtml } from './icons.js';
 let timer = null;
 
 /**
- * A short message at the top of the screen. The page needs <div class="toast" id="toast">.
+ * A short message at the top of the screen, always in the same place: sheets stop below it (--toast-room in
+ * css/base.css), so it never covers their title or Close button. The page needs <div class="toast" id="toast">.
  * `icon` (an icons.js name, e.g. 'check') shows in front of it.
  */
 export function toast(message, { error = false, icon = null } = {}) {

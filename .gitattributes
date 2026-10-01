@@ -1,2 +1,5 @@
-# Shell scripts run in the add-on's Linux container: keep Unix line endings, also on Windows checkouts
+# Files the add-on uses in its Linux container (and Home Assistant reads): keep Unix line endings,
+# also on Windows checkouts
 *.sh text eol=lf
+*.yaml text eol=lf
+Dockerfile text eol=lf

@@ -24,12 +24,11 @@ function shuffled(list) {
   return copy;
 }
 
-/** Up to TILE_COVERS random items of a category, the ones with a picture first. Dropped ones are never shown. */
+/** Up to TILE_COVERS random items of a category that have a picture (not a made-up cover), and aren't dropped. */
 function tileItems(categoryId, items) {
-  const byId = new Map(items.filter((item) => !item.dropped).map((item) => [item.id, item]));
+  const byId = new Map(items.filter((item) => item.image && !item.dropped).map((item) => [item.id, item]));
   const kept = (picked.get(categoryId) ?? []).filter((id) => byId.has(id));
-  const others = shuffled([...byId.values()].filter((item) => !kept.includes(item.id)))
-    .sort((a, b) => Boolean(b.image) - Boolean(a.image));        // stable: still random within each group
+  const others = shuffled([...byId.values()].filter((item) => !kept.includes(item.id)));
   const ids = [...kept, ...others.map((item) => item.id)].slice(0, TILE_COVERS);
   picked.set(categoryId, ids);
   return ids.map((id) => byId.get(id));

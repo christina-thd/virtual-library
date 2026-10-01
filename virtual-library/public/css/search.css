@@ -1,6 +1,6 @@
 /* Search sheet: pick a category, type, add a result as pending or done. */
 
-.search-sheet { height: calc(var(--viewport-height) - var(--safe-top) - 24px); }
+.search-sheet { height: calc(var(--viewport-height) - var(--safe-top) - var(--toast-room)); }
 
 .search-head { flex: none; padding: 0 16px 12px; border-bottom: 1px solid var(--line); }
 
