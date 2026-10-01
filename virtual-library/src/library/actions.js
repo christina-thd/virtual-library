@@ -1,5 +1,5 @@
 import { CATEGORY_IDS, isRating, MAX_CREATOR, MAX_TITLE, statusesFor } from '../../public/js/shared/library.js';
-import { findBySource, findItem, newId, parseImageUrls, parseSource, parseYear } from './state.js';
+import { findBySource, findItem, newId, parseImageUrls, parseMinutes, parseSource, parseYear } from './state.js';
 
 /** A rejected action. `status` is the HTTP status the API answers with. */
 export class ActionError extends Error {
@@ -61,6 +61,7 @@ const handlers = {
       status,
       rating: status === 'done' ? rating(action.rating) : null,
       dropped: false,
+      runtime: category === 'movie' ? parseMinutes(action.runtime) : null,   // else looked up after adding
       addedAt: ctx.now,
       finishedAt: status === 'done' ? ctx.now : null,
     };

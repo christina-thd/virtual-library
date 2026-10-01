@@ -21,7 +21,7 @@ function authenticate(apiKey) {
 export function createTmdb(category, apiKey) {
   const kind = KINDS[category];
   const auth = authenticate(apiKey);
-  return {
+  const provider = {
     id: 'tmdb',
     name: 'TMDB',
     url: 'https://www.themoviedb.org/',
@@ -40,4 +40,12 @@ export function createTmdb(category, apiKey) {
       }));
     },
   };
+  if (category === 'movie') {
+    /** Minutes, from the movie's details (search results don't have it). */
+    provider.runtime = async (id, http) => {
+      const data = await http.json(`${API}/movie/${encodeURIComponent(id)}?language=en-US${auth.query}`, { headers: auth.headers });
+      return data.runtime ?? null;
+    };
+  }
+  return provider;
 }

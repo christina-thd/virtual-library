@@ -1,6 +1,7 @@
 import path from 'node:path';
 import { CATEGORIES } from '../public/js/shared/library.js';
 import { SearchError } from './catalog/index.js';
+import { createRuntimeSync } from './catalog/runtimes.js';
 import { createCoverSync } from './covers.js';
 import { UpstreamError } from './http-client.js';
 import { ActionError, applyAction } from './library/actions.js';
@@ -80,6 +81,7 @@ export function createApp({
   }
 
   const coverSync = createCoverSync({ state, covers, onChange: changed, logger });
+  const runtimeSync = createRuntimeSync({ state, catalog, onChange: changed, logger });
 
   async function dispatch(req, res) {
     const action = await readJsonBody(req);
@@ -87,6 +89,7 @@ export function createApp({
     changed();
     sendJson(res, 200, result);
     coverSync.sync();
+    runtimeSync.sync();
   }
 
   async function search(res, searchParams) {
@@ -152,5 +155,5 @@ export function createApp({
     }
   }
 
-  return { handle, hub, syncCovers: () => coverSync.sync() };
+  return { handle, hub, syncCovers: () => coverSync.sync(), syncRuntimes: () => runtimeSync.sync() };
 }

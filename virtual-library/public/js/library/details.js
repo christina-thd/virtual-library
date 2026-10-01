@@ -1,6 +1,7 @@
 // Item sheet: big cover, move between Pending, Waiting (series) and Done, drop it, rate when done, remove.
 import { sendAction } from '../shared/api.js';
 import { $, escapeHtml } from '../shared/dom.js';
+import { formatRuntime } from '../shared/format.js';
 import { categoryOf, STATUS_LABELS, statusesFor } from '../shared/library.js';
 import { celebrate } from '../ui/celebrate.js';
 import { coverHtml } from '../ui/cover.js';
@@ -34,7 +35,7 @@ export function createDetails({ getItem }) {
 
   function render(item) {
     const kind = categoryOf(item.category);
-    const meta = [item.year, item.creator].filter(Boolean).map(escapeHtml).join(' · ');
+    const meta = [item.year, item.creator, formatRuntime(item.runtime)].filter(Boolean).map(escapeHtml).join(' · ');   // runtime: movies
     const done = item.status === 'done';
     const glow = item.image
       ? `<div class="details-glow" style="background-image:url('${escapeHtml(item.image)}')"></div>`

@@ -13,6 +13,7 @@ import { CATEGORY_IDS, isRating, MAX_CREATOR, MAX_TITLE, sameSource, statusesFor
  *       cover: string | null,              file name of the saved copy (see covers.js)
  *       status ('pending' | 'waiting' (series only) | 'done'), rating (1–5) | null,
  *       dropped: boolean,                  done, but given up on (it wasn't worth finishing)
+ *       runtime: minutes | null,           how long a movie is (looked up in the background, see catalog/runtimes.js)
  *       addedAt, finishedAt | null,        ms timestamps
  *     }],
  *   }
@@ -40,6 +41,18 @@ export function parseYear(value) {
   const match = /^\s*(\d{4})/.exec(String(value ?? ''));
   const year = match ? Number(match[1]) : NaN;
   return year >= 1000 && year <= 9999 ? year : null;
+}
+
+/** Minutes from a number or catalog text ("155 min", "2h 35min"), or null. */
+export function parseMinutes(value) {
+  let minutes = NaN;
+  if (typeof value === 'number') minutes = value;
+  else if (typeof value === 'string') {
+    const hours = /(\d+)\s*h/i.exec(value);
+    const mins = /(\d+)\s*m/i.exec(value) ?? (!hours && /^\s*(\d+)\s*$/.exec(value));
+    if (hours || mins) minutes = Number(hours?.[1] ?? 0) * 60 + Number(mins?.[1] ?? 0);
+  }
+  return Number.isInteger(minutes) && minutes > 0 && minutes <= 24 * 60 ? minutes : null;
 }
 
 /** Distinct https URLs that pass `allowed`, best first. */
@@ -74,6 +87,7 @@ function normalizeItem(raw, now) {
     status,
     rating: status === 'done' && isRating(raw.rating) ? raw.rating : null,
     dropped: status === 'done' && raw.dropped === true,
+    runtime: raw.category === 'movie' ? parseMinutes(raw.runtime) : null,
     addedAt,
     finishedAt: status === 'done' ? toTime(raw.finishedAt, addedAt) : null,
   };

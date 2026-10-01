@@ -28,6 +28,7 @@ server.listen(config.port, config.host, () => {
   const searchedOn = (s) => (s.label ? `${s.label}: ` : '') + s.credits.map((c) => c.name).join(' / ');
   console.log(`  Search:   ${Object.entries(catalog.sources).map(([category, list]) => `${category} → ${list.map(searchedOn).join(' · ')}`).join(', ')}`);
   app.syncCovers();                                  // covers that couldn't be saved last time
+  app.syncRuntimes();                                // movie durations not looked up yet
 });
 
 // Save anything pending and close connections before exiting (Ctrl+C, add-on stop).

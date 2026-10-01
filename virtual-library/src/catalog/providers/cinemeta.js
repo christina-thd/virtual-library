@@ -11,7 +11,7 @@ function largerPoster(url) {
 
 /** @param {'movie' | 'series'} type */
 export function createCinemeta(type) {
-  return {
+  const provider = {
     id: 'cinemeta',
     name: 'Cinemeta',
     url: 'https://www.stremio.com/',
@@ -26,7 +26,13 @@ export function createCinemeta(type) {
         creator: Array.isArray(m.director) ? m.director[0] : null,
         thumbUrl: m.poster,
         coverUrl: largerPoster(m.poster),
+        runtime: m.runtime,                          // "155 min", only sometimes in search results
       }));
     },
   };
+  if (type === 'movie') {
+    /** How long the movie is, e.g. "155 min" (the full entry always has it). */
+    provider.runtime = async (id, http) => (await http.json(`${API}/meta/movie/${encodeURIComponent(id)}.json`)).meta?.runtime ?? null;
+  }
+  return provider;
 }

@@ -1,13 +1,13 @@
 import assert from 'node:assert/strict';
 import { describe, test } from 'node:test';
-import { createInitialState, normalizeState, parseImageUrls, parseYear, SCHEMA_VERSION, toView } from '../src/library/state.js';
+import { createInitialState, normalizeState, parseImageUrls, parseMinutes, parseYear, SCHEMA_VERSION, toView } from '../src/library/state.js';
 
 const NOW = 1_700_000_000_000;
 
 const item = (overrides = {}) => ({
   id: 'abc123', category: 'movie', title: 'Dune', year: 2021, creator: 'Denis Villeneuve',
   source: { provider: 'cinemeta', id: 'tt1160419' }, imageUrls: ['https://images.metahub.space/poster/medium/tt1160419/img'],
-  cover: null, status: 'done', rating: 5, dropped: false, addedAt: NOW - 1000, finishedAt: NOW, ...overrides,
+  cover: null, status: 'done', rating: 5, dropped: false, runtime: 155, addedAt: NOW - 1000, finishedAt: NOW, ...overrides,
 });
 
 describe('normalizeState', () => {
@@ -67,6 +67,16 @@ describe('normalizeState', () => {
 });
 
 describe('helpers', () => {
+  test('parseMinutes reads durations from numbers and catalog text', () => {
+    assert.deepEqual(['155 min', '2h 35min', '1h', 90, ' 45 ', 'soon', 0, -5, 3000, 1.5, null].map(parseMinutes),
+      [155, 155, 60, 90, 45, null, null, null, null, null, null]);
+  });
+
+  test('only movies keep a duration', () => {
+    const [movie, series] = normalizeState({ items: [item({ id: 'a1', runtime: '2h' }), item({ id: 'b2', category: 'series', runtime: 50 })] }, NOW).items;
+    assert.deepEqual([movie.runtime, series.runtime], [120, null]);
+  });
+
   test('parseYear reads years from numbers and dates', () => {
     assert.equal(parseYear(2021), 2021);
     assert.equal(parseYear('2021-10-22'), 2021);

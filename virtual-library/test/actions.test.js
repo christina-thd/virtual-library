@@ -118,6 +118,14 @@ describe('setStatus', () => {
   });
 });
 
+describe('runtime', () => {
+  test('a movie keeps the duration from its search result; others never get one', () => {
+    assert.equal(itemOf(add({ category: 'movie', source: null, title: 'Dune', runtime: 155 })).runtime, 155);
+    assert.equal(itemOf(add({ category: 'movie', source: null, title: 'Cats' })).runtime, null);
+    assert.equal(itemOf(add({ runtime: 50 })).runtime, null);      // a series
+  });
+});
+
 describe('setDropped', () => {
   test('dropping a pending item makes it done (and new items are not dropped)', () => {
     const id = add();
