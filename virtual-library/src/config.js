@@ -15,8 +15,8 @@ function parsePort(value) {
  *   HOST          interface to bind (default all)
  *   STATE_FILE    where the library is saved (default ./data/library.json)
  *   COVERS_DIR    where cover images are saved (default ./data/covers)
- *   TMDB_API_KEY  optional: search movies and series on TMDB instead of Cinemeta / TVmaze
- *   RAWG_API_KEY  optional: search games on RAWG (all platforms) instead of Steam
+ *   TMDB_API_KEY  optional: search movies and series on TMDB first (then Cinemeta / TVmaze)
+ *   RAWG_API_KEY  optional: search games on RAWG (all platforms) first (then Steam / GOG)
  */
 export function loadConfig(env = process.env) {
   const pkg = JSON.parse(readFileSync(path.join(ROOT_DIR, 'package.json'), 'utf8'));

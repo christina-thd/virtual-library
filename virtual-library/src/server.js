@@ -25,7 +25,7 @@ server.listen(config.port, config.host, () => {
   console.log(`Hoard Board ${config.version}`);
   console.log(`  Open:     http://localhost:${config.port}/`);
   console.log(`  Library:  ${config.stateFile} (${state.items.length} items)`);
-  console.log(`  Search:   ${Object.entries(catalog.credits).map(([category, c]) => `${category} → ${c.name}`).join(', ')}`);
+  console.log(`  Search:   ${Object.entries(catalog.credits).map(([category, list]) => `${category} → ${list.map((c) => c.name).join(' / ')}`).join(', ')}`);
   app.syncCovers();                                  // covers that couldn't be saved last time
 });
 

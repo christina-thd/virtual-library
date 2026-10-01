@@ -36,7 +36,7 @@ src/                      server (Node, no framework, no dependencies)
   library/state.js        state shape, repairing saved data, the view sent to screens
   library/actions.js      every library action, validated (the only code that changes state)
   catalog/index.js        search: picks a provider per category, cleans up results, image allow-list
-  catalog/providers/      one file per catalog: cinemeta, tvmaze, open-library, steam, tmdb, rawg
+  catalog/providers/      one file per catalog: cinemeta, tvmaze, open-library, apple-books, steam, gog, tmdb, rawg
   covers.js               saved cover images (CoverStore) and keeping them in step with the library
   http-client.js          fetch with a timeout and a User-Agent, for catalogs and images
   store.js                JSON file storage: debounced, atomic writes
@@ -69,13 +69,14 @@ only render the latest view.
 **Actions:** `addItem`, `setStatus`, `rateItem`, `removeItem`. See `src/library/actions.js`.
 Only finished items can be rated; moving an item back to pending clears its rating.
 
-**Search.** `GET /api/search?category=movie&q=dune` asks the provider for that category and returns
+**Search.** `GET /api/search?category=movie&q=dune` asks the providers for that category, one after the
+other until one finds something (a provider that's down is skipped), and returns
 results in one shape: `{ category, title, year, creator, source: { provider, id }, coverUrl, thumbUrl }`.
 The screen sends a result back as it is with `addItem`. `source` stops the same thing being added twice.
 
 A provider is a small object: `{ id, name, url, imageHosts, search(query, http) }`. To add or swap one,
-write a file in `src/catalog/providers/` and pick it in `chooseProviders` (`src/catalog/index.js`).
-TMDB and RAWG are used instead of the keyless ones when their API key is set.
+write a file in `src/catalog/providers/` and add it to its category's list in `chooseProviders`
+(`src/catalog/index.js`), best first. TMDB and RAWG go first when their API key is set; the keyless ones stay as fallbacks.
 
 **Covers.** Items keep a list of image URLs, best first (e.g. a large poster, then the search thumbnail).
 After every change, `createCoverSync` (`src/covers.js`) downloads covers that aren't saved yet, one at a

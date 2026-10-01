@@ -1,5 +1,11 @@
 # Changelog
 
+## Unreleased
+- Search asks a second catalog when the first finds nothing or is down: Cinemeta for series, Apple Books for books,
+  GOG for games (no account needed). With an API key, TMDB / RAWG go first and the free ones stay as fallbacks
+- Faster search: recent searches come back instantly, and slow Steam cover lookups no longer hold up game results
+- No more zooming in on iPhone when tapping a button twice quickly (e.g. "Tap again to remove")
+
 ## 1.0.6
 - **+** inside a category only adds to that category ("Add a game"), so nothing lands somewhere you're not looking
 - **+** on the home screen still lets you pick the category

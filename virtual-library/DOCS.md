@@ -49,12 +49,15 @@ Turn it off if that's a concern; the sidebar and the Home Assistant app use your
 
 Search works out of the box, with no account:
 
-| Kind   | Searched on | With an API key |
-|--------|-------------|-----------------|
-| Movies | Cinemeta (IMDb data) | TMDB |
-| Series | TVmaze | TMDB |
-| Books  | Open Library | — |
-| Games  | Steam (PC games) | RAWG (every platform) |
+| Kind   | Searched on | Then, if nothing is found | With an API key (asked first) |
+|--------|-------------|---------------------------|-------------------------------|
+| Movies | Cinemeta (IMDb data) | — | TMDB |
+| Series | TVmaze | Cinemeta | TMDB |
+| Books  | Open Library | Apple Books | — |
+| Games  | Steam (PC games) | GOG | RAWG (every platform) |
+
+The next catalog is also asked when one doesn't answer, so search keeps working if a website is down.
+The line under the results says which catalog found them.
 
 The add-on needs internet access to search. When you add something, it saves a copy of the cover,
 so the library keeps its pictures even if a website changes.
@@ -64,12 +67,12 @@ so the library keeps its pictures even if a website changes.
 Both options are optional. Leave them empty to use the catalogs above.
 
 **tmdb_api_key** (optional)
-- Searches movies and series on [TMDB](https://www.themoviedb.org/), which has the best posters and finds more
+- Searches movies and series on [TMDB](https://www.themoviedb.org/) first, which has the best posters and finds more
 - Get a free key: create a TMDB account, then **Settings → API → Create**. Either the "API Key" or the
   longer "API Read Access Token" works.
 
 **rawg_api_key** (optional)
-- Searches games on [RAWG](https://rawg.io/), which knows console games too (Steam only has PC games)
+- Searches games on [RAWG](https://rawg.io/) first, which knows console games too (Steam and GOG only have PC games)
 - Get a free key at [rawg.io/apidocs](https://rawg.io/apidocs)
 
 Restart the add-on after changing an option. Items you've already added keep their covers.

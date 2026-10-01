@@ -96,14 +96,15 @@ export function createSearch({ getItems, openItem }) {
       button.classList.toggle('selected', selected);
       button.setAttribute('aria-checked', selected);
     }
-    showCredits();
     run();
   }
 
+  /** The catalog that found the results shown, or every catalog asked for this category, in order. */
   function showCredits() {
-    const credit = credits[category];
-    $('searchCredits').innerHTML = credit
-      ? `Search by <a href="${escapeHtml(credit.url)}" target="_blank" rel="noopener">${escapeHtml(credit.name)}</a>` : '';
+    const list = credits[category] ?? [];
+    const answered = phase === 'results' && list.find((c) => c.id === results[0]?.source?.provider);
+    const link = (c) => `<a href="${escapeHtml(c.url)}" target="_blank" rel="noopener">${escapeHtml(c.name)}</a>`;
+    $('searchCredits').innerHTML = list.length ? `Search by ${(answered ? [answered] : list).map(link).join(', then ')}` : '';
   }
 
   // ----- rendering -----
@@ -170,6 +171,7 @@ export function createSearch({ getItems, openItem }) {
 
   function render() {
     $('searchClear').hidden = !input.value;
+    showCredits();
     if (phase === 'idle') {
       body.innerHTML = messageHtml('search', `<p>Find a ${categoryOf(category).label.toLowerCase()} by its title.</p>`);
     } else if (phase === 'loading') {

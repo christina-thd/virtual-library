@@ -17,7 +17,7 @@ const JPEG = Buffer.from([0xff, 0xd8, 0xff, 0xe0]);
 
 /** A catalog that knows one series, and fails for the query "down". */
 const catalog = {
-  credits: { series: { name: 'Fake', url: 'https://fake.example/' } },
+  credits: { series: [{ id: 'fake', name: 'Fake', url: 'https://fake.example/' }] },
   isAllowedImage: (url) => url.startsWith('https://img.example/'),
   async search(category, query) {
     if (category !== 'series') throw new SearchError('category must be series');
@@ -91,7 +91,7 @@ describe('pages and static files', () => {
     const info = await (await fetch(`${base}/api/info`)).json();
     assert.equal(info.version, 'test');
     assert.deepEqual(info.categories.map((c) => c.id), ['movie', 'series', 'book', 'game']);
-    assert.equal(info.credits.series.name, 'Fake');
+    assert.equal(info.credits.series[0].name, 'Fake');
   });
 });
 

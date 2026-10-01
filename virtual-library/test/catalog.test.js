@@ -104,6 +104,80 @@ describe('keyless catalogs', () => {
   });
 });
 
+describe('fallback catalogs (asked when the one before finds nothing)', () => {
+  const providers = chooseProviders();
+
+  test('series: Cinemeta when TVmaze finds nothing', async () => {
+    const { results, calls } = await search(providers, {
+      'https://api.tvmaze.com/search/shows': [],
+      'https://v3-cinemeta.strem.io/catalog/series/top/search=': {
+        metas: [{ imdb_id: 'tt19231492', name: 'Dark Matter', releaseInfo: '2024-', poster: 'https://m.media-amazon.com/images/M/MV5BN2U._V1_SX250.jpg' }],
+      },
+    }, 'series', 'dark matter');
+    assert.equal(calls.length, 2);
+    assert.deepEqual(results[0], {
+      category: 'series', title: 'Dark Matter', year: 2024, creator: null,
+      source: { provider: 'cinemeta', id: 'tt19231492' },
+      coverUrl: 'https://m.media-amazon.com/images/M/MV5BN2U._V1_SX600.jpg',
+      thumbUrl: 'https://m.media-amazon.com/images/M/MV5BN2U._V1_SX250.jpg',
+    });
+  });
+
+  test('books: Apple Books when Open Library finds nothing, covers in portrait sizes', async () => {
+    const { results, calls } = await search(providers, {
+      'https://openlibrary.org/search.json': { docs: [] },
+      'https://itunes.apple.com/search': {
+        results: [{ trackId: 1602694961, trackName: 'The Hobbit', artistName: 'J. R. R. Tolkien', releaseDate: '2012-02-15T08:00:00Z',
+          artworkUrl100: 'https://is1-ssl.mzstatic.com/image/thumb/Publication122/v4/8a/9780547951973.jpg/100x100bb.jpg' }],
+      },
+    }, 'book', 'hobbit');
+    assert.match(calls[1].url, /term=hobbit&media=ebook/);
+    assert.deepEqual(results[0], {
+      category: 'book', title: 'The Hobbit', year: 2012, creator: 'J. R. R. Tolkien',
+      source: { provider: 'applebooks', id: '1602694961' },
+      coverUrl: 'https://is1-ssl.mzstatic.com/image/thumb/Publication122/v4/8a/9780547951973.jpg/600x900bb.jpg',
+      thumbUrl: 'https://is1-ssl.mzstatic.com/image/thumb/Publication122/v4/8a/9780547951973.jpg/200x300bb.jpg',
+    });
+  });
+
+  test('games: GOG when Steam is down', async () => {
+    const { results, calls } = await search(providers, {
+      'https://catalog.gog.com/v1/catalog': {
+        products: [{ id: '1207664663', title: 'The Witcher 3: Wild Hunt', releaseDate: '2015.05.18', developers: ['CD PROJEKT RED'],
+          coverVertical: 'https://images.gog-statics.com/abc.jpg' }],
+      },
+    }, 'game', 'witcher 3');
+    assert.match(calls.at(-1).url, /query=like:witcher%203&/);
+    assert.deepEqual(results[0], {
+      category: 'game', title: 'The Witcher 3: Wild Hunt', year: 2015, creator: 'CD PROJEKT RED',
+      source: { provider: 'gog', id: '1207664663' },
+      coverUrl: 'https://images.gog-statics.com/abc.jpg',
+      thumbUrl: 'https://images.gog-statics.com/abc.jpg',
+    });
+  });
+
+  test('the first catalog with results wins: later ones are not asked', async () => {
+    const { calls } = await search(providers, { 'https://openlibrary.org/search.json': { docs: [{ key: '/works/OL1W', title: 'Dune' }] } }, 'book', 'dune');
+    assert.equal(calls.length, 1);
+  });
+
+  test('nothing anywhere is an empty answer; an error only when no catalog answered', async () => {
+    const fake = (id, answer) => ({ id, name: id, url: 'https://x.example/', imageHosts: [], search: answer });
+    const down = (message) => async () => { throw new Error(message); };
+    const empty = async () => [];
+    const run = (...list) => createCatalog({ http: fakeHttp({}), providers: { movie: list } }).search('movie', 'x');
+    assert.deepEqual(await run(fake('a', down('a is down')), fake('b', empty)), []);
+    assert.deepEqual(await run(fake('a', empty), fake('b', down('b is down'))), []);
+    await assert.rejects(run(fake('a', down('a is down')), fake('b', down('b is down'))), /a is down/);
+  });
+
+  test('credits list every catalog of a category, in the order they are asked', () => {
+    const { credits } = createCatalog({ http: fakeHttp({}), providers });
+    assert.deepEqual(credits.book.map((c) => c.name), ['Open Library', 'Apple Books']);
+    assert.deepEqual(credits.game[1], { id: 'gog', name: 'GOG', url: 'https://www.gog.com/' });
+  });
+});
+
 describe('catalogs with an API key', () => {
   test('a TMDB key switches movies and series to TMDB', async () => {
     const providers = chooseProviders({ tmdbApiKey: 'short-v3-key' });
@@ -137,8 +211,14 @@ describe('catalogs with an API key', () => {
     assert.equal(results[0].year, 2013);
   });
 
-  test('books stay on Open Library', () => {
-    assert.equal(chooseProviders({ tmdbApiKey: 'a', rawgApiKey: 'b' }).book.id, 'openlibrary');
+  test('a key puts its catalog first; the keyless ones stay as fallbacks', () => {
+    const ids = (providers) => Object.fromEntries(Object.entries(providers).map(([c, list]) => [c, list.map((p) => p.id)]));
+    assert.deepEqual(ids(chooseProviders()), {
+      movie: ['cinemeta'], series: ['tvmaze', 'cinemeta'], book: ['openlibrary', 'applebooks'], game: ['steam', 'gog'],
+    });
+    assert.deepEqual(ids(chooseProviders({ tmdbApiKey: 'a', rawgApiKey: 'b' })), {
+      movie: ['tmdb', 'cinemeta'], series: ['tmdb', 'tvmaze', 'cinemeta'], book: ['openlibrary', 'applebooks'], game: ['rawg', 'steam', 'gog'],
+    });
   });
 });
 
@@ -215,6 +295,6 @@ describe('createCatalog', () => {
 
   test('lists who searches each category, for the credits line', () => {
     assert.deepEqual(Object.keys(catalog.credits).sort(), ['book', 'game', 'movie', 'series']);
-    assert.equal(catalog.credits.series.name, 'TVmaze');
+    assert.equal(catalog.credits.series[0].name, 'TVmaze');
   });
 });

@@ -1,6 +1,8 @@
 import { CATEGORY_IDS, MAX_CREATOR, MAX_QUERY, MAX_TITLE } from '../../public/js/shared/library.js';
 import { parseYear } from '../library/state.js';
-import { cinemeta } from './providers/cinemeta.js';
+import { appleBooks } from './providers/apple-books.js';
+import { createCinemeta } from './providers/cinemeta.js';
+import { gog } from './providers/gog.js';
 import { openLibrary } from './providers/open-library.js';
 import { createRawg } from './providers/rawg.js';
 import { steam } from './providers/steam.js';
@@ -21,13 +23,17 @@ export class SearchError extends Error {
   }
 }
 
-/** Which catalog searches each category: the keyless ones by default, better ones when a key is set. */
+/**
+ * Which catalogs search each category, best first: the next one is asked only when the one before
+ * finds nothing or doesn't answer. The keyless ones always; one with an API key goes first when it's set.
+ */
 export function chooseProviders({ tmdbApiKey = null, rawgApiKey = null } = {}) {
+  const withKey = (key, create) => (key ? [create(key)] : []);
   return {
-    movie: tmdbApiKey ? createTmdb('movie', tmdbApiKey) : cinemeta,
-    series: tmdbApiKey ? createTmdb('series', tmdbApiKey) : tvmaze,
-    book: openLibrary,
-    game: rawgApiKey ? createRawg(rawgApiKey) : steam,
+    movie: [...withKey(tmdbApiKey, (k) => createTmdb('movie', k)), createCinemeta('movie')],
+    series: [...withKey(tmdbApiKey, (k) => createTmdb('series', k)), tvmaze, createCinemeta('series')],
+    book: [openLibrary, appleBooks],
+    game: [...withKey(rawgApiKey, createRawg), steam, gog],
   };
 }
 
@@ -37,9 +43,11 @@ const clean = (value, max) => (typeof value === 'string' || typeof value === 'nu
  * Search across the catalogs. Every provider has the same shape:
  *   { id, name, url, imageHosts: [hostname], search(query, http) → [{ id, title, year, creator, coverUrl, thumbUrl? }] }
  * and this turns its results into what screens show and send back with `addItem`.
+ * `providers` maps each category to a list of them, best first (or to just one).
  */
 export function createCatalog({ http, providers = chooseProviders(), now = Date.now }) {
-  const imageHosts = new Set(Object.values(providers).flatMap((p) => p.imageHosts));
+  const chains = Object.fromEntries(Object.entries(providers).map(([category, p]) => [category, [p].flat()]));
+  const imageHosts = new Set(Object.values(chains).flat().flatMap((p) => p.imageHosts));
 
   /** Only https images from the catalogs' own image servers are shown and downloaded. */
   function isAllowedImage(url) {
@@ -77,9 +85,27 @@ export function createCatalog({ http, providers = chooseProviders(), now = Date.
     return results;
   }
 
+  /** The first catalog that finds something. Fails only if none of them answered. */
   async function ask(category, query) {
-    const provider = providers[category];
-    const found = await provider.search(query, http);
+    let answered = false;
+    let failure = null;
+    for (const provider of chains[category]) {
+      let found;
+      try {
+        found = await provider.search(query, http);
+      } catch (err) {
+        failure ??= err;
+        continue;
+      }
+      answered = true;
+      const results = tidy(category, provider, found);
+      if (results.length) return results;
+    }
+    if (answered) return [];
+    throw failure;
+  }
+
+  function tidy(category, provider, found) {
     return found
       .map((r) => ({
         category,
@@ -94,8 +120,9 @@ export function createCatalog({ http, providers = chooseProviders(), now = Date.
       .slice(0, MAX_RESULTS);
   }
 
-  /** Credits per category, shown under the search results. */
-  const credits = Object.fromEntries(Object.entries(providers).map(([category, p]) => [category, { name: p.name, url: p.url }]));
+  /** Credits per category, in the order they're asked, shown under the search results. */
+  const credits = Object.fromEntries(Object.entries(chains).map(([category, list]) =>
+    [category, list.map((p) => ({ id: p.id, name: p.name, url: p.url }))]));
 
   return { search, isAllowedImage, credits };
 }

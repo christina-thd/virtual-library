@@ -15,8 +15,8 @@ virtual-library/                   Home Assistant add-on containing the app
 │   ├── app.js                     HTTP routes: page, static files, /covers, /api/search, /api/actions, /api/events
 │   ├── library/state.js           state shape, repairing saved data, view for clients
 │   ├── library/actions.js         addItem, setStatus, rateItem, removeItem — validated
-│   ├── catalog/index.js           search: provider per category, result shape, image allow-list
-│   ├── catalog/providers/         cinemeta, tvmaze, open-library, steam (keyless); tmdb, rawg (with a key)
+│   ├── catalog/index.js           search: providers per category (fallback order), result shape, image allow-list
+│   ├── catalog/providers/         cinemeta, tvmaze, open-library, apple-books, steam, gog (keyless); tmdb, rawg (with a key)
 │   ├── covers.js                  saved covers: download (with fallbacks), serve, prune
 │   ├── http-client.js             fetch with timeout and User-Agent; errors never show the URL
 │   ├── store.js                   safe JSON saving (atomic, debounced)
