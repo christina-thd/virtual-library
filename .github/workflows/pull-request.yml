@@ -14,15 +14,18 @@ jobs:
     steps:
       - uses: actions/checkout@v4
         with:
-          fetch-depth: 0                          # main too, to compare with
+          fetch-depth: 0                          # the base commit too, to compare with
 
+      # Against main as it was when the pull request was opened or last updated, not as it is now: merging
+      # right after opening would otherwise compare the new version with itself, and fail.
       - name: Compare config.yaml's version with main's
         env:
           BASE: ${{ github.base_ref }}
+          BASE_SHA: ${{ github.event.pull_request.base.sha }}
         run: |
           version_of() { sed -nE 's/^version:[[:space:]]*"?([^"[:space:]]+)"?.*/\1/p'; }
           new=$(version_of < virtual-library/config.yaml)
-          old=$(git show "origin/$BASE:virtual-library/config.yaml" | version_of)
+          old=$(git show "$BASE_SHA:virtual-library/config.yaml" | version_of)
           echo "main: $old, this pull request: $new"
           if [ "$new" = "$old" ]; then
             echo "::error file=virtual-library/config.yaml::The version is still $old, the same as on $BASE. Raise it in config.yaml and package.json, and add it to CHANGELOG.md, or Home Assistant won't offer the update."
