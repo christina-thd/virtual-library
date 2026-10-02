@@ -22,7 +22,7 @@ and what's still pending.
 - **Series** have a third tab, **Waiting**: series you've caught up on, waiting for a new season. Move a series there
   from its page; when the new season is out, move it back to Pending.
 - Tap a cover to open it: move it between Pending, (Waiting) and Done, rate it, or remove it. A finished game also
-  has **Hours played**, if you want to keep track.
+  has a **Playtime** field, if you want to keep track.
 - Gave up on something because it wasn't worth finishing? Tap **Dropped it** on its page. It goes to Done (no confetti),
   greyed out with a red **Dropped** band across its cover. Tap it again to undo, or move it back to Pending.
 - **+** inside a kind adds to that kind only (e.g. "Add a game"). **+** on the home screen lets you pick the kind
@@ -30,8 +30,9 @@ and what's still pending.
 - To close the search or an item, tap **Close** (or **Back to search**), swipe it down from the top, or use your phone's back button.
 - After adding something, its search result says **✓ Added to Pending** (or Done); tap it to open the item.
 - **Stats** (the chart button at the top of the home screen): what you finished each month over the last year,
-  your top genres, time spent (hours of movies, episodes, pages, hours played), ratings, and the oldest thing
-  still pending. For the whole library or one kind. Dropped things are counted on their own, not as finished;
+  your streak of months in a row, your top genres and creators (directors, networks, authors), time spent
+  (hours of movies, episodes, pages, playtime), records (the longest movie, biggest book…), release decades
+  (for movies, series and books), ratings, the oldest thing still pending, and a year in review. For the whole library or one kind. Dropped things are counted on their own, not as finished;
   moving something back to Pending takes it out of the month it was finished in. The monthly and this-year numbers
   count from the day you updated to 3.0.0 (shown under the chart), so a library filled in all at once doesn't skew them.
 

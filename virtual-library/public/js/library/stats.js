@@ -1,13 +1,16 @@
-// Stats page: finished per month, genres, time spent, ratings and backlog, for the whole library or one
-// category. The numbers come from shared/stats.js.
+// Stats page: streaks, finished per month, time spent, genres, creators, records, decades (movies, series, books),
+// ratings, backlog and the year in review, for the whole library or one category. Numbers: shared/stats.js.
 import { $, closest, escapeHtml } from '../shared/dom.js';
+import { formatCount, formatRuntime } from '../shared/format.js';
 import { CATEGORIES, categoryOf } from '../shared/library.js';
 import { libraryStats } from '../shared/stats.js';
 import { coverHtml } from '../ui/cover.js';
 import { icon, star } from '../ui/icons.js';
+import { starsHtml } from '../ui/stars.js';
 
 const SHORT_MONTH = new Intl.DateTimeFormat('en', { month: 'short' });
 const MONTH_YEAR = new Intl.DateTimeFormat('en', { month: 'short', year: 'numeric' });
+const LONG_MONTH = new Intl.DateTimeFormat('en', { month: 'long' });
 const DAY = new Intl.DateTimeFormat('en', { day: 'numeric', month: 'short', year: 'numeric' });
 const number = (n) => n.toLocaleString('en');
 const monthName = (m) => SHORT_MONTH.format(new Date(m.year, m.month, 1));
@@ -26,6 +29,8 @@ function summaryHtml(s) {
     ${cell(s.finishedThisYear, 'this year')}
     ${cell(s.pending + s.waiting, s.waiting ? `pending (${s.waiting} waiting)` : 'pending')}
     ${cell(s.dropped, 'dropped')}
+    ${cell(s.streak.current, s.streak.current === 1 ? 'month in a row' : 'months in a row')}
+    ${cell(s.streak.best, 'best streak')}
   </div>`;
 }
 
@@ -53,14 +58,17 @@ function monthsHtml(s, category) {
   return section('Finished per month', `<div class="stats-bars">${bars}</div>${legend}${foot ? `<p class="stats-foot">${foot}</p>` : ''}`);
 }
 
-/** Time spent: hours of movies, episodes, pages, hours played; one tile per kind (only its own for one category). */
+/** Each kind's time: [value, label]. */
+const timeTiles = (time) => ({
+  movie: [`${number(Math.round(time.movieMinutes / 60))}h`, 'of movies'],
+  series: [number(time.episodes), 'episodes'],
+  book: [number(time.pages), 'pages read'],
+  game: [`${number(time.hours)}h`, 'playtime'],
+});
+
+/** Time spent: hours of movies, episodes, pages, playtime; one tile per kind (only its own for one category). */
 function timeHtml(s, category) {
-  const tiles = {
-    movie: [`${number(Math.round(s.time.movieMinutes / 60))}h`, 'of movies'],
-    series: [number(s.time.episodes), 'episodes'],
-    book: [number(s.time.pages), 'pages read'],
-    game: [`${number(s.time.hours)}h`, 'played'],
-  };
+  const tiles = timeTiles(s.time);
   const shown = category ? [category] : Object.keys(tiles);
   return section('Time spent', `<div class="stats-summary">${shown.map((id) =>
     `<div class="stats-number" data-category="${id}"><strong>${tiles[id][0]}</strong><span>${icon(id)}${tiles[id][1]}</span></div>`).join('')}</div>`);
@@ -88,6 +96,88 @@ function genresHtml(s, category) {
   return section('Top genres', groups || empty);
 }
 
+/** The chosen year: how much of each kind, the favourite, top genres, busiest month, time spent. A switch per year. */
+function reviewHtml(s, category) {
+  const r = s.review;
+  const years = s.years.length > 1 ? `<div class="stats-years">${s.years.map((y) =>
+    `<button type="button" data-year="${y}" class="${y === r.year ? 'selected' : ''}">${y}</button>`).join('')}</div>` : '';
+  if (!r.finished) return section('Year in review', `${years}<p class="stats-empty">Nothing finished in ${r.year} yet.</p>`);
+  const kinds = CATEGORIES.filter((c) => r.byCategory[c.id]).map((c) =>
+    `<span data-category="${c.id}">${icon(c.id)}${r.byCategory[c.id]}</span>`).join('');
+  const tiles = timeTiles(r.time);
+  const spent = (category ? [category] : Object.keys(tiles)).filter((id) => tiles[id][0] !== '0' && tiles[id][0] !== '0h');
+  const time = spent.length ? `
+    <div class="review-time"><span class="stats-note">Time spent</span>
+      <div class="stats-summary">${spent.map((id) =>
+        `<div class="stats-number" data-category="${id}"><strong>${tiles[id][0]}</strong><span>${icon(id)}${tiles[id][1]}</span></div>`).join('')}</div>
+    </div>` : '';
+  const facts = [
+    r.genres.length ? ['Top genres', r.genres.map((g) => escapeHtml(g.name)).join(', ')] : null,
+    r.busiestMonth != null ? ['Busiest month', LONG_MONTH.format(new Date(r.year, r.busiestMonth, 1))] : null,
+  ].filter(Boolean).map(([label, value]) => `<div class="review-fact"><span>${label}</span><strong>${value}</strong></div>`).join('');
+  const favourite = r.favourite ? `
+    <button type="button" class="stats-oldest" data-item="${r.favourite.id}">
+      ${coverHtml(r.favourite)}
+      <span><span class="stats-note">Your favourite</span><strong>${escapeHtml(r.favourite.title)}</strong>${starsHtml(r.favourite.rating)}</span>
+    </button>` : '';
+  return section('Year in review', `${years}
+    <div class="review-total"><strong>${number(r.finished)}</strong><span>finished in ${r.year}</span></div>
+    ${category ? '' : `<div class="stats-averages">${kinds}</div>`}
+    ${favourite}${facts}${time}`);
+}
+
+const CREATOR_TITLES = { movie: 'Directors', series: 'Networks', book: 'Authors' };
+
+/** Whose work you finished most: directors, networks and authors (games have none). */
+function creatorsHtml(s, category) {
+  const empty = '<p class="stats-empty">Nobody twice yet: they show up once you finish two by the same one.</p>';
+  if (category) {
+    if (!s.creators) return '';
+    return section(`Top ${CREATOR_TITLES[category].toLowerCase()}`, s.creators.length ? `<div data-category="${category}">${genreRows(s.creators)}</div>` : empty);
+  }
+  const groups = Object.entries(s.creatorsByCategory).filter(([, list]) => list.length).map(([kind, list]) => `
+    <div class="genre-group" data-category="${kind}">
+      <h3>${icon(kind)}${CREATOR_TITLES[kind]}</h3>
+      ${genreRows(list)}
+    </div>`).join('');
+  return section('Top creators', groups || empty);
+}
+
+/** How a record reads: "2h 47m", "608 pages", "26 episodes", "140h played". */
+const RECORD_TEXT = {
+  movie: (v) => formatRuntime(v), book: (v) => formatCount(v, 'page'), series: (v) => formatCount(v, 'episode'), game: (v) => `${v}h played`,
+};
+const RECORD_NAME = { movie: 'Longest movie', book: 'Biggest book', series: 'Longest series', game: 'Most played' };
+
+/** The longest movie, biggest book, longest series and most-played game (one kind: its top three). */
+function recordsHtml(s, category) {
+  if (!s.records.length) return section('Records', '<p class="stats-empty">No records yet: they need finished items with their length.</p>');
+  const rows = s.records.map(({ item, value }, i) => `
+    <button type="button" class="stats-oldest" data-item="${item.id}">
+      ${coverHtml(item)}
+      <span><span class="stats-note">${category ? `#${i + 1}` : RECORD_NAME[item.category]}</span>
+        <strong>${escapeHtml(item.title)}</strong>
+        <span class="stats-kind" data-category="${item.category}">${icon(item.category)}${RECORD_TEXT[item.category](value)}</span></span>
+    </button>`).join('');
+  return section('Records', `<div class="stats-list">${rows}</div>`);
+}
+
+/** Movies, series and books by when they came out: a bar per decade (a game's year says less, often a port's). */
+function decadesHtml(s, category) {
+  if (!['movie', 'series', 'book'].includes(category) || !s.decades.length) return '';
+  const most = Math.max(...s.decades.map((d) => d.total));
+  const rows = s.decades.map((d) => {
+    const segments = `<i data-category="${category}" style="width:${(d.total / most) * 100}%"></i>`;
+    return `
+      <div class="genre-row">
+        <span class="genre-name">${d.decade}s</span>
+        <span class="genre-bar decade-bar">${segments}</span>
+        <span class="genre-count">${d.total}</span>
+      </div>`;
+  }).join('');
+  return section('Release decades', rows);
+}
+
 /** Average rating and the 1–5 star spread; for the whole library also each category's average. */
 function ratingsHtml(s, category, items) {
   const r = s.ratings;
@@ -109,18 +199,27 @@ function ratingsHtml(s, category, items) {
     <div class="stats-rows">${rows}</div>`);
 }
 
-/** The oldest thing still pending: maybe time to start it (or let it go). */
+/** The oldest thing still pending (the whole library: each category's): maybe time to start it, or let it go. */
 function backlogHtml(s) {
-  const item = s.oldestPending;
-  if (!item) return section('Backlog', '<p class="stats-empty">Nothing pending. All caught up!</p>');
-  const since = MONTH_YEAR.format(new Date(item.addedAt));
-  return section('Backlog', `
+  const items = s.oldestPendingByCategory ?? (s.oldestPending ? [s.oldestPending] : []);
+  if (!items.length) return section('Backlog', '<p class="stats-empty">Nothing pending. All caught up!</p>');
+  // the whole library: a cover per category
+  if (s.oldestPendingByCategory) {
+    const covers = items.map((item) => `
+      <button type="button" class="backlog-cover" data-item="${item.id}" aria-label="${escapeHtml(item.title)}">
+        ${coverHtml(item)}
+        <span class="stats-kind" data-category="${item.category}">${icon(item.category)}${MONTH_YEAR.format(new Date(item.addedAt))}</span>
+      </button>`).join('');
+    return section('Backlog', `<p class="stats-note backlog-note">Waiting the longest, since</p><div class="backlog-covers">${covers}</div>`);
+  }
+  const rows = items.map((item) => `
     <button type="button" class="stats-oldest" data-item="${item.id}">
       ${coverHtml(item)}
-      <span><span class="stats-note">Waiting the longest, since ${since}</span>
+      <span><span class="stats-note">Waiting the longest, since ${MONTH_YEAR.format(new Date(item.addedAt))}</span>
         <strong>${escapeHtml(item.title)}</strong>
         <span class="stats-kind" data-category="${item.category}">${icon(item.category)}${categoryOf(item.category).label}</span></span>
-    </button>`);
+    </button>`).join('');
+  return section('Backlog', `<div class="stats-list">${rows}</div>`);
 }
 
 /** @param {{ onBack: () => void, onOpenItem: (id: string) => void }} options */
@@ -131,6 +230,7 @@ export function createStatsView({ onBack, onOpenItem }) {
   let category = null;              // null: the whole library
   let library = [];
   let since = 0;                    // when the stats started counting (from the server)
+  let year = new Date().getFullYear();   // the one in review
   let shown = false;
 
   $('statsBack').innerHTML = icon('back');
@@ -148,10 +248,13 @@ export function createStatsView({ onBack, onOpenItem }) {
       button.setAttribute('aria-selected', String(selected));
     }
     view.dataset.category = category ?? '';
-    const s = libraryStats(library, { category, since });
+    let s = libraryStats(library, { category, since, year });
+    // a year picked for another category may not exist for this one (no switch to get back): its newest instead
+    if (!s.years.includes(year)) s = libraryStats(library, { category, since, year: (year = s.years[0]) });
     body.innerHTML = s.total
       ? summaryHtml(s) + monthsHtml(s, category) + timeHtml(s, category) + genresHtml(s, category)
-        + ratingsHtml(s, category, library) + backlogHtml(s)
+        + creatorsHtml(s, category) + recordsHtml(s, category) + decadesHtml(s, category)
+        + ratingsHtml(s, category, library) + backlogHtml(s) + reviewHtml(s, category)
       : `<div class="empty">${icon('chart')}<h2>No stats yet</h2><p>Add a few things and finish them: they'll show up here.</p></div>`;
   }
 
@@ -163,8 +266,13 @@ export function createStatsView({ onBack, onOpenItem }) {
   });
 
   body.addEventListener('click', (e) => {
-    const oldest = closest(e, '[data-item]');
-    if (oldest) onOpenItem(oldest.dataset.item);
+    const yearButton = closest(e, '[data-year]');
+    if (yearButton) {
+      year = Number(yearButton.dataset.year);
+      return render();
+    }
+    const item = closest(e, '[data-item]');               // the backlog, a favourite or a record
+    if (item) onOpenItem(item.dataset.item);
   });
 
   // like a category: the bar gets a background once the page scrolls under it
@@ -174,7 +282,8 @@ export function createStatsView({ onBack, onOpenItem }) {
   return {
     show() {
       shown = true;
-      category = null;                              // always opens on the whole library
+      category = null;                              // always opens on the whole library, this year
+      year = new Date().getFullYear();
       render();
     },
     hide() {

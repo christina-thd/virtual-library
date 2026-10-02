@@ -129,3 +129,45 @@
 .stats-oldest strong { font-size: 15px; line-height: 1.25; }
 .stats-kind { display: inline-flex; align-items: center; gap: 5px; color: var(--tint); font-size: 13px; font-weight: 600; }
 .stats-kind svg.icon { width: 14px; height: 14px; }
+
+/* year in review: the year switch, the big number, a few facts */
+.stats-years { display: flex; flex-wrap: wrap; gap: 6px; margin: -4px 0 14px; }
+.stats-years button {
+  padding: 5px 12px;
+  border-radius: 999px;
+  background: var(--surface-2);
+  color: var(--muted);
+  font-size: 13px;
+  font-weight: 600;
+}
+.stats-years button.selected { background: var(--tint); color: var(--accent-ink); }
+.review-total { display: flex; align-items: baseline; gap: 8px; margin-bottom: 12px; }
+.review-total strong { font-family: var(--font-display); font-weight: 600; font-size: 34px; line-height: 1; }
+.review-total span { color: var(--muted); font-size: 14px; }
+.stats-card .stats-oldest { margin: 4px 0 12px; }
+.review-fact { display: flex; justify-content: space-between; gap: 12px; padding: 9px 0; border-top: 1px solid var(--line); font-size: 13.5px; }
+.review-fact span { color: var(--muted); white-space: nowrap; }
+.review-fact strong { font-weight: 600; text-align: right; }
+
+/* records: one row each */
+.stats-list { display: grid; gap: 12px; }
+.stats-list .stats-oldest { margin: 0; }
+
+/* decades: one bar each, split by category for the whole library */
+.decade-bar { display: flex; gap: 2px; }                  /* rounded and clipped by .genre-bar */
+.decade-bar i { flex: none; height: 100%; background: var(--tint); }
+
+/* backlog: a cover per category */
+.backlog-note { margin: -6px 0 12px; }
+.backlog-covers { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 10px; }
+.backlog-cover { display: flex; flex-direction: column; align-items: center; gap: 6px; min-width: 0; }
+.backlog-cover .cover { width: 100%; border-radius: 8px; }
+.backlog-cover .stats-kind { gap: 3px; font-size: 11.5px; white-space: nowrap; }
+.backlog-cover .stats-kind svg.icon { width: 12px; height: 12px; }
+
+/* year in review: time tiles */
+.review-time { padding-top: 10px; border-top: 1px solid var(--line); }
+.review-time .stats-note { display: block; margin-bottom: 8px; }
+.review-time .stats-summary { gap: 8px; }
+.review-time .stats-number { padding: 9px 12px; border-radius: 12px; }
+.review-time .stats-number strong { font-size: 20px; }

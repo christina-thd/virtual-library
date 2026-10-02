@@ -70,4 +70,50 @@ test('ratings of finished items, and the oldest thing still pending', () => {
   assert.deepEqual(movies.ratings, { rated: 4, average: 4.3, stars: { 1: 0, 2: 0, 3: 1, 4: 1, 5: 2 } });   // the dropped 1★ isn't in
   assert.equal(libraryStats(library, { now: NOW }).oldestPending.title, 'Oldest');
   assert.equal(movies.oldestPending, null);
+  // the whole library: each category's oldest pending one (movies have none pending here)
+  assert.deepEqual(libraryStats(library, { now: NOW }).oldestPendingByCategory.map((i) => i.category), ['book', 'game']);
+  assert.equal(movies.oldestPendingByCategory, null);
+});
+
+test('streak: months in a row with something finished; this month still empty doesn\'t break it', () => {
+  // finished in Jun 2024, Dec 2025, Mar 2026, Sep and Oct 2026 (dropped ones don't count)
+  assert.deepEqual(libraryStats(library, { now: NOW }).streak, { current: 2, best: 2 });
+  const inNovember = new Date(2026, 10, 3).getTime();                                   // nothing yet in November
+  assert.equal(libraryStats(library, { now: inNovember }).streak.current, 2);
+  const inDecember = new Date(2026, 11, 3).getTime();                                   // November ended empty
+  assert.equal(libraryStats(library, { now: inDecember }).streak.current, 0);
+});
+
+test('year in review: what was finished that year, its favourite, genres, busiest month and time', () => {
+  const stats = libraryStats(library, { now: NOW });
+  assert.deepEqual(stats.years, [2026, 2025, 2024]);
+  const r = stats.review;
+  assert.deepEqual([r.year, r.finished, r.byCategory], [2026, 5, { movie: 3, series: 1, game: 1 }]);
+  assert.equal(r.favourite.rating, 5);
+  assert.deepEqual(r.genres.map((g) => g.name), ['Drama', 'Comedy', 'Sci-Fi']);
+  assert.equal(r.busiestMonth, 2);                                                      // March (tied with October: the first)
+  assert.deepEqual(r.time, { movieMinutes: 365, episodes: 26, pages: 0, hours: 42.5 });
+  assert.equal(libraryStats(library, { now: NOW, year: 2025 }).review.finished, 1);
+});
+
+test('records: the biggest of each kind; one kind has its top three; playtime counts dropped games', () => {
+  const all = libraryStats(library, { now: NOW }).records.map((r) => [r.item.category, r.value]);
+  assert.deepEqual(all, [['movie', 155], ['series', 26], ['book', 310], ['game', 42.5]]);
+  const movies = libraryStats(library, { category: 'movie', now: NOW }).records.map((r) => r.value);
+  assert.deepEqual(movies, [155, 120, 100]);                                            // the dropped 95-minute one isn't a record
+});
+
+test('release decades and top creators, of what was finished', () => {
+  const shelf = [
+    item({ year: 1982, creator: 'Ridley Scott' }), item({ year: 1979, creator: 'Ridley Scott' }), item({ year: 2017, creator: 'Denis Villeneuve' }),
+    item({ year: 2021, creator: 'Denis Villeneuve' }), item({ year: 2024, creator: 'Denis Villeneuve' }), item({ year: 2010, creator: 'Christopher Nolan' }),
+    item({ category: 'book', year: 1937, creator: 'J.R.R. Tolkien' }), item({ year: null, dropped: true, creator: 'Ridley Scott' }),
+  ];
+  const stats = libraryStats(shelf, { now: NOW });
+  assert.deepEqual(stats.decades.map((d) => [d.decade, d.total]), [[1930, 1], [1970, 1], [1980, 1], [2010, 2], [2020, 2]]);
+  assert.deepEqual(stats.decades[0].byCategory, { book: 1 });
+  // a name seen once says nothing, so it's left out; games have no creators
+  assert.deepEqual(stats.creatorsByCategory.movie, [{ name: 'Denis Villeneuve', count: 3 }, { name: 'Ridley Scott', count: 2 }]);
+  assert.deepEqual(stats.creatorsByCategory.book, []);
+  assert.equal(libraryStats(shelf, { category: 'game', now: NOW }).creators, null);
 });

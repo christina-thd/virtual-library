@@ -10,7 +10,7 @@ finished things an optional 5-star rating. Every item shows its cover. Made for 
   <img src="images/category.jpg" alt="Movies, Done: best rated first, and the ones you dropped" width="200">
   <img src="images/search.jpg" alt="Adding a game: searching Nintendo&#39;s store" width="200">
   <img src="images/details.jpg" alt="Finishing a game: confetti and a congratulation" width="200">
-  <img src="images/stats.jpg" alt="Stats: finished per month, by category, and time spent" width="200">
+  <img src="images/stats.jpg" alt="Stats: streaks and what you finished per month" width="200">
 </p>
 
 ## Installation

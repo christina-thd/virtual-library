@@ -1,5 +1,10 @@
 # Changelog
 
+## 3.1.0
+- More stats: streaks, year in review, top creators, records and release decades
+- "Hours played" is now "Playtime"
+- Sorting by rating puts dropped items last
+
 ## 3.0.0
 - **Stats** page: finished per month, top genres, time spent, ratings and backlog
 - Genres for every item

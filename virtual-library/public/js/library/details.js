@@ -1,4 +1,4 @@
-// Item sheet: the cover, its status, drop it, rate it (games: hours played), remove it.
+// Item sheet: the cover, its status, drop it, rate it (games: playtime), remove it.
 import { sendAction } from '../shared/api.js';
 import { $, closest, escapeHtml } from '../shared/dom.js';
 import { formatCount, formatRuntime } from '../shared/format.js';
@@ -78,7 +78,7 @@ export function createDetails({ getItem }) {
 
         ${done && item.category === 'game' ? `
           <form class="hours" data-hours>
-            <label class="rating-label" for="hoursInput">Hours played (optional)</label>
+            <label class="rating-label" for="hoursInput">Playtime (optional)</label>
             <span class="hours-field">
               <input id="hoursInput" type="text" inputmode="decimal" autocomplete="off" maxlength="8" placeholder="–"
                 value="${item.hoursPlayed ?? ''}"><span aria-hidden="true">h</span>
@@ -150,7 +150,7 @@ export function createDetails({ getItem }) {
     }
   });
 
-  // hours played (games): saved when leaving the field or pressing Enter (which also hides the keyboard)
+  // playtime (games): saved when leaving the field or pressing Enter (which also hides the keyboard)
   panel.addEventListener('submit', (e) => {
     if (!closest(e, '[data-hours]')) return;
     e.preventDefault();
@@ -170,7 +170,7 @@ export function createDetails({ getItem }) {
     }
     if (hours === item.hoursPlayed) return;
     send({ type: 'setHours', itemId, hours })
-      .then(() => toast(hours ? `${formatHours(hours)} played on “${item.title}”` : `Hours played on “${item.title}” cleared`, { icon: 'check' }))
+      .then(() => toast(hours ? `Playtime of “${item.title}”: ${formatHours(hours)}` : `Playtime of “${item.title}” cleared`, { icon: 'check' }))
       .catch(() => render(item));
   });
 
