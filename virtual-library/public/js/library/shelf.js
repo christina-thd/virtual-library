@@ -22,22 +22,22 @@ const LENGTHS = {
   series: { label: 'Seasons', name: 'Seasons (most first)', value: (i) => i.seasons, then: (i) => i.episodes,
     show: (i) => formatCount(i.seasons, 'season') },
   book: { label: 'Pages', name: 'Pages (longest first)', value: (i) => i.pages, show: (i) => formatCount(i.pages, 'page') },
-  game: { label: 'Hours', name: 'Hours played (most first)', value: (i) => i.hoursPlayed, doneOnly: true,
+  game: { label: 'Playtime', name: 'Playtime (most first)', value: (i) => i.hoursPlayed, doneOnly: true,
     show: (i) => (i.hoursPlayed ? `${i.hoursPlayed}h played` : '') },
 };
 
 /**
  * How a shelf can be sorted. `label` is shown on the button, `name` in the list; `doneOnly` ones need
- * a rating (or hours played), so they're offered on the Done tab only. Ties are A–Z.
+ * a rating (or a playtime), so they're offered on the Done tab only. Ties are A–Z.
  */
 export const SORTS = [
   { id: 'recent', label: 'Recent', name: 'Recently added or finished', compare: (a, b) => byRecent(a, b) || byTitle(a, b) },
   { id: 'title', label: 'A–Z', name: 'Name (A–Z)', compare: byTitle },
   { id: 'rating', label: 'Rating', name: 'Rating (highest first)', doneOnly: true,
-    compare: (a, b) => (b.rating ?? 0) - (a.rating ?? 0) || byTitle(a, b) },
+    compare: (a, b) => Number(a.dropped) - Number(b.dropped) || (b.rating ?? 0) - (a.rating ?? 0) || byTitle(a, b) },   // dropped last
 ];
 
-/** The length sort for a kind (duration, seasons, pages, hours played). */
+/** The length sort for a kind (duration, seasons, pages, playtime). */
 function lengthSort(category) {
   const length = LENGTHS[category];
   if (!length) return null;

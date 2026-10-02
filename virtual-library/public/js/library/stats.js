@@ -53,13 +53,13 @@ function monthsHtml(s, category) {
   return section('Finished per month', `<div class="stats-bars">${bars}</div>${legend}${foot ? `<p class="stats-foot">${foot}</p>` : ''}`);
 }
 
-/** Time spent: hours of movies, episodes, pages, hours played; one tile per kind (only its own for one category). */
+/** Time spent: hours of movies, episodes, pages, playtime; one tile per kind (only its own for one category). */
 function timeHtml(s, category) {
   const tiles = {
     movie: [`${number(Math.round(s.time.movieMinutes / 60))}h`, 'of movies'],
     series: [number(s.time.episodes), 'episodes'],
     book: [number(s.time.pages), 'pages read'],
-    game: [`${number(s.time.hours)}h`, 'played'],
+    game: [`${number(s.time.hours)}h`, 'playtime'],
   };
   const shown = category ? [category] : Object.keys(tiles);
   return section('Time spent', `<div class="stats-summary">${shown.map((id) =>

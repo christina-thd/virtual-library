@@ -1,5 +1,9 @@
 # Changelog
 
+## 3.1.0
+- "Hours played" is now "Playtime"
+- Sorting by rating puts dropped items last
+
 ## 3.0.0
 - **Stats** page: finished per month, top genres, time spent, ratings and backlog
 - Genres for every item
