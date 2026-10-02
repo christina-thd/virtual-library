@@ -21,7 +21,7 @@ const add = (overrides = {}) => apply({
 const itemOf = (id) => state.items.find((i) => i.id === id);
 
 function rejects(action, status, message) {
-  assert.throws(() => apply(action), (err) => {
+  assert.throws(() => apply(action), (/** @type {any} */ err) => {
     assert.ok(err instanceof ActionError, err.message);
     assert.equal(err.status, status);
     if (message) assert.match(err.message, message);
@@ -120,13 +120,15 @@ describe('setStatus', () => {
 
 describe('details', () => {
   test('a movie keeps the duration from its search result (no lookup needed); the rest is looked up later', () => {
-    const dune = itemOf(add({ category: 'movie', source: null, title: 'Dune', runtime: 155 }));
-    assert.deepEqual([dune.runtime, dune.detailsAt], [155, NOW]);
+    const dune = itemOf(add({ category: 'movie', source: null, title: 'Dune', runtime: 155, genres: ['Sci-Fi'] }));
+    assert.deepEqual([dune.runtime, dune.genres, dune.detailsAt], [155, ['Sci-Fi'], NOW]);   // everything known
+    const arrival = itemOf(add({ category: 'movie', source: null, title: 'Arrival', runtime: 116 }));
+    assert.deepEqual([arrival.genres, arrival.detailsAt], [null, null]);                // genres still to look up
     assert.equal(itemOf(add({ category: 'movie', source: null, title: 'Cats' })).detailsAt, null);
     const dark = itemOf(add({ runtime: 50 }));                       // a series
     assert.deepEqual([dark.runtime, dark.seasons, dark.episodes, dark.detailsAt], [null, null, null, null]);
     const hobbit = itemOf(add({ category: 'book', source: null, title: 'The Hobbit', pages: 310, runtime: 90 }));
-    assert.deepEqual([hobbit.pages, hobbit.runtime, hobbit.detailsAt], [310, null, NOW]);
+    assert.deepEqual([hobbit.pages, hobbit.runtime, hobbit.detailsAt], [310, null, null]);
   });
 });
 

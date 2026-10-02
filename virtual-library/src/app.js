@@ -68,6 +68,9 @@ function readJsonBody(req) {
  *   GET  /api/events       live view (Server-Sent Events)
  *   GET  /api/search?category=movie&q=dune[&source=nintendo]   search a catalog: { results }
  *   POST /api/actions      apply one action, e.g. { "type": "setStatus", "itemId": "…", "status": "done" }
+ *
+ * @param {{ config: any, state: any, store: any, catalog: any, covers: any, hub?: SseHub, now?: () => number,
+ *   logger?: Pick<Console, 'warn' | 'error'> }} options
  */
 export function createApp({
   config, state, store, catalog, covers,

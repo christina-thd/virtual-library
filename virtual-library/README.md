@@ -9,6 +9,7 @@ A personal library of movies, series, books and games. Search for something, add
 - Search built in: no account or API key needed
 - Two lists: **Pending** and **Done** (series also **Waiting**, for a new season)
 - Optional 5-star rating for finished things
+- Stats: what you finished each month, your top genres, time spent and more
 
 ## Installation
 

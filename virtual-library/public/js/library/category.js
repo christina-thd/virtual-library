@@ -1,6 +1,6 @@
-// One category: its title, the Pending / (series: Waiting /) Done tabs, the sort button and the shelf. It always opens
-// on Pending; each tab starts in its own order (Pending, Waiting: recent first, Done: best rated first), whatever was picked before.
-import { $, escapeHtml } from '../shared/dom.js';
+// One category: its title, the Pending / (Waiting /) Done tabs, the sort button and the shelf. It always opens
+// on Pending, and each tab starts in its own order (Done: best rated first).
+import { $, closest, escapeHtml } from '../shared/dom.js';
 import { categoryOf, statusesFor } from '../shared/library.js';
 import { icon } from '../ui/icons.js';
 import { renderShelf, SORTS, sortsFor } from './shelf.js';
@@ -17,7 +17,9 @@ export function createCategoryView({ onBack }) {
 
   const view = $('categoryView');
   const tabs = $('statusTabs');
-  const sortSelect = $('sortSelect');
+  const sortSelect = /** @type {HTMLSelectElement} */ ($('sortSelect'));
+  /** The Pending / (Waiting) / Done buttons. */
+  const tabButtons = () => /** @type {NodeListOf<HTMLElement>} */ (tabs.querySelectorAll('[data-status]'));
   tabs.classList.add('segmented');
   $('backButton').innerHTML = icon('back');
   $('backButton').addEventListener('click', onBack);
@@ -27,10 +29,10 @@ export function createCategoryView({ onBack }) {
   const currentSort = () => sortsFor(category, status).find((s) => s.id === sorts[status]) ?? SORTS[0];
 
   function markSelected() {
-    for (const button of tabs.querySelectorAll('[data-status]')) {
+    for (const button of tabButtons()) {
       const selected = button.dataset.status === status;
       button.classList.toggle('selected', selected);
-      button.setAttribute('aria-selected', selected);
+      button.setAttribute('aria-selected', String(selected));
     }
     // the phone's own list (a wheel on iPhone) opens on tap; the button shows the short name
     const current = currentSort();
@@ -42,16 +44,16 @@ export function createCategoryView({ onBack }) {
   function render({ animate = false } = {}) {
     if (!category) return;
     const inCategory = library.filter((i) => i.category === category);
-    for (const button of tabs.querySelectorAll('[data-status]')) {
+    for (const button of tabButtons()) {
       const count = inCategory.filter((i) => i.status === button.dataset.status).length;
-      button.querySelector('.count').textContent = count || '';
+      button.querySelector('.count').textContent = count ? String(count) : '';
     }
     const context = { category, status, inCategory: inCategory.length, sort: currentSort().id };
     renderShelf(inCategory.filter((i) => i.status === status), context, { animate });
   }
 
   tabs.addEventListener('click', (e) => {
-    const button = e.target.closest('[data-status]');
+    const button = closest(e, '[data-status]');
     if (!button || button.dataset.status === status) return;
     status = button.dataset.status;
     sorts[status] = START_SORT[status];
@@ -65,7 +67,7 @@ export function createCategoryView({ onBack }) {
     render({ animate: true });
   });
 
-  // the title, back button and tabs always stay at the top; they get a background once the shelf scrolls under them
+  // the title and tabs stay at the top; they get a background once the shelf scrolls under them
   new IntersectionObserver(([entry]) => $('categoryHead').classList.toggle('stuck', !entry.isIntersecting))
     .observe($('headSentinel'));
 
@@ -80,10 +82,10 @@ export function createCategoryView({ onBack }) {
     show(id) {
       category = id;
       view.dataset.category = id;
-      status = 'pending';                          // always opens on Pending
+      status = 'pending';
       // only series have Waiting (caught up, waiting for a new season)
-      for (const button of tabs.querySelectorAll('[data-status]')) button.hidden = !statusesFor(id).includes(button.dataset.status);
-      $('filters').classList.toggle('three-tabs', statusesFor(id).length > 2);   // room for them: the sort button is an icon
+      for (const button of tabButtons()) button.hidden = !statusesFor(id).includes(button.dataset.status);
+      $('filters').classList.toggle('three-tabs', statusesFor(id).length > 2);   // sort button: icon only
       Object.assign(sorts, START_SORT);
       markSelected();
       $('categoryTitle').innerHTML = `${icon(id)}<span>${categoryOf(id).plural}</span>`;

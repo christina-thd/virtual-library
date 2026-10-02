@@ -1,5 +1,6 @@
 import { CATEGORY_IDS, MAX_CREATOR, MAX_QUERY, MAX_TITLE } from '../../public/js/shared/library.js';
 import { parseYear, readDetails } from '../library/state.js';
+import { cleanGenres } from './genres.js';
 import { appleBooks } from './providers/apple-books.js';
 import { createCinemeta } from './providers/cinemeta.js';
 import { gog } from './providers/gog.js';
@@ -11,7 +12,7 @@ import { createTmdb } from './providers/tmdb.js';
 import { tvmaze } from './providers/tvmaze.js';
 
 const MAX_RESULTS = 20;
-// Recent searches are answered from memory: typing back, switching categories and reopening the search are instant.
+// recent searches are answered from memory
 const CACHE_TTL_MS = 10 * 60 * 1000;
 const CACHE_SIZE = 200;
 
@@ -25,11 +26,10 @@ export class SearchError extends Error {
 }
 
 /**
- * Which catalogs search each category, best first: the next one is asked only when the one before
- * finds nothing or doesn't answer. The keyless ones always; one with an API key goes first when it's set.
- *
- * Games are split by platform (picked on the search screen), because each store answers every search with
- * look-alikes of its own ("metroid" on Steam is "Metroidvania Maker"), so one can't be a fallback for the other.
+ * Which catalogs search each category, best first: the next is asked only when the one before finds nothing
+ * or doesn't answer. A catalog with an API key goes first when the key is set.
+ * Games are split by platform (a switch on the search screen): each store answers every search with its own
+ * look-alikes ("metroid" on Steam is "Metroidvania Maker"), so one can't fall back to the other.
  */
 export function chooseProviders({ tmdbApiKey = null, rawgApiKey = null } = {}) {
   const withKey = (key, create) => (key ? [create(key)] : []);
@@ -38,23 +38,26 @@ export function chooseProviders({ tmdbApiKey = null, rawgApiKey = null } = {}) {
     series: [...withKey(tmdbApiKey, (k) => createTmdb('series', k)), tvmaze, createCinemeta('series')],
     book: [openLibrary, appleBooks],
     game: [
-      // `icon`: what the switch shows (public/js/ui/icons.js); the label is its name for screen readers and tooltips
+      // icon: on the switch (ui/icons.js); label: its name, for screen readers
       { id: 'pc', label: rawgApiKey ? 'All platforms' : 'PC & Steam Deck', icon: rawgApiKey ? 'game' : 'steam', providers: [...withKey(rawgApiKey, createRawg), steam, gog] },
       { id: 'nintendo', label: 'Nintendo', icon: 'nintendo', providers: [nintendo] },
     ],
   };
 }
 
+/** Details as a catalog gave them, its genres named the way every catalog's are (genres.js). */
+const catalogDetails = (category, raw) =>
+  readDetails(category, raw && { ...raw, genres: raw.genres == null ? undefined : cleanGenres(category, raw.genres) });
+
 const clean = (value, max) => (typeof value === 'string' || typeof value === 'number' ? String(value).trim().slice(0, max) : '');
 
 /**
- * Search across the catalogs. Every provider has the same shape:
- *   { id, name, url, imageHosts: [hostname], search(query, http) → [{ id, title, year, creator, coverUrl, thumbUrl?, ...details? }],
- *     details?(id, http) → movies { runtime: minutes or "155 min" }, series { seasons, episodes }, books { pages } }
- * (search results may include some details already: Cinemeta movies sometimes the runtime, Open Library the pages)
- * and this turns its results into what screens show and send back with `addItem`.
- * `providers` maps each category to a list of them, best first (or to just one), or to a list of
- * sources to pick from: [{ id, label, providers: [...] }].
+ * Search across the catalogs, turning their results into what screens show and send back with `addItem`.
+ * Every provider has the same shape:
+ *   { id, name, url, imageHosts, search(query, http) → [{ id, title, year, creator, coverUrl, thumbUrl?, ...details }],
+ *     details?(id, http) → { runtime | seasons, episodes | pages, genres } }
+ * `providers`: per category, a list of them (best first) or a list of sources to pick from ({ id, label, providers }).
+ * @param {{ http: any, providers?: Record<string, any>, now?: () => number }} options
  */
 export function createCatalog({ http, providers = chooseProviders(), now = Date.now }) {
   const toSources = (value) => {
@@ -79,7 +82,7 @@ export function createCatalog({ http, providers = chooseProviders(), now = Date.
   // at once goes out once. Failures are dropped, to be tried again.
   const cache = new Map();
 
-  /** `sourceId` picks one of the category's sources (e.g. games: "pc" or "nintendo"); the first one by default. */
+  /** `sourceId` picks one of the category's sources (games: "pc" or "nintendo"); the first by default. */
   function search(category, rawQuery, sourceId = null) {
     if (!CATEGORY_IDS.includes(category)) return Promise.reject(new SearchError(`category must be one of: ${CATEGORY_IDS.join(', ')}`));
     const query = clean(rawQuery, MAX_QUERY);
@@ -134,27 +137,21 @@ export function createCatalog({ http, providers = chooseProviders(), now = Date.
         source: { provider: provider.id, id: clean(r.id, 100) },
         coverUrl: image(r.coverUrl),
         thumbUrl: image(r.thumbUrl) ?? image(r.coverUrl),
-        ...Object.fromEntries(Object.entries(readDetails(category, r)).filter(([, value]) => value != null)),
+        ...Object.fromEntries(Object.entries(catalogDetails(category, r)).filter(([, value]) => value != null)),
       }))
       .filter((r) => r.title && r.source.id)
       .slice(0, MAX_RESULTS);
   }
 
-  /**
-   * What the search screen offers per category: [{ id, label, credits: [{ id, name, url }] }], credits in the
-   * order they're asked. One source with no label is just "search"; several are a switch (games: PC / Nintendo).
-   */
+  /** Per category, what the search screen offers: [{ id, label, credits: [{ id, name, url }] }]; several are a switch. */
   const sources = Object.fromEntries(Object.entries(sourcesOf).map(([category, list]) =>
     [category, list.map((s) => ({ id: s.id, label: s.label, icon: s.icon ?? null, credits: s.providers.map((p) => ({ id: p.id, name: p.name, url: p.url })) }))]));
 
-  /**
-   * Details from the catalog an item was found in: movies { runtime } (minutes), series { seasons, episodes }
-   * (out so far), books { pages }. Null when that catalog can't tell; a field it doesn't know is null.
-   */
+  /** An item's details from the catalog it was found in (unknown fields null), or null when it has none to give. */
   async function detailsOf(category, source) {
     const provider = (sourcesOf[category] ?? []).flatMap((s) => s.providers).find((p) => p.id === source?.provider);
     if (!provider?.details) return null;
-    return readDetails(category, await provider.details(source.id, http));
+    return catalogDetails(category, await provider.details(source.id, http));
   }
 
   return { search, isAllowedImage, sources, detailsOf };

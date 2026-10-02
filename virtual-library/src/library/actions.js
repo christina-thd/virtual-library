@@ -1,5 +1,5 @@
 import { CATEGORY_IDS, isRating, MAX_CREATOR, MAX_TITLE, statusesFor } from '../../public/js/shared/library.js';
-import { findBySource, findItem, itemDetails, newId, parseHours, parseImageUrls, parseSource, parseYear } from './state.js';
+import { detailFields, findBySource, findItem, itemDetails, newId, parseHours, parseImageUrls, parseSource, parseYear } from './state.js';
 
 /** A rejected action. `status` is the HTTP status the API answers with. */
 export class ActionError extends Error {
@@ -63,9 +63,8 @@ const handlers = {
       rating: status === 'done' ? rating(action.rating) : null,
       dropped: false,
       hoursPlayed: null,
-      // from the search result when it has them (a movie's runtime, a book's pages); else looked up after adding
-      ...details,
-      detailsAt: Object.values(details).some((v) => v != null) ? ctx.now : null,
+      ...details,                                  // what the search result had; the rest is looked up after adding
+      detailsAt: detailFields(category).every((field) => details[field] != null) ? ctx.now : null,
       addedAt: ctx.now,
       finishedAt: status === 'done' ? ctx.now : null,
     };
@@ -84,10 +83,7 @@ const handlers = {
     item.dropped = false;
   },
 
-  /**
-   * Dropped: given up on, it wasn't worth finishing. It counts as done (it's off the pending list, and can still
-   * be rated), with a mark on its cover. Undropping keeps it done.
-   */
+  /** Given up on: counts as done (can still be rated), with a mark on its cover. Undropping keeps it done. */
   setDropped(state, { itemId, dropped }, ctx) {
     const item = getItem(state, itemId);
     if (typeof dropped !== 'boolean') throw new ActionError('dropped must be true or false');

@@ -19,6 +19,7 @@ export const appleBooks = {
       creator: book.artistName,
       thumbUrl: sized(book.artworkUrl100, '200x300'),
       coverUrl: sized(book.artworkUrl100, '600x900'),
+      genres: book.genres ?? [],                     // store sections ("Fantasy", "Books"…): sorted out in genres.js
     }));
   },
 };

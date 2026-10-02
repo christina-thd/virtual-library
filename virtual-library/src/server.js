@@ -11,7 +11,10 @@ import { JsonFileStore } from './store.js';
 
 const config = loadConfig();
 const store = new JsonFileStore(config.stateFile);
-const state = normalizeState(store.load());
+const saved = store.load();
+const state = normalizeState(saved);
+// the stats' start date is set on the first run with stats: save it now, so a restart doesn't move it
+if (saved && saved.statsSince !== state.statsSince) store.save(state);
 
 const client = createHttpClient({ userAgent: `HoardBoard/${config.version} (Home Assistant add-on)` });
 const providers = chooseProviders({ tmdbApiKey: config.tmdbApiKey, rawgApiKey: config.rawgApiKey });
@@ -28,7 +31,7 @@ server.listen(config.port, config.host, () => {
   const searchedOn = (s) => (s.label ? `${s.label}: ` : '') + s.credits.map((c) => c.name).join(' / ');
   console.log(`  Search:   ${Object.entries(catalog.sources).map(([category, list]) => `${category} → ${list.map(searchedOn).join(' · ')}`).join(', ')}`);
   app.syncCovers();                                  // covers that couldn't be saved last time
-  app.syncDetails();                                 // movie durations, series seasons: missing or a week old
+  app.syncDetails();                                 // details not looked up yet, or a week old
 });
 
 // Save anything pending and close connections before exiting (Ctrl+C, add-on stop).

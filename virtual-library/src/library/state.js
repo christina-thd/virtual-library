@@ -2,25 +2,12 @@ import { randomBytes } from 'node:crypto';
 import { CATEGORY_IDS, isRating, MAX_CREATOR, MAX_TITLE, sameSource, statusesFor } from '../../public/js/shared/library.js';
 
 /**
- * State shape (saved to disk as JSON):
- *
- *   {
- *     schema: 1,
- *     items: [{
- *       id, category ('movie' | 'series' | 'book' | 'game'), title, year | null, creator | null,
- *       source: { provider, id } | null,   where it was found (null: added by hand)
- *       imageUrls: [string],               the catalog's images, best first (the next is tried if one fails)
- *       cover: string | null,              file name of the saved copy (see covers.js)
- *       status ('pending' | 'waiting' (series only) | 'done'), rating (1–5) | null,
- *       dropped: boolean,                  done, but given up on (it wasn't worth finishing)
- *       hoursPlayed: number | null,        games: how long you played it, entered when done
- *       runtime: minutes | null,           how long a movie is
- *       seasons, episodes: number | null,  how many of a series are out
- *       pages: number | null,              how long a book is
- *       detailsAt: ms | null,              when those were last looked up (in the background, see catalog/details.js)
- *       addedAt, finishedAt | null,        ms timestamps
- *     }],
- *   }
+ * What's saved to disk (JSON): { schema, statsSince, items }.
+ *   statsSince   when the stats started counting (what was finished before has no real date)
+ * Each item is an Item (public/js/shared/library.js) with, instead of `image`:
+ *   imageUrls    the catalog's images, best first (the next is tried if one fails)
+ *   cover        file name of the saved copy (covers.js)
+ *   detailsAt    when runtime / seasons / pages / genres were last looked up (catalog/details.js)
  */
 export const SCHEMA_VERSION = 1;
 
@@ -30,8 +17,8 @@ export const MAX_IMAGE_URLS = 3;
 
 export const newId = () => randomBytes(6).toString('hex');
 
-export function createInitialState() {
-  return { schema: SCHEMA_VERSION, items: [] };
+export function createInitialState(now = Date.now()) {
+  return { schema: SCHEMA_VERSION, statsSince: now, items: [] };
 }
 
 export const findItem = (state, itemId) => state.items.find((i) => i.id === itemId);
@@ -70,13 +57,21 @@ export function parseHours(value) {
 
 // The details each category keeps, read from saved data, a search result or a catalog lookup.
 const DETAIL_READERS = {
-  movie: (raw) => ({ runtime: parseMinutes(raw.runtime) }),
-  series: (raw) => ({ seasons: parseCount(raw.seasons), episodes: parseCount(raw.episodes) }),
-  book: (raw) => ({ pages: parseCount(raw.pages) }),
+  movie: (raw) => ({ runtime: parseMinutes(raw.runtime), genres: parseGenres(raw.genres) }),
+  series: (raw) => ({ seasons: parseCount(raw.seasons), episodes: parseCount(raw.episodes), genres: parseGenres(raw.genres) }),
+  book: (raw) => ({ pages: parseCount(raw.pages), genres: parseGenres(raw.genres) }),
+  game: (raw) => ({ genres: parseGenres(raw.genres) }),
 };
-const NO_DETAILS = Object.freeze({ runtime: null, seasons: null, episodes: null, pages: null });
+const NO_DETAILS = Object.freeze({ runtime: null, seasons: null, episodes: null, pages: null, genres: null });
 
-/** The details a category keeps, e.g. series: ['seasons', 'episodes']; none for games. */
+/** Up to three genre names, or null when they haven't been looked up ([] when the catalog has none). */
+export function parseGenres(value) {
+  if (!Array.isArray(value)) return null;
+  const names = value.filter((g) => typeof g === 'string').map((g) => g.trim()).filter((g) => g && g.length <= 30);
+  return [...new Set(names)].slice(0, 3);
+}
+
+/** The details a category keeps, e.g. series: ['seasons', 'episodes', 'genres']. */
 export const detailFields = (category) => (DETAIL_READERS[category] ? Object.keys(DETAIL_READERS[category]({})) : []);
 
 /** The category's details found in `raw` (unknown ones null); {} for a category that keeps none. */
@@ -85,7 +80,11 @@ export const readDetails = (category, raw) => DETAIL_READERS[category]?.(raw ?? 
 /** Every detail field, the category's from `raw` and the rest null, as items store them. */
 export const itemDetails = (category, raw) => ({ ...NO_DETAILS, ...readDetails(category, raw) });
 
-/** Distinct https URLs that pass `allowed`, best first. */
+/**
+ * Distinct https URLs that pass `allowed`, best first.
+ * @param {unknown[]} urls
+ * @param {(url: string) => boolean} [allowed]
+ */
 export function parseImageUrls(urls, allowed = () => true) {
   const valid = urls.filter((url) => typeof url === 'string' && url.startsWith('https://') && url.length < 500 && allowed(url));
   return [...new Set(valid)].slice(0, MAX_IMAGE_URLS);
@@ -127,10 +126,12 @@ function normalizeItem(raw, now) {
 
 /** Turns whatever was read from disk into a valid current-schema state (unusable items are dropped). */
 export function normalizeState(raw, now = Date.now()) {
-  if (!raw || typeof raw !== 'object' || !Array.isArray(raw.items)) return createInitialState();
+  if (!raw || typeof raw !== 'object' || !Array.isArray(raw.items)) return createInitialState(now);
   const items = raw.items.map((i) => normalizeItem(i, now)).filter(Boolean);
   const unique = [...new Map(items.map((i) => [i.id, i])).values()];
-  return { schema: SCHEMA_VERSION, items: unique };
+  // a library from before the stats: they count from now on, not from when it was filled in
+  const statsSince = Number.isFinite(raw.statsSince) && raw.statsSince > 0 && raw.statsSince <= now ? raw.statsSince : now;
+  return { schema: SCHEMA_VERSION, statsSince, items: unique };
 }
 
 /** An item as screens see it: `image` is the saved cover when there is one, else the catalog's. */
@@ -140,5 +141,5 @@ function itemView({ cover, imageUrls, ...item }) {
 
 /** What every screen receives. */
 export function toView(state, appVersion) {
-  return { version: appVersion, items: state.items.map(itemView) };
+  return { version: appVersion, statsSince: state.statsSince, items: state.items.map(itemView) };
 }

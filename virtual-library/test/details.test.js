@@ -6,7 +6,8 @@ import { createDetailsSync } from '../src/catalog/details.js';
 const NOW = 1_700_000_000_000;
 const DAY = 24 * 60 * 60 * 1000;
 const movie = (id, overrides = {}) => ({
-  id, category: 'movie', title: id, status: 'pending', source: { provider: 'cinemeta', id: `tt${id}` }, runtime: null, detailsAt: null, ...overrides,
+  id, category: 'movie', title: id, status: 'pending', source: { provider: 'cinemeta', id: `tt${id}` }, runtime: null, genres: null,
+  detailsAt: null, ...overrides,
 });
 const series = (id, overrides = {}) => ({ ...movie(id), category: 'series', seasons: null, episodes: null, ...overrides });
 const quiet = { warn() {} };
@@ -14,31 +15,33 @@ const syncWith = (state, catalog, changes = { count: 0 }) =>
   createDetailsSync({ state, catalog, onChange: () => changes.count++, now: () => NOW, logger: quiet });
 
 test('fills in items not looked up yet, one at a time, and tells screens', async () => {
-  const state = { items: [movie('a'), movie('b', { runtime: 90, detailsAt: NOW - DAY }), movie('c', { source: null }),
+  /** @type {{ items: any[] }} */
+  const state = { items: [movie('a'), movie('b', { runtime: 90, genres: ['Drama'], detailsAt: NOW - DAY }), movie('c', { source: null }),
     { ...movie('d'), category: 'game' }, series('e')] };
   const asked = [];
   const catalog = {
     async detailsOf(category, source) {
       asked.push(source.id);
-      return category === 'movie' ? { runtime: 120 } : { seasons: 3, episodes: 26 };
+      return category === 'movie' ? { runtime: 120, genres: ['Sci-Fi'] } : { seasons: 3, episodes: 26, genres: [] };
     },
   };
   const changes = { count: 0 };
   await syncWith(state, catalog, changes).sync();
-  assert.deepEqual(asked, ['tta', 'tte']);          // not: already looked up, typed by hand, a game
-  assert.deepEqual([state.items[0].runtime, state.items[0].detailsAt], [120, NOW]);
+  assert.deepEqual(asked, ['tta', 'ttd', 'tte']);   // not: already looked up, typed by hand
+  assert.deepEqual([state.items[0].runtime, state.items[0].genres, state.items[0].detailsAt], [120, ['Sci-Fi'], NOW]);
   assert.deepEqual([state.items[4].seasons, state.items[4].episodes], [3, 26]);
-  assert.equal(changes.count, 2);
+  assert.equal(changes.count, 3);
 });
 
 test('a series you are still watching (or waiting for) is looked up again after a week; a finished one is not', async () => {
   const old = NOW - 8 * DAY;
+  /** @type {{ items: any[] }} */
   const state = { items: [
-    series('a', { seasons: 2, episodes: 18, detailsAt: old }),
-    series('b', { status: 'waiting', seasons: 2, episodes: 18, detailsAt: old }),
-    series('c', { status: 'done', seasons: 2, episodes: 18, detailsAt: old }),
-    series('d', { seasons: 2, episodes: 18, detailsAt: NOW - DAY }),
-    movie('e', { runtime: 100, detailsAt: old }),
+    series('a', { seasons: 2, episodes: 18, genres: [], detailsAt: old }),
+    series('b', { status: 'waiting', seasons: 2, episodes: 18, genres: [], detailsAt: old }),
+    series('c', { status: 'done', seasons: 2, episodes: 18, genres: [], detailsAt: old }),
+    series('d', { seasons: 2, episodes: 18, genres: [], detailsAt: NOW - DAY }),
+    movie('e', { runtime: 100, genres: [], detailsAt: old }),
   ] };
   const asked = [];
   await syncWith(state, { async detailsOf(c, source) { asked.push(source.id); return { seasons: 3, episodes: 27 }; } }).sync();
@@ -55,6 +58,14 @@ test('looked up but unknown: not asked again; a catalog that fails: tried again 
   await sync.sync();
   assert.equal(calls, 2);
   assert.deepEqual(state.items.map((i) => [i.runtime, i.detailsAt]), [[null, NOW], [null, null]]);
+});
+
+test('items looked up before genres were kept are looked up once more; none found is remembered as []', async () => {
+  const state = { items: [movie('a', { runtime: 100, detailsAt: NOW - DAY }), movie('b', { runtime: 90, genres: ['Drama'], detailsAt: NOW - DAY })] };
+  const asked = [];
+  await syncWith(state, { async detailsOf(c, source) { asked.push(source.id); return { runtime: 100, genres: null }; } }).sync();
+  assert.deepEqual(asked, ['tta']);
+  assert.deepEqual(state.items[0].genres, []);
 });
 
 test('an item removed while it was being looked up stays removed', async () => {

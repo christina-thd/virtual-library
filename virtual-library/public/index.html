@@ -19,17 +19,34 @@
   <link rel="stylesheet" href="css/shelf.css">
   <link rel="stylesheet" href="css/search.css">
   <link rel="stylesheet" href="css/details.css">
+  <link rel="stylesheet" href="css/stats.css">
   <script type="module" src="js/app.js"></script>
 </head>
 <body>
   <!-- ===== home: one tile per category ===== -->
   <div class="view" id="homeView">
     <header class="top home-top">
+      <button type="button" class="icon-button stats-button" id="statsButton" aria-label="Stats" title="Stats"></button>
       <img class="home-logo" src="img/logo.svg" alt="" width="56" height="56">
       <h1>Hoard Board</h1>
       <p class="tagline" id="summary">&nbsp;</p>
     </header>
     <main class="tiles" id="tiles"></main>
+  </div>
+
+  <!-- ===== stats: the whole library or one category ===== -->
+  <div class="view category-view stats-view" id="statsView" hidden>
+    <div class="head-sentinel" id="statsSentinel" aria-hidden="true"></div>
+    <div class="category-head" id="statsHead">
+      <header class="top category-top">
+        <button type="button" class="icon-button back-button" id="statsBack" aria-label="Back to all categories"></button>
+        <h1 id="statsTitle"></h1>
+      </header>
+      <nav class="filters">
+        <div class="stats-filter" id="statsFilter" role="tablist" aria-label="Which kind"></div>
+      </nav>
+    </div>
+    <main class="stats" id="statsBody"></main>
   </div>
 
   <!-- ===== one category: Pending / Done ===== -->

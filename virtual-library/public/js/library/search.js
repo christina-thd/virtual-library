@@ -1,23 +1,22 @@
-// Search sheet: pick a category, type a title, add a result as pending or done.
+// Search sheet: pick a category (and for games a store), type a title, add a result as pending or done.
+// This decides what to search and when, and handles adding; search-results.js draws what it found.
 import { searchCatalog, sendAction } from '../shared/api.js';
-import { $, escapeHtml } from '../shared/dom.js';
-import { metaLine } from '../shared/format.js';
-import { CATEGORIES, CATEGORY_IDS, categoryOf, sameSource, STATUS_LABELS } from '../shared/library.js';
+import { $, closest, escapeHtml } from '../shared/dom.js';
+import { CATEGORIES, CATEGORY_IDS, categoryOf, STATUS_LABELS } from '../shared/library.js';
 import { storage } from '../shared/storage.js';
-import { coverHtml } from '../ui/cover.js';
 import { icon } from '../ui/icons.js';
 import { createSheet } from '../ui/sheet.js';
 import { toast } from '../ui/toast.js';
+import { createResults } from './search-results.js';
 
 const CATEGORY_KEY = 'searchCategory';
 const DEBOUNCE_MS = 250;
 const CACHE_SIZE = 50;
 const MIN_QUERY = 2;
 
-
 /**
  * @param {object} options
- * @param {() => object[]} options.getItems    the library, to mark results that are already in it
+ * @param {() => import('../shared/library.js').Item[]} options.getItems    the library, to mark what's in it
  * @param {(itemId: string, how: { fromSearch?: boolean }) => void} options.openItem
  */
 export function createSearch({ getItems, openItem }) {
@@ -30,15 +29,16 @@ export function createSearch({ getItems, openItem }) {
     }, 400),
   });
   const body = $('searchBody');
-  const input = $('searchInput');
+  const input = /** @type {HTMLInputElement} */ ($('searchInput'));
   const picker = $('searchCategories');
   const sourcePicker = $('searchSources');
+  const shown = createResults({ getItems });
 
   // the category picked on the home screen's search, remembered on this phone
   const homeCategory = () => (CATEGORY_IDS.includes(storage.get(CATEGORY_KEY)) ? storage.get(CATEGORY_KEY) : 'movie');
   let category = homeCategory();
   let locked = false;               // opened from a category: only that category can be added
-  // category → [{ id, label, credits }], from the server. Several for a category is a switch (games: PC / Nintendo)
+  // category → [{ id, label, credits }], from the server; several make a switch (games: PC / Nintendo)
   let sources = {};
   const sourcesOf = (id) => sources[id] ?? [];
   // category → the source picked on the switch. Not remembered: each time the search opens it's back to the
@@ -49,7 +49,7 @@ export function createSearch({ getItems, openItem }) {
     const list = sourcesOf(category);
     return list.find((s) => s.id === picked.get(category)) ?? list[0] ?? null;
   }
-  // idle | loading | results | error
+  /** @type {'idle' | 'loading' | 'results' | 'error'} */
   let phase = 'idle';
   let results = [];
   let error = '';
@@ -58,10 +58,7 @@ export function createSearch({ getItems, openItem }) {
   let timer = null;
   // results already fetched since the page loaded (category + query → results): shown again without asking
   const cache = new Map();
-  const cacheKey = (query) => `${category}\0${currentSource()?.id ?? ''}\0${query.toLowerCase().replace(/\s+/g, ' ')}`;
-  // what was added from this search (key → { itemId, status, fresh, seen }): its row says "Added to …" until
-  // the next search, even before the library update arrives; `fresh` plays the badge's pop once
-  const added = new Map();
+  const cacheKey = (query) => [category, currentSource()?.id ?? '', query.toLowerCase().replace(/\s+/g, ' ')].join('\u0000');
 
   picker.classList.add('segmented');
   picker.innerHTML = CATEGORIES.map((c) => `
@@ -81,7 +78,7 @@ export function createSearch({ getItems, openItem }) {
     }
     controller = new AbortController();
     const { signal } = controller;
-    if (query !== searched) added.clear();
+    if (query !== searched) shown.clearAdded();
     searched = query;
     const key = cacheKey(query);
     if (cache.has(key)) {
@@ -109,10 +106,10 @@ export function createSearch({ getItems, openItem }) {
     category = id;
     if (!locked) storage.set(CATEGORY_KEY, id);
     input.placeholder = `Search ${categoryOf(id).plural.toLowerCase()}`;
-    for (const button of picker.children) {
+    for (const button of /** @type {HTMLCollectionOf<HTMLElement>} */ (picker.children)) {
       const selected = button.dataset.category === id;
       button.classList.toggle('selected', selected);
-      button.setAttribute('aria-checked', selected);
+      button.setAttribute('aria-checked', String(selected));
     }
     showSources();
     run();
@@ -145,120 +142,44 @@ export function createSearch({ getItems, openItem }) {
     $('searchCredits').innerHTML = list.length ? `Search by ${(answered ? [answered] : list).map(link).join(', then ')}` : '';
   }
 
-  // ----- rendering -----
-
-  const libraryMatch = (result) => getItems().find((item) => sameSource(item.source, result.source));
-  const keyOf = (entry) => (entry.source ? `${entry.source.provider}:${entry.source.id}` : `typed:${entry.category}:${entry.title}`);
-
-  /** The item this entry became, if it's in the library: { itemId, status, recent, fresh }. */
-  function ownedBy(entry) {
-    const key = keyOf(entry);
-    const mine = added.get(key);
-    const item = entry.source ? libraryMatch(entry) : mine && getItems().find((i) => i.id === mine.itemId);
-    const fresh = Boolean(mine?.fresh);
-    if (mine) mine.fresh = false;
-    if (item) {
-      if (mine) mine.seen = true;
-      return { itemId: item.id, status: item.dropped ? 'dropped' : item.status, recent: Boolean(mine), fresh };
-    }
-    if (mine && !mine.seen) return { ...mine, recent: true, fresh };  // just added: the library update is on its way
-    if (mine) added.delete(key);                        // removed from the library since
-    return null;
-  }
-
-  /** "✓ Added to Done" when added from this search, "✓ In your library · Done" otherwise. Tap to open it. */
-  function ownedHtml({ itemId, status, recent, fresh }) {
-    const label = status === 'dropped' ? 'Dropped' : STATUS_LABELS[status];
-    const text = recent ? `Added to ${label}` : `In your library · ${label}`;
-    return `<button type="button" class="in-library ${recent ? 'just-added' : ''} ${fresh ? 'pop' : ''}" data-open="${itemId}">
-      <span class="in-library-check">${icon('check')}</span><span>${text}</span><span class="in-library-open">Open</span></button>`;
-  }
-
-  function addButtons(index) {
-    return `<div class="result-actions">
-      <button type="button" class="pill" data-add="${index}" data-status="pending">${icon('clock')}Pending</button>
-      <button type="button" class="pill primary" data-add="${index}" data-status="done">${icon('check')}Done</button>
-    </div>`;
-  }
-
-  function resultHtml(result, index) {
-    const owned = ownedBy(result);
-    const action = owned ? ownedHtml(owned) : addButtons(index);
-    return `
-      <li class="result">
-        ${coverHtml({ image: result.thumbUrl, title: result.title, category: result.category })}
-        <div class="result-info">
-          <div class="result-title">${escapeHtml(result.title)}</div>
-          <div class="result-meta">${escapeHtml(metaLine(result) || categoryOf(result.category).label)}</div>
-          ${action}
-        </div>
-      </li>`;
-  }
-
-  /**
-   * Adding by hand, for things the catalog doesn't know (or doesn't list the way you want).
-   * Index -1 means "the typed title". `ask` is the question before it: "Add “Dune” anyway?"
-   */
-  function manualHtml(query, ask = (title) => `Add ${title} anyway?`) {
-    const owned = ownedBy({ category, title: query });
-    const title = `<strong>“${escapeHtml(query)}”</strong>`;
-    return `<div class="manual">
-      <p>${owned ? title : ask(title)}</p>
-      ${owned ? ownedHtml(owned) : addButtons(-1)}
-    </div>`;
-  }
-
-  function messageHtml(iconName, html) {
-    return `<div class="search-message">${icon(iconName)}${html}</div>`;
-  }
+  // ----- showing -----
 
   function render() {
     $('searchClear').hidden = !input.value;
     showCredits();
-    if (phase === 'idle') {
-      body.innerHTML = messageHtml('search', `<p>Find a ${categoryOf(category).label.toLowerCase()} by its title.</p>`);
-    } else if (phase === 'loading') {
-      const row = '<li class="result skeleton"><div class="cover"></div><div><div class="bar"></div><div class="bar short"></div></div></li>';
-      body.innerHTML = `<ul class="results">${row.repeat(5)}</ul>`;
-    } else if (phase === 'error') {
-      body.innerHTML = messageHtml('alert', `<p>${escapeHtml(error)}</p>${manualHtml(searched)}`);
-    } else if (!results.length) {
-      body.innerHTML = messageHtml('search', `<p>Nothing found for <strong>“${escapeHtml(searched)}”</strong>.</p>${manualHtml(searched)}`);
-    } else {
-      // after the results, so a title the catalogs list differently (or not at all) can still be added as typed
-      body.innerHTML = `<ul class="results">${results.map(resultHtml).join('')}</ul>
-        <div class="manual-end">${manualHtml(searched, (title) => `Not in the list? Add ${title} as you typed it`)}</div>`;
-    }
+    body.innerHTML = shown.html({ phase, results, error, searched, category });
   }
 
   // ----- adding -----
 
+  /** @param {HTMLElement} button  Pending or Done; data-add: the result's index, or -1 for the typed title */
   async function add(button) {
     const index = Number(button.dataset.add);
     const status = button.dataset.status;
     const entry = index >= 0 ? results[index] : { category, title: searched };
-    for (const b of button.parentElement.children) b.disabled = true;
+    const buttons = /** @type {HTMLCollectionOf<HTMLButtonElement>} */ (button.parentElement.children);
+    for (const b of buttons) b.disabled = true;
     try {
       const { itemId } = await sendAction({ type: 'addItem', ...entry, status });
-      added.set(keyOf(entry), { itemId, status, fresh: true });
+      shown.markAdded(entry, { itemId, status });
       render();
       toast(`“${entry.title}” added to ${STATUS_LABELS[status]}`, { icon: 'check' });
       if (status === 'done') openItem(itemId, { fromSearch: true });   // to rate it, if you like
     } catch (err) {
       toast(err.message, { error: true });
-      for (const b of button.parentElement.children) b.disabled = false;
+      for (const b of buttons) b.disabled = false;
     }
   }
 
   // ----- events -----
 
   picker.addEventListener('click', (e) => {
-    const button = e.target.closest('[data-category]');
+    const button = closest(e, '[data-category]');
     if (button && button.dataset.category !== category) setCategory(button.dataset.category);
   });
 
   sourcePicker.addEventListener('click', (e) => {
-    const button = e.target.closest('[data-source]');
+    const button = closest(e, '[data-source]');
     if (button && button.dataset.source !== currentSource()?.id) setSource(button.dataset.source);
   });
 
@@ -281,9 +202,9 @@ export function createSearch({ getItems, openItem }) {
   });
 
   body.addEventListener('click', (e) => {
-    const addButton = e.target.closest('[data-add]');
+    const addButton = closest(e, '[data-add]');
     if (addButton) return add(addButton);
-    const owned = e.target.closest('[data-open]');
+    const owned = closest(e, '[data-open]');
     if (owned) openItem(owned.dataset.open, { fromSearch: true });
   });
 

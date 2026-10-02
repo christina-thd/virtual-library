@@ -47,4 +47,10 @@ export const steam = {
       coverUrl: portraitOf(game.id),
     }));
   },
+
+  /** Genres: from the game's store page (search results don't have them). */
+  async details(id, http) {
+    const data = await http.json(`${STORE}/appdetails?appids=${encodeURIComponent(id)}&filters=genres`);
+    return { genres: data?.[id]?.data?.genres ?? [] };   // [{ description }]
+  },
 };

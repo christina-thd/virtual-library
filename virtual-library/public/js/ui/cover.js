@@ -40,7 +40,9 @@ export function coverHtml({ image, title, category, dropped = false }, className
 /** Swaps images that fail to load for a generated cover. Call once. */
 export function installCoverFallback() {
   document.addEventListener('error', (e) => {
-    const frame = e.target instanceof HTMLImageElement && e.target.parentElement;
-    if (frame?.classList.contains('cover')) e.target.outerHTML = generatedHtml(frame.dataset.category, frame.dataset.title);   // keeps the badge
+    const img = e.target instanceof HTMLImageElement ? e.target : null;
+    const frame = img?.parentElement;
+    // only the image is replaced, so a "Dropped" band stays
+    if (frame?.classList.contains('cover')) img.outerHTML = generatedHtml(frame.dataset.category, frame.dataset.title);
   }, true);   // error events don't bubble, so listen while capturing
 }

@@ -28,13 +28,13 @@ const LENGTHS = {
 
 /**
  * How a shelf can be sorted. `label` is shown on the button, `name` in the list; `doneOnly` ones need
- * a rating (or hours played), so they're offered on the Done tab only.
+ * a rating (or hours played), so they're offered on the Done tab only. Ties are A–Z.
  */
 export const SORTS = [
-  { id: 'recent', label: 'Recent', name: 'Recently added or finished', compare: byRecent },
+  { id: 'recent', label: 'Recent', name: 'Recently added or finished', compare: (a, b) => byRecent(a, b) || byTitle(a, b) },
   { id: 'title', label: 'A–Z', name: 'Name (A–Z)', compare: byTitle },
   { id: 'rating', label: 'Rating', name: 'Rating (highest first)', doneOnly: true,
-    compare: (a, b) => (b.rating ?? 0) - (a.rating ?? 0) || byRecent(a, b) },
+    compare: (a, b) => (b.rating ?? 0) - (a.rating ?? 0) || byTitle(a, b) },
 ];
 
 /** The length sort for a kind (duration, seasons, pages, hours played). */
@@ -75,8 +75,8 @@ function emptyHtml({ category, status, inCategory }) {
 }
 
 /**
- * Renders `items` (one category and status), in the order of `context.sort` (an id from SORTS; newest first by default).
- * `animate` plays the cards' entrance, when the shelf is opened and when the tab or the order changes.
+ * Renders `items` (one category and status) in the order `context.sort` names (a SORTS id; recent by default).
+ * `animate` plays the cards' entrance: when the shelf opens and when the tab or the order changes.
  */
 export function renderShelf(items, context, { animate = false } = {}) {
   const shelf = $('shelf');

@@ -1,5 +1,28 @@
 // Library rules shared by the server and the browser.
 
+/**
+ * An item as the screens get it (src/library/state.js has the saved form, and why each field is there).
+ * @typedef {object} Item
+ * @property {string} id
+ * @property {string} category                       'movie' | 'series' | 'book' | 'game'
+ * @property {string} title
+ * @property {number | null} year
+ * @property {string | null} creator
+ * @property {{ provider: string, id: string } | null} source   null: typed in by hand
+ * @property {string | null} image
+ * @property {'pending' | 'waiting' | 'done'} status
+ * @property {number | null} rating                  1–5, finished items only
+ * @property {boolean} dropped                       done, but given up on
+ * @property {number | null} hoursPlayed             games
+ * @property {number | null} runtime                 movies, minutes
+ * @property {number | null} seasons                 series
+ * @property {number | null} episodes                series
+ * @property {number | null} pages                   books
+ * @property {string[] | null} genres                null: not looked up yet
+ * @property {number} addedAt                        ms
+ * @property {number | null} finishedAt              ms
+ */
+
 export const CATEGORIES = Object.freeze([
   { id: 'movie', label: 'Movie', plural: 'Movies' },
   { id: 'series', label: 'Series', plural: 'Series' },

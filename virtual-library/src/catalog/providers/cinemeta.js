@@ -29,15 +29,17 @@ export function createCinemeta(type) {
         thumbUrl: m.poster,
         coverUrl: largerPoster(m.poster),
         runtime: m.runtime,                          // "155 min", only sometimes in search results
+        genres: m.genres ?? m.genre,                 // the same: only sometimes
       }));
     },
   };
-  /** From the full entry: how long a movie is ("155 min"); how many seasons and episodes of a series are out. */
+  /** From the full entry: a movie's runtime ("155 min"), or a series' seasons and episodes out so far. */
   provider.details = async (id, http) => {
     const { meta } = await http.json(`${API}/meta/${type}/${encodeURIComponent(id)}.json`);
+    const genres = meta?.genres ?? meta?.genre ?? [];
     return type === 'movie'
-      ? { runtime: meta?.runtime }
-      : airedCounts((meta?.videos ?? []).map((v) => ({ season: v.season, date: v.released ?? v.firstAired })));
+      ? { runtime: meta?.runtime, genres }
+      : { ...airedCounts((meta?.videos ?? []).map((v) => ({ season: v.season, date: v.released ?? v.firstAired }))), genres };
   };
   return provider;
 }

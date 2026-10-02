@@ -7,19 +7,26 @@ const NOW = 1_700_000_000_000;
 const item = (overrides = {}) => ({
   id: 'abc123', category: 'movie', title: 'Dune', year: 2021, creator: 'Denis Villeneuve',
   source: { provider: 'cinemeta', id: 'tt1160419' }, imageUrls: ['https://images.metahub.space/poster/medium/tt1160419/img'],
-  cover: null, status: 'done', rating: 5, dropped: false, hoursPlayed: null, runtime: 155, seasons: null, episodes: null, pages: null, detailsAt: NOW, addedAt: NOW - 1000, finishedAt: NOW, ...overrides,
+  cover: null, status: 'done', rating: 5, dropped: false, hoursPlayed: null, runtime: 155, seasons: null, episodes: null, pages: null, genres: ['Sci-Fi'], detailsAt: NOW, addedAt: NOW - 1000, finishedAt: NOW, ...overrides,
 });
 
 describe('normalizeState', () => {
   test('nothing saved yet gives an empty library', () => {
     for (const raw of [null, undefined, 'nope', {}, { items: 'x' }]) {
-      assert.deepEqual(normalizeState(raw, NOW), createInitialState());
+      assert.deepEqual(normalizeState(raw, NOW), createInitialState(NOW));
     }
   });
 
   test('keeps a valid item as it is', () => {
     const state = normalizeState({ schema: SCHEMA_VERSION, items: [item()] }, NOW);
     assert.deepEqual(state.items, [item()]);
+  });
+
+  test('the stats start counting when a library is first loaded with them; that date is then kept', () => {
+    assert.equal(normalizeState({ items: [item()] }, NOW).statsSince, NOW);                       // a library from before
+    assert.equal(normalizeState({ statsSince: NOW - 5000, items: [] }, NOW).statsSince, NOW - 5000);
+    assert.equal(normalizeState({ statsSince: NOW + 5000, items: [] }, NOW).statsSince, NOW);     // not in the future
+    assert.equal(createInitialState(NOW).statsSince, NOW);
   });
 
   test('drops items without a title or with an unknown category', () => {
@@ -61,6 +68,13 @@ describe('normalizeState', () => {
       item({ id: 'a1', category: 'game', status: 'pending', hoursPlayed: 12.25 }), item({ id: 'b2', hoursPlayed: 3 }),
     ] }, NOW).items;
     assert.deepEqual([game.hoursPlayed, movie.hoursPlayed], [12.3, null]);
+  });
+
+  test('genres: up to three names; null means not looked up yet', () => {
+    const [many, odd, none] = normalizeState({ items: [
+      item({ id: 'a1', genres: ['Drama', 'Drama', ' Crime ', 'Mystery', 'Thriller'] }), item({ id: 'b2', genres: [3, '', null] }), item({ id: 'c3', genres: 'Drama' }),
+    ] }, NOW).items;
+    assert.deepEqual([many.genres, odd.genres, none.genres], [['Drama', 'Crime', 'Mystery'], [], null]);
   });
 
   test('a rating only survives on finished items', () => {

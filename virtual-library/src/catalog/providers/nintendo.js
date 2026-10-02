@@ -17,6 +17,7 @@ export const nintendo = {
       creator: Array.isArray(game.system_names_txt) ? game.system_names_txt.slice(0, 3).join(', ') : null,
       thumbUrl: game.image_url_sq_s,
       coverUrl: game.image_url ?? game.image_url_sq_s,   // the box art; the square picture when there's none
+      genres: game.pretty_game_categories_txt ?? [],
     }));
   },
 };
