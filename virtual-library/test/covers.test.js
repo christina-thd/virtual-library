@@ -39,6 +39,16 @@ describe('http client', () => {
     await assert.rejects(http.json('https://down.example/?key=hunter2'), /down\.example did not answer/);
   });
 
+  test('json() with a body sends it as JSON, in a POST', async () => {
+    const { fetch, calls } = fakeFetch({ 'https://api.example/search': { type: 'application/json', body: '{"ok":true}' } });
+    const http = createHttpClient({ fetch });
+    assert.deepEqual(await http.json('https://api.example/search', { body: { search: 'One Piece' } }), { ok: true });
+    assert.deepEqual([calls[0].options.method, calls[0].options.body, calls[0].options.headers['Content-Type']],
+      ['POST', '{"search":"One Piece"}', 'application/json']);
+    await http.json('https://api.example/search');
+    assert.equal(calls[1].options.method, 'GET');
+  });
+
   test('image() rejects things that are not images, or too big', async () => {
     const { fetch } = fakeFetch({
       'https://img.example/page': { type: 'text/html', body: '<html>' },

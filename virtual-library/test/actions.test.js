@@ -8,7 +8,7 @@ const ctx = { now: NOW, allowImage: (url) => url.startsWith('https://images.exam
 
 let state;
 beforeEach(() => {
-  state = createInitialState();
+  state = { ...createInitialState(), setupStep: null, setupSince: null };   // a library that's set up
 });
 
 const apply = (action, context = ctx) => applyAction(state, action, context);
@@ -111,7 +111,59 @@ describe('setStatus', () => {
     assert.equal(itemOf(add({ source: null, title: 'Severance', status: 'waiting' })).status, 'waiting');
   });
 
+  test('moving a series to waiting keeps when and how many episodes were out; back to pending soon after undoes it', () => {
+    const id = add({ episodes: 10 });
+    assert.deepEqual(itemOf(id).caughtUp, []);
+    apply({ type: 'setStatus', itemId: id, status: 'waiting' });
+    assert.deepEqual(itemOf(id).caughtUp, [{ at: NOW, episodes: 10 }]);
+    apply({ type: 'setStatus', itemId: id, status: 'pending' }, { ...ctx, now: NOW + 60_000 });   // a mistake
+    assert.deepEqual(itemOf(id).caughtUp, []);
+    apply({ type: 'setStatus', itemId: id, status: 'waiting' });
+    const WEEKS = 30 * 24 * 60 * 60 * 1000;
+    itemOf(id).episodes = 18;                                                                    // a new season is out
+    apply({ type: 'setStatus', itemId: id, status: 'pending' }, { ...ctx, now: NOW + WEEKS });
+    apply({ type: 'setStatus', itemId: id, status: 'waiting' }, { ...ctx, now: NOW + 2 * WEEKS });
+    assert.deepEqual(itemOf(id).caughtUp, [{ at: NOW, episodes: 10 }, { at: NOW + 2 * WEEKS, episodes: 18 }]);
+    apply({ type: 'setStatus', itemId: id, status: 'done' });
+    apply({ type: 'setStatus', itemId: id, status: 'waiting' });                                // nothing new: not again
+    assert.equal(itemOf(id).caughtUp.length, 2);
+    assert.deepEqual(itemOf(add({ source: null, title: 'Severance', status: 'waiting', episodes: 19 })).caughtUp, [{ at: NOW, episodes: 19 }]);
+    assert.equal(itemOf(add({ category: 'movie', source: null, title: 'Dune' })).caughtUp, null);
+  });
+
+  test('a kind can be hidden and shown again; its items stay; one is always shown', () => {
+    const id = add({ category: 'book', source: null, title: 'Dune' });
+    apply({ type: 'setCategoryHidden', category: 'book', hidden: true });
+    apply({ type: 'setCategoryHidden', category: 'book', hidden: true });                       // twice: once
+    assert.deepEqual([state.hiddenCategories, itemOf(id).title], [['book'], 'Dune']);
+    apply({ type: 'setCategoryHidden', category: 'book', hidden: false });
+    assert.deepEqual(state.hiddenCategories, []);
+    for (const category of ['movie', 'series', 'book', 'comic']) apply({ type: 'setCategoryHidden', category, hidden: true });
+    rejects({ type: 'setCategoryHidden', category: 'game', hidden: true }, 400, /at least one/);
+    rejects({ type: 'setCategoryHidden', category: 'music', hidden: true }, 400);
+    rejects({ type: 'setCategoryHidden', category: 'game', hidden: 'yes' }, 400);
+  });
+
+  test('setup: what is done while setting up was seen before; setting up again leaves the rest as it was', () => {
+    state = createInitialState(NOW);
+    assert.equal(state.setupStep, 'categories');                                                // a new library
+    apply({ type: 'setSetup', step: 'library' });
+    const seen = add({ status: 'done' });
+    const later = add({ source: null, title: 'Severance' });
+    apply({ type: 'setStatus', itemId: later, status: 'done' });
+    apply({ type: 'setSetup', step: 'done' }, { ...ctx, now: NOW + 1000 });
+    assert.deepEqual([state.setupStep, state.setupSince, itemOf(seen).beforeStats, itemOf(later).beforeStats], [null, null, true, true]);
+    const statsSince = state.statsSince;
+    const now = add({ source: null, title: 'Dark', status: 'done' });                           // after setup: dated
+    apply({ type: 'setSetup', step: 'categories' }, { ...ctx, now: NOW + 5000 });                // again
+    assert.deepEqual([state.setupSince, state.statsSince, itemOf(now).beforeStats], [NOW + 5000, statsSince, false]);
+    apply({ type: 'setSetup', step: 'library' }, { ...ctx, now: NOW + 6000 });
+    assert.equal(state.setupSince, NOW + 5000);                                                 // still from when it started
+    rejects({ type: 'setSetup', step: 'later' }, 400, /step/);
+  });
+
   test('only series can wait', () => {
+    rejects({ type: 'addItem', category: 'comic', title: 'One Piece', status: 'waiting' }, 400);
     const movie = add({ category: 'movie', source: null, title: 'Dune' });
     rejects({ type: 'setStatus', itemId: movie, status: 'waiting' }, 400, /pending, done/);
     rejects({ type: 'addItem', category: 'book', title: 'Dune', status: 'waiting' }, 400);
@@ -227,6 +279,6 @@ describe('applyAction', () => {
   });
 
   test('lists every action', () => {
-    assert.deepEqual([...ACTION_TYPES].sort(), ['addItem', 'rateItem', 'removeItem', 'setDropped', 'setHours', 'setStatus']);
+    assert.deepEqual([...ACTION_TYPES].sort(), ['addItem', 'rateItem', 'removeItem', 'setCategoryHidden', 'setDropped', 'setHours', 'setSetup', 'setStatus']);
   });
 });

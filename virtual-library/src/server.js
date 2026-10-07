@@ -1,5 +1,5 @@
 #!/usr/bin/env node
-// Hoard Board: movies, series, books and games you've finished or still have pending.
+// Hoard Board: movies, series, books, comics and games you've finished or still have pending.
 import http from 'node:http';
 import { createApp } from './app.js';
 import { chooseProviders, createCatalog } from './catalog/index.js';

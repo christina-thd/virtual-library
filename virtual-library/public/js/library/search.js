@@ -34,8 +34,10 @@ export function createSearch({ getItems, openItem }) {
   const sourcePicker = $('searchSources');
   const shown = createResults({ getItems });
 
-  // the category picked on the home screen's search, remembered on this phone
-  const homeCategory = () => (CATEGORY_IDS.includes(storage.get(CATEGORY_KEY)) ? storage.get(CATEGORY_KEY) : 'movie');
+  let hidden = [];                  // kinds hidden from home and stats: not offered here either
+  const isShown = (id) => CATEGORY_IDS.includes(id) && !hidden.includes(id);
+  // the category picked on the home screen's search, remembered on this phone (the first one shown otherwise)
+  const homeCategory = () => (isShown(storage.get(CATEGORY_KEY)) ? storage.get(CATEGORY_KEY) : CATEGORY_IDS.find(isShown));
   let category = homeCategory();
   let locked = false;               // opened from a category: only that category can be added
   // category → [{ id, label, credits }], from the server; several make a switch (games: PC / Nintendo)
@@ -62,7 +64,7 @@ export function createSearch({ getItems, openItem }) {
 
   picker.classList.add('segmented');
   picker.innerHTML = CATEGORIES.map((c) => `
-    <button type="button" role="radio" data-category="${c.id}">${icon(c.id)}${c.label}</button>`).join('');
+    <button type="button" role="radio" data-category="${c.id}" aria-label="${c.label}" title="${c.label}">${icon(c.id)}</button>`).join('');
   $('searchForm').querySelector('.search-icon').innerHTML = icon('search');
   $('searchClear').innerHTML = icon('close');
 
@@ -248,6 +250,13 @@ export function createSearch({ getItems, openItem }) {
       showSources();
       if (sourcesOf(category).length > 1) run();       // a search made before this went to the default source
       else showCredits();
+    },
+
+    /** @param {string[]} value  kinds hidden from home and stats: their buttons go too */
+    setHidden(value) {
+      hidden = value;
+      for (const button of /** @type {HTMLCollectionOf<HTMLElement>} */ (picker.children)) button.hidden = !isShown(button.dataset.category);
+      if (!locked && !isShown(category)) setCategory(homeCategory());
     },
 
     /** The library changed: update the "In your library" marks. */

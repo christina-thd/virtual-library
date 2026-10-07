@@ -7,7 +7,7 @@ const NOW = 1_700_000_000_000;
 const item = (overrides = {}) => ({
   id: 'abc123', category: 'movie', title: 'Dune', year: 2021, creator: 'Denis Villeneuve',
   source: { provider: 'cinemeta', id: 'tt1160419' }, imageUrls: ['https://images.metahub.space/poster/medium/tt1160419/img'],
-  cover: null, status: 'done', rating: 5, dropped: false, hoursPlayed: null, runtime: 155, seasons: null, episodes: null, pages: null, genres: ['Sci-Fi'], detailsAt: NOW, addedAt: NOW - 1000, finishedAt: NOW, ...overrides,
+  cover: null, status: 'done', rating: 5, dropped: false, hoursPlayed: null, runtime: 155, seasons: null, episodes: null, caughtUp: null, pages: null, volumes: null, publisher: null, genres: ['Sci-Fi'], detailsAt: NOW, addedAt: NOW - 1000, finishedAt: NOW, beforeStats: false, ...overrides,
 });
 
 describe('normalizeState', () => {
@@ -27,6 +27,19 @@ describe('normalizeState', () => {
     assert.equal(normalizeState({ statsSince: NOW - 5000, items: [] }, NOW).statsSince, NOW - 5000);
     assert.equal(normalizeState({ statsSince: NOW + 5000, items: [] }, NOW).statsSince, NOW);     // not in the future
     assert.equal(createInitialState(NOW).statsSince, NOW);
+  });
+
+  test('setup: a new library starts it; one from before with items in it is set up already', () => {
+    const setupOf = (raw) => normalizeState(raw, NOW).setupStep;
+    assert.equal(createInitialState(NOW).setupStep, 'categories');
+    assert.deepEqual([setupOf({ items: [item()] }), setupOf({ items: [] }), setupOf({ setupStep: 'library', items: [item()] }), setupOf({ setupStep: null, items: [] })],
+      [null, 'categories', 'library', null]);
+  });
+
+  test('hidden kinds: known ones, once each, never all of them', () => {
+    const hiddenOf = (hiddenCategories) => normalizeState({ hiddenCategories, items: [] }, NOW).hiddenCategories;
+    assert.deepEqual([hiddenOf(undefined), hiddenOf(['book', 'book', 'music']), hiddenOf('book')], [[], ['book'], []]);
+    assert.deepEqual(hiddenOf(['movie', 'series', 'book', 'comic', 'game']), []);
   });
 
   test('drops items without a title or with an unknown category', () => {
@@ -54,6 +67,17 @@ describe('normalizeState', () => {
     ] }, NOW).items;
     assert.deepEqual([series.status, series.rating, series.finishedAt], ['waiting', null, null]);
     assert.equal(movie.status, 'pending');
+  });
+
+  test('a series waiting from before catch-ups were kept has seen what is out, undated; saved ones are kept', () => {
+    const [old, saved, pending] = normalizeState({ items: [
+      item({ id: 'a1', category: 'series', status: 'waiting', episodes: 20 }),
+      item({ id: 'b2', category: 'series', status: 'pending', episodes: 30, caughtUp: [{ at: NOW, episodes: 20 }, { at: 'x', episodes: -1 }] }),
+      item({ id: 'c3', category: 'series', status: 'pending' }),
+    ] }, NOW).items;
+    assert.deepEqual(old.caughtUp, [{ at: null, episodes: 20 }]);
+    assert.deepEqual(saved.caughtUp, [{ at: NOW, episodes: 20 }, { at: null, episodes: null }]);
+    assert.deepEqual(pending.caughtUp, []);
   });
 
   test('only a done item can be dropped', () => {

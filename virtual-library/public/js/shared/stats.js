@@ -3,6 +3,20 @@
 // clears when it was finished, so an undone item no longer counts in the month it was finished.
 // What was finished before `since` (when the stats started: a library filled in on day one marks everything
 // finished that day) has no real date, so the per-month and this-year counts leave it out.
+// Episodes count when seen: a series moved to Waiting has seen what's out, and finishing it adds the rest.
+
+import { CATEGORIES, isManga } from './library.js';
+
+/**
+ * What the stats tell apart, each with its own tab: the categories, with manga and western comics apart (a manga
+ * counts volumes, a comic is one book). `category` is the one each belongs to (its color).
+ */
+export const STAT_KINDS = Object.freeze(CATEGORIES.flatMap((c) => (c.id === 'comic'
+  ? [{ id: 'manga', category: 'comic', icon: 'manga', plural: 'Manga' }, { id: 'comic', category: 'comic', icon: 'comic', plural: 'Comics' }]
+  : [{ id: c.id, category: c.id, icon: c.id, plural: c.plural }])));
+
+/** The stats kind of an item: its category, or "manga" for a manga. */
+export const kindOfItem = (item) => (isManga(item) ? 'manga' : item.category);
 
 const MONTHS = 12;
 const TOP_GENRES = 5;
@@ -41,15 +55,31 @@ function topGenres(finished, limit = TOP_GENRES) {
     .slice(0, limit);
 }
 
-/** Hours of movies, episodes, pages and playtime of the given done items. */
+/** Hours of movies, episodes, pages, manga volumes, comics and playtime of the given done items. */
 function timeSpent(done) {
-  const of = (kind) => done.filter((item) => item.category === kind);
+  const of = (kind) => done.filter((item) => kindOfItem(item) === kind);
   return {
     movieMinutes: sum(of('movie'), (i) => i.runtime),
     episodes: sum(of('series'), (i) => i.episodes),
     pages: sum(of('book'), (i) => i.pages),
+    volumes: sum(of('manga'), (i) => i.volumes),
+    comics: of('comic').length,                                  // each is one book
     hours: Math.round(sum(of('game'), (i) => i.hoursPlayed) * 10) / 10,
   };
+}
+
+/** Series episodes as seen: [{ at, episodes }], what's new at each catch-up and, once finished, the rest. */
+function episodesSeen(series) {
+  const seen = [];
+  for (const item of series) {
+    let before = 0;
+    for (const c of item.caughtUp ?? []) {
+      if (c.episodes > before) seen.push({ at: c.at, episodes: c.episodes - before });
+      before = Math.max(before, c.episodes ?? 0);
+    }
+    if (isFinished(item) && item.episodes > before) seen.push({ at: item.beforeStats ? null : item.finishedAt, episodes: item.episodes - before });
+  }
+  return seen;
 }
 
 /** Months in a row with something finished: the run still going (it lasts until a month ends empty) and the best. */
@@ -69,8 +99,9 @@ function streaks(dated, now, since) {
 }
 
 /** One year: how much was finished, of what, the favourite, top genres, busiest month and time spent. */
-function yearReview(dated, year) {
+function yearReview(dated, seen, year) {
   const items = dated.filter((item) => new Date(item.finishedAt).getFullYear() === year);
+  const episodes = sum(seen.filter((s) => new Date(s.at).getFullYear() === year), (s) => s.episodes);
   const byCategory = {};
   const perMonth = new Array(12).fill(0);
   for (const item of items) {
@@ -87,7 +118,7 @@ function yearReview(dated, year) {
     favourite,
     genres: topGenres(items, 3),
     busiestMonth: most > 1 ? perMonth.indexOf(most) : null,      // only when one stands out
-    time: timeSpent(items),
+    time: { ...timeSpent(items), episodes },
   };
 }
 
@@ -105,19 +136,23 @@ function decades(finished) {
   return [...byDecade.values()].sort((a, b) => a.decade - b.decade);
 }
 
-/** What makes a record, per kind: the longest movie, biggest book, longest series, most-played game. */
-const RECORDS = { movie: (i) => i.runtime, book: (i) => i.pages, series: (i) => i.episodes, game: (i) => i.hoursPlayed };
+/** What makes a record, per kind: the longest movie, biggest book, longest series and manga, most-played game. */
+const RECORDS = { movie: (i) => i.runtime, book: (i) => i.pages, series: (i) => i.episodes, manga: (i) => i.volumes, game: (i) => i.hoursPlayed };
 
-/** The biggest of each kind (or one kind's top three): [{ item, value }]. Playtime counts dropped games too. */
-function records(done, category) {
-  const best = (kind, count) => done.filter((i) => i.category === kind && RECORDS[kind](i) && (kind === 'game' || !i.dropped))
-    .sort((a, b) => RECORDS[kind](b) - RECORDS[kind](a))
+/** The biggest of each kind (or one kind's top three): [{ item, kind, value }]. Playtime counts dropped games too. */
+function records(done, kind) {
+  const best = (k, count) => (RECORDS[k] ? done : [])
+    .filter((i) => kindOfItem(i) === k && RECORDS[k](i) && (k === 'game' || !i.dropped))
+    .sort((a, b) => RECORDS[k](b) - RECORDS[k](a))
     .slice(0, count)
-    .map((item) => ({ item, value: RECORDS[kind](item) }));
-  return category ? best(category, 3) : ['movie', 'series', 'book', 'game'].flatMap((kind) => best(kind, 1));
+    .map((item) => ({ item, kind: k, value: RECORDS[k](item) }));
+  return kind ? best(kind, 3) : STAT_KINDS.flatMap((k) => best(k.id, 1));
 }
 
-/** Whose work you finished most: directors, networks, authors. Games' "creator" is a platform or developer, so none. */
+/**
+ * Whose work you finished most: directors, networks, authors. Not for games (their "creator" is a platform or
+ * developer), manga or comics.
+ */
 const CREATOR_KINDS = ['movie', 'series', 'book'];
 
 function topCreators(finished, limit) {
@@ -127,6 +162,14 @@ function topCreators(finished, limit) {
     .filter((c) => c.count > 1)                                 // one each says nothing
     .sort((a, b) => b.count - a.count || a.name.localeCompare(b.name))
     .slice(0, limit);
+}
+
+/** Comics finished per publisher, most first, the ones not among the known publishers last as "Other". */
+function publishers(comics) {
+  const counts = new Map();
+  for (const comic of comics) counts.set(comic.publisher ?? 'Other', (counts.get(comic.publisher ?? 'Other') ?? 0) + 1);
+  return [...counts].map(([name, count]) => ({ name, count }))
+    .sort((a, b) => Number(a.name === 'Other') - Number(b.name === 'Other') || b.count - a.count || a.name.localeCompare(b.name));
 }
 
 /** The one added longest ago, or null. */
@@ -142,20 +185,25 @@ function ratings(finished) {
 }
 
 /**
- * Everything the Stats page shows, for one category or (null) the whole library.
+ * Everything the Stats page shows, for one kind (a STAT_KINDS id) or (null) the whole library.
  * @param {import('./library.js').Item[]} items  the library
- * @param {{ category?: string|null, now?: number, since?: number, year?: number }} [options]
+ * @param {{ kind?: string|null, now?: number, since?: number, year?: number }} [options]
  *   since: when the stats started; year: the one to review (this year by default)
  */
-export function libraryStats(items, { category = null, now = Date.now(), since = 0, year = new Date(now).getFullYear() } = {}) {
+export function libraryStats(items, { kind = null, now = Date.now(), since = 0, year = new Date(now).getFullYear() } = {}) {
   const today = new Date(now);
-  const mine = category ? items.filter((item) => item.category === category) : items;
+  const mine = kind ? items.filter((item) => kindOfItem(item) === kind) : items;
   const finished = mine.filter(isFinished);
-  const dated = finished.filter((item) => item.finishedAt >= since);   // finished since the stats started
+  // finished since the stats started, and not while setting up (seen before)
+  const dated = finished.filter((item) => item.finishedAt >= since && !item.beforeStats);
   const pending = mine.filter((item) => item.status === 'pending');
+  const seen = episodesSeen(mine.filter((item) => item.category === 'series'));
+  const seenDated = seen.filter((s) => s.at != null && s.at >= since);
   const months = finishedPerMonth(dated, today, new Date(Math.min(since, now)));
   const busiest = months.reduce((best, m) => (m.total > (best?.total ?? 0) ? m : best), null);
-  const of = (kind) => finished.filter((item) => item.category === kind);
+  const of = (k) => finished.filter((item) => kindOfItem(item) === k);
+  // the whole library: each kind's top three
+  const perKind = (top, kinds) => Object.fromEntries(kinds.map((k) => [k, top(of(k), 3)]));
   const done = mine.filter((item) => item.status === 'done');
   const years = [...new Set([today.getFullYear(), ...dated.map((item) => new Date(item.finishedAt).getFullYear())])]
     .sort((a, b) => b - a);
@@ -170,23 +218,22 @@ export function libraryStats(items, { category = null, now = Date.now(), since =
     waiting: mine.filter((item) => item.status === 'waiting').length,
     months,
     busiest,                                                    // the month with the most finished, or null
-    // time played is time played: dropped games count too
-    time: { ...timeSpent(finished), hours: timeSpent(done).hours },
+    // seen is seen: dropped games' playtime and the episodes of series not finished count too
+    time: { ...timeSpent(finished), episodes: sum(seen, (s) => s.episodes), hours: timeSpent(done).hours },
     streak: streaks(dated, today, new Date(Math.min(since, now))),
     years,                                                      // years to review, newest first
-    review: yearReview(dated, year),
+    review: yearReview(dated, seenDated, year),
     decades: decades(finished),
-    records: records(done, category),
-    creators: category ? (CREATOR_KINDS.includes(category) ? topCreators(finished, 5) : null) : null,
-    creatorsByCategory: category ? null
-      : Object.fromEntries(CREATOR_KINDS.map((kind) => [kind, topCreators(of(kind), 3)])),
-    genres: category ? topGenres(finished) : null,              // one category: its top genres
-    genresByCategory: category ? null                           // the whole library: each category's top three
-      : Object.fromEntries(['movie', 'series', 'book', 'game'].map((kind) => [kind, topGenres(of(kind), 3)])),
+    records: records(done, kind),
+    creators: kind && CREATOR_KINDS.includes(kind) ? topCreators(finished, 5) : null,   // one kind: its top five
+    creatorsByKind: kind ? null : perKind(topCreators, CREATOR_KINDS),
+    genres: kind ? topGenres(finished) : null,
+    publishers: kind === 'comic' ? publishers(finished) : null,     // Marvel, DC…
+    genresByKind: kind ? null : perKind(topGenres, STAT_KINDS.map((k) => k.id)),
     ratings: ratings(finished),
     oldestPending: oldest(pending),
     // the whole library: each category's oldest pending one
-    oldestPendingByCategory: category ? null
-      : ['movie', 'series', 'book', 'game'].map((kind) => oldest(pending.filter((i) => i.category === kind))).filter(Boolean),
+    oldestPendingByCategory: kind ? null
+      : CATEGORIES.map(({ id: kind }) => oldest(pending.filter((i) => i.category === kind))).filter(Boolean),
   };
 }

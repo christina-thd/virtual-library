@@ -22,6 +22,7 @@ const LENGTHS = {
   series: { label: 'Seasons', name: 'Seasons (most first)', value: (i) => i.seasons, then: (i) => i.episodes,
     show: (i) => formatCount(i.seasons, 'season') },
   book: { label: 'Pages', name: 'Pages (longest first)', value: (i) => i.pages, show: (i) => formatCount(i.pages, 'page') },
+  comic: { label: 'Volumes', name: 'Volumes (most first)', value: (i) => i.volumes, show: (i) => formatCount(i.volumes, 'volume') },
   game: { label: 'Playtime', name: 'Playtime (most first)', value: (i) => i.hoursPlayed, doneOnly: true,
     show: (i) => (i.hoursPlayed ? `${i.hoursPlayed}h played` : '') },
 };

@@ -2,6 +2,8 @@
 import assert from 'node:assert/strict';
 import { describe, test } from 'node:test';
 import { chooseProviders, createCatalog, SearchError } from '../src/catalog/index.js';
+import { parseVolumes } from '../src/catalog/providers/mangaupdates.js';
+import { pickPublisher } from '../src/catalog/providers/open-library.js';
 
 /** An http client that answers from `routes` (URL prefix → body) and records what was asked. */
 function fakeHttp(routes) {
@@ -9,7 +11,7 @@ function fakeHttp(routes) {
   return {
     calls,
     async json(url, options = {}) {
-      calls.push({ url, headers: options.headers ?? {} });
+      calls.push({ url, headers: options.headers ?? {}, body: options.body });
       const prefix = Object.keys(routes).find((p) => url.startsWith(p));
       if (!prefix) throw new Error(`unexpected request ${url}`);
       return routes[prefix];
@@ -78,6 +80,96 @@ describe('keyless catalogs', () => {
       thumbUrl: 'https://covers.openlibrary.org/b/id/14627509-M.jpg',
     });
     assert.equal(results[1].coverUrl, null);
+  });
+
+  test('comics: manga from Kitsu, with its genres and author sent alongside; light novels left out', async () => {
+    const { results, calls } = await search(providers, {
+      'https://kitsu.io/api/edge/manga': {
+        data: [
+          { id: '11', type: 'manga', attributes: { canonicalTitle: 'NARUTO', titles: { en: 'Naruto', en_jp: 'NARUTO' }, startDate: '1999-09-21', volumeCount: 72, subtype: 'manga',
+            posterImage: { small: 'https://media.kitsu.app/manga/11/small.jpg', large: 'https://media.kitsu.app/manga/11/large.jpg' } },
+          relationships: { categories: { data: [{ type: 'categories', id: '1' }, { type: 'categories', id: '2' }] }, staff: { data: [{ type: 'mediaStaff', id: '7' }] } } },
+          { id: '12', type: 'manga', attributes: { canonicalTitle: 'One Piece', titles: {}, startDate: '1997-07-22', volumeCount: 0, subtype: 'manga', posterImage: null }, relationships: {} },
+          { id: '13', type: 'manga', attributes: { canonicalTitle: 'Naruto Ninden', titles: {}, subtype: 'novel' }, relationships: {} },
+        ],
+        included: [
+          { type: 'categories', id: '1', attributes: { title: 'Shounen' } }, { type: 'categories', id: '2', attributes: { title: 'Action' } },
+          { type: 'mediaStaff', id: '7', attributes: { role: 'Story & Art' }, relationships: { person: { data: { type: 'people', id: '9' } } } },
+          { type: 'people', id: '9', attributes: { name: 'Masashi Kishimoto' } },
+        ],
+      },
+    }, 'comic', 'naruto');
+    assert.equal(calls[0].headers.Accept, 'application/vnd.api+json');
+    assert.deepEqual(results[0], {
+      category: 'comic', title: 'Naruto', year: 1999, creator: 'Masashi Kishimoto', source: { provider: 'kitsu', id: '11' },
+      coverUrl: 'https://media.kitsu.app/manga/11/large.jpg', thumbUrl: 'https://media.kitsu.app/manga/11/small.jpg',
+      genres: ['Action'],
+    });
+    assert.deepEqual(results.map((r) => r.title), ['Naruto', 'One Piece']);
+  });
+
+  test('comics: MangaDex when Kitsu finds nothing, without doujinshi', async () => {
+    const tag = (group, en) => ({ attributes: { group, name: { en } } });
+    const { results } = await search(providers, {
+      'https://kitsu.io/api/edge/manga': { data: [] },
+      'https://api.mangadex.org/manga': {
+        data: [
+          { id: 'a1', attributes: { title: { 'ja-ro': 'Naruto' }, altTitles: [{ en: 'Naruto' }], year: 1999, status: 'completed', lastVolume: '72', tags: [tag('genre', 'Action'), tag('theme', 'Ninja')] },
+            relationships: [{ type: 'author', attributes: { name: 'Kishimoto Masashi' } }, { type: 'cover_art', attributes: { fileName: 'c.jpg' } }] },
+          { id: 'b2', attributes: { title: { en: 'One Piece' }, year: 1997, status: 'ongoing', lastVolume: '', tags: [] }, relationships: [] },
+          { id: 'c3', attributes: { title: { en: 'Naruto - Rocket' }, tags: [tag('format', 'Doujinshi')] }, relationships: [] },
+        ],
+      },
+    }, 'comic', 'naruto');
+    assert.deepEqual(results[0], {
+      category: 'comic', title: 'Naruto', year: 1999, creator: 'Kishimoto Masashi', source: { provider: 'mangadex', id: 'a1' },
+      coverUrl: 'https://uploads.mangadex.org/covers/a1/c.jpg.512.jpg', thumbUrl: 'https://uploads.mangadex.org/covers/a1/c.jpg.256.jpg',
+      genres: ['Action'],
+    });
+    assert.deepEqual(results.map((r) => r.title), ['Naruto', 'One Piece']);
+  });
+
+  test('manga volumes come from MangaUpdates: the one from the same year, ongoing ones too', async () => {
+    const kitsuManga = { data: { id: '38', type: 'manga', attributes: { canonicalTitle: 'One Piece', titles: { en: 'One Piece' }, startDate: '1997-07-22', volumeCount: 0, status: 'current', subtype: 'manga' }, relationships: {} } };
+    const http = fakeHttp({
+      'https://kitsu.io/api/edge/manga/38': kitsuManga,
+      'https://api.mangaupdates.com/v1/series/search': { results: [
+        { record: { series_id: 1, title: 'One Piece dj', type: 'Doujinshi', year: '1997' } },
+        { record: { series_id: 2, title: 'One Piece Party', type: 'Manga', year: '2014' } },
+        { record: { series_id: 3, title: 'One Piece', type: 'Manga', year: '1997' } },
+      ] },
+      'https://api.mangaupdates.com/v1/series/3': { status: '115 Volumes (Ongoing)  \n' },
+    });
+    const catalog = createCatalog({ http, providers: chooseProviders() });
+    assert.deepEqual(await catalog.detailsOf('comic', { provider: 'kitsu', id: '38' }), { volumes: 115, publisher: null, genres: [] });
+    assert.deepEqual(http.calls[1].body, { search: 'One Piece', perpage: 5 });
+    // MangaUpdates down: a finished manga keeps its catalog's own count, an ongoing one has none
+    const down = fakeHttp({ 'https://kitsu.io/api/edge/manga/38': kitsuManga });
+    assert.deepEqual(await createCatalog({ http: down, providers: chooseProviders() }).detailsOf('comic', { provider: 'kitsu', id: '38' }), { volumes: null, publisher: null, genres: [] });
+  });
+
+  test('the publisher of a comic: the known one its editions name most; others are none', () => {
+    assert.equal(pickPublisher(['Panini Verlags GmbH', 'DC', 'DC Comics Inc.', 'IDW Publishing', 'dc']), 'DC');
+    assert.equal(pickPublisher(['Titan Publishing Company', 'DC Comics', 'Vertigo', 'Brand: Vertigo / DC Comics']), 'DC');
+    assert.equal(pickPublisher(['Marvel Enterprises', 'PANINI', 'Marvel']), 'Marvel');
+    assert.equal(pickPublisher(['Image Comics']), 'Image');
+    assert.equal(pickPublisher(['Pantheon books', 'Random House']), null);
+    assert.equal(pickPublisher([]), null);
+  });
+
+  test('a volume count is the first one MangaUpdates gives: the whole series, not one of its parts', () => {
+    assert.equal(parseVolumes('24 Volumes (Complete)\n\nPart 1: 11 Volumes (Complete)'), 24);
+    assert.equal(parseVolumes('200 Chapters + Prologue (Complete)\n15 Volumes (Complete)'), 15);
+    assert.equal(parseVolumes('1 Volume (Complete)'), 1);
+    assert.equal(parseVolumes('52 Chapters (Ongoing)'), null);
+    assert.equal(parseVolumes(null), null);
+  });
+
+  test('comics: western comics from Open Library, only those filed as comics, one volume each', async () => {
+    const http = fakeHttp({ 'https://openlibrary.org/search.json': { docs: [{ key: '/works/OL2897798W', title: 'Watchmen', author_name: ['Alan Moore', 'DC Comics'], first_publish_year: 1986, cover_i: 7774899, publisher: ['Panini', 'DC', 'IDW Publishing'] }] } });
+    const results = await createCatalog({ http, providers }).search('comic', 'watchmen', 'comics');
+    assert.match(decodeURIComponent(http.calls[0].url), /q=watchmen subject:\(comics OR "graphic novels"/);
+    assert.deepEqual([results[0].title, results[0].creator, results[0].volumes, results[0].publisher], ['Watchmen', 'Alan Moore', 1, 'DC']);
   });
 
   const steamSearch = { items: [{ type: 'app', id: 3357650, name: 'PRAGMATA' }, { type: 'app', id: 1145360, name: 'Hades' }, { type: 'sub', id: 9, name: 'Bundle' }] };
@@ -333,11 +425,11 @@ describe('catalogs with an API key', () => {
       .map(([c, list]) => [c, Object.fromEntries(list.map((s) => [s.id, s.credits.map((p) => p.id)]))]));
     assert.deepEqual(ids(chooseProviders()), {
       movie: { all: ['cinemeta'] }, series: { all: ['tvmaze', 'cinemeta'] }, book: { all: ['openlibrary', 'applebooks'] },
-      game: { pc: ['steam', 'gog'], nintendo: ['nintendo'] },
+      comic: { manga: ['kitsu', 'mangadex', 'openlibrary'], comics: ['openlibrary'] }, game: { pc: ['steam', 'gog'], nintendo: ['nintendo'] },
     });
     assert.deepEqual(ids(chooseProviders({ tmdbApiKey: 'a', rawgApiKey: 'b' })), {
       movie: { all: ['tmdb', 'cinemeta'] }, series: { all: ['tmdb', 'tvmaze', 'cinemeta'] }, book: { all: ['openlibrary', 'applebooks'] },
-      game: { pc: ['rawg', 'steam', 'gog'], nintendo: ['nintendo'] },
+      comic: { manga: ['kitsu', 'mangadex', 'openlibrary'], comics: ['openlibrary'] }, game: { pc: ['rawg', 'steam', 'gog'], nintendo: ['nintendo'] },
     });
   });
 });
@@ -414,7 +506,7 @@ describe('createCatalog', () => {
   });
 
   test('lists who searches each category, for the credits line', () => {
-    assert.deepEqual(Object.keys(catalog.sources).sort(), ['book', 'game', 'movie', 'series']);
+    assert.deepEqual(Object.keys(catalog.sources).sort(), ['book', 'comic', 'game', 'movie', 'series']);
     assert.equal(catalog.sources.series[0].credits[0].name, 'TVmaze');
   });
 });

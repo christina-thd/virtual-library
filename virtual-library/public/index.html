@@ -27,11 +27,26 @@
   <div class="view" id="homeView">
     <header class="top home-top">
       <button type="button" class="icon-button stats-button" id="statsButton" aria-label="Stats" title="Stats"></button>
+      <button type="button" class="icon-button stats-button kinds-button" id="kindsButton" aria-label="Settings" title="Settings"></button>
       <img class="home-logo" src="img/logo.svg" alt="" width="56" height="56">
       <h1>Hoard Board</h1>
       <p class="tagline" id="summary">&nbsp;</p>
     </header>
+    <section class="setup-banner" id="setupBanner" hidden>
+      <div class="setup-text"><strong id="setupTitle">Add what you've seen</strong><span id="setupCount"></span></div>
+      <button type="button" class="setup-done" id="setupDone">Start stats</button>
+    </section>
     <main class="tiles" id="tiles"></main>
+  </div>
+
+  <!-- ===== first run: which categories you use, then (on home) add what you've already seen ===== -->
+  <div class="view welcome-view" id="welcomeView" hidden>
+    <img class="home-logo" src="img/logo.svg" alt="" width="64" height="64">
+    <h1><span class="welcome-hello">Welcome to</span>Hoard Board</h1>
+    <p class="tagline">What do you hoard?</p>
+    <div class="kinds-list" id="welcomeKinds"></div>
+    <p class="welcome-note">Change these any time from <span id="welcomeEye"></span> on the home screen.</p>
+    <button type="button" class="welcome-next" id="welcomeNext">Next</button>
   </div>
 
   <!-- ===== stats: the whole library or one category ===== -->
@@ -96,6 +111,25 @@
       </div>
       <div class="search-body" id="searchBody"></div>
       <p class="credits" id="searchCredits"></p>
+    </section>
+  </div>
+
+  <!-- ===== which kinds show on the home screen, stats and search ===== -->
+  <div class="layer" id="kindsLayer" hidden>
+    <div class="backdrop" data-close></div>
+    <section class="sheet kinds-sheet" role="dialog" aria-modal="true" aria-labelledby="kindsTitle">
+      <div class="grabber" data-drag data-close></div>
+      <div class="kinds-head" data-drag>
+        <div class="search-title-row">
+          <h2 class="search-title" id="kindsTitle">Settings</h2>
+          <button type="button" class="search-close" data-close>Close</button>
+        </div>
+      </div>
+      <p class="settings-label">Categories visibility</p>
+      <div class="kinds-list" id="kindsList"></div>
+      <hr class="settings-divider">
+      <p class="settings-label">Forgot something?</p>
+      <button type="button" class="setup-again" id="seenButton"></button>
     </section>
   </div>
 

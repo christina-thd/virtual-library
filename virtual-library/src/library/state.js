@@ -2,14 +2,23 @@ import { randomBytes } from 'node:crypto';
 import { CATEGORY_IDS, isRating, MAX_CREATOR, MAX_TITLE, sameSource, statusesFor } from '../../public/js/shared/library.js';
 
 /**
- * What's saved to disk (JSON): { schema, statsSince, items }.
- *   statsSince   when the stats started counting (what was finished before has no real date)
+ * What's saved to disk (JSON): { schema, statsSince, hiddenCategories, setupStep, setupSince, items }.
+ *   statsSince        when the stats started counting (what was finished before has no real date)
+ *   hiddenCategories  kinds kept off the home screen, stats and search (their items stay)
+ *   setupStep         first-run setup: 'categories' (which ones you use), 'library' (adding what you've already
+ *                     seen), or null once set up
+ *   setupSince        when setup started (null once set up): what's been added since shows on the home screen
  * Each item is an Item (public/js/shared/library.js) with, instead of `image`:
  *   imageUrls    the catalog's images, best first (the next is tried if one fails)
  *   cover        file name of the saved copy (covers.js)
- *   detailsAt    when runtime / seasons / pages / genres were last looked up (catalog/details.js)
+ *   detailsAt    when runtime / seasons / pages / volumes / genres were last looked up (catalog/details.js)
+ *   beforeStats  done while setting up: seen before, so it counts in the totals but in no month or year
+ *   caughtUp     series: when they were moved to Waiting, with how many episodes were out (seen) then
  */
 export const SCHEMA_VERSION = 1;
+
+/** First-run setup, in order; 'done' is how actions finish it (saved as null). */
+export const SETUP_STEPS = Object.freeze(['categories', 'library']);
 
 /** File names of saved covers: `<item id>.<ext>`. */
 export const COVER_FILE = /^[a-f0-9]{1,32}\.(jpg|png|webp)$/;
@@ -18,7 +27,7 @@ export const MAX_IMAGE_URLS = 3;
 export const newId = () => randomBytes(6).toString('hex');
 
 export function createInitialState(now = Date.now()) {
-  return { schema: SCHEMA_VERSION, statsSince: now, items: [] };
+  return { schema: SCHEMA_VERSION, statsSince: now, hiddenCategories: [], setupStep: 'categories', setupSince: now, items: [] };
 }
 
 export const findItem = (state, itemId) => state.items.find((i) => i.id === itemId);
@@ -34,7 +43,7 @@ export function parseYear(value) {
   return year >= 1000 && year <= 9999 ? year : null;
 }
 
-/** A count of seasons, episodes or pages: a whole number from 1, or null. */
+/** A count of seasons, episodes, pages or volumes: a whole number from 1, or null. */
 export const parseCount = (value) => (Number.isInteger(value) && value > 0 && value < 100_000 ? value : null);
 
 /** Minutes from a number or catalog text ("155 min", "2h 35min"), or null. */
@@ -60,9 +69,21 @@ const DETAIL_READERS = {
   movie: (raw) => ({ runtime: parseMinutes(raw.runtime), genres: parseGenres(raw.genres) }),
   series: (raw) => ({ seasons: parseCount(raw.seasons), episodes: parseCount(raw.episodes), genres: parseGenres(raw.genres) }),
   book: (raw) => ({ pages: parseCount(raw.pages), genres: parseGenres(raw.genres) }),
+  comic: (raw) => ({ volumes: parseCount(raw.volumes), publisher: toText(raw.publisher, 40) || null, genres: parseGenres(raw.genres) }),
   game: (raw) => ({ genres: parseGenres(raw.genres) }),
 };
-const NO_DETAILS = Object.freeze({ runtime: null, seasons: null, episodes: null, pages: null, genres: null });
+const NO_DETAILS = Object.freeze({ runtime: null, seasons: null, episodes: null, pages: null, volumes: null, publisher: null, genres: null });
+
+/**
+ * A series' catch-ups: [{ at, episodes }]. One already waiting from before they were kept has seen what's out,
+ * when isn't known.
+ */
+export function parseCaughtUp(value, status, episodes) {
+  if (!Array.isArray(value)) return status === 'waiting' ? [{ at: null, episodes }] : [];
+  return value.filter((c) => c && typeof c === 'object')
+    .map((c) => ({ at: Number.isFinite(c.at) && c.at > 0 ? Math.trunc(c.at) : null, episodes: parseCount(c.episodes) }))
+    .slice(-50);
+}
 
 /** Up to three genre names, or null when they haven't been looked up ([] when the catalog has none). */
 export function parseGenres(value) {
@@ -118,10 +139,18 @@ function normalizeItem(raw, now) {
     dropped: status === 'done' && raw.dropped === true,
     hoursPlayed: raw.category === 'game' ? parseHours(raw.hoursPlayed) : null,   // kept if moved back from done
     ...itemDetails(raw.category, raw),
+    caughtUp: raw.category === 'series' ? parseCaughtUp(raw.caughtUp, status, parseCount(raw.episodes)) : null,
     detailsAt: Number.isFinite(raw.detailsAt) && raw.detailsAt > 0 ? raw.detailsAt : null,
     addedAt,
     finishedAt: status === 'done' ? toTime(raw.finishedAt, addedAt) : null,
+    beforeStats: status === 'done' && raw.beforeStats === true,
   };
+}
+
+/** Hidden kinds: known ones, each once, and never all of them. */
+export function parseHidden(value) {
+  const hidden = [...new Set(Array.isArray(value) ? value : [])].filter((id) => CATEGORY_IDS.includes(id));
+  return hidden.length < CATEGORY_IDS.length ? hidden : [];
 }
 
 /** Turns whatever was read from disk into a valid current-schema state (unusable items are dropped). */
@@ -131,7 +160,11 @@ export function normalizeState(raw, now = Date.now()) {
   const unique = [...new Map(items.map((i) => [i.id, i])).values()];
   // a library from before the stats: they count from now on, not from when it was filled in
   const statsSince = Number.isFinite(raw.statsSince) && raw.statsSince > 0 && raw.statsSince <= now ? raw.statsSince : now;
-  return { schema: SCHEMA_VERSION, statsSince, items: unique };
+  // from before setup was kept: a library with something in it is set up already
+  const setupStep = SETUP_STEPS.includes(raw.setupStep) ? raw.setupStep
+    : raw.setupStep === null || unique.length ? null : 'categories';
+  const setupSince = setupStep ? toTime(raw.setupSince, statsSince) : null;
+  return { schema: SCHEMA_VERSION, statsSince, hiddenCategories: parseHidden(raw.hiddenCategories), setupStep, setupSince, items: unique };
 }
 
 /** An item as screens see it: `image` is the saved cover when there is one, else the catalog's. */
@@ -141,5 +174,12 @@ function itemView({ cover, imageUrls, ...item }) {
 
 /** What every screen receives. */
 export function toView(state, appVersion) {
-  return { version: appVersion, statsSince: state.statsSince, items: state.items.map(itemView) };
+  return {
+    version: appVersion,
+    statsSince: state.statsSince,
+    hiddenCategories: state.hiddenCategories,
+    setupStep: state.setupStep,
+    setupSince: state.setupSince,
+    items: state.items.map(itemView),
+  };
 }

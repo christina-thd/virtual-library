@@ -1,5 +1,5 @@
 import { CATEGORY_IDS, isRating, MAX_CREATOR, MAX_TITLE, statusesFor } from '../../public/js/shared/library.js';
-import { detailFields, findBySource, findItem, itemDetails, newId, parseHours, parseImageUrls, parseSource, parseYear } from './state.js';
+import { detailFields, findBySource, findItem, itemDetails, newId, parseHours, parseImageUrls, parseSource, parseYear, SETUP_STEPS } from './state.js';
 
 /** A rejected action. `status` is the HTTP status the API answers with. */
 export class ActionError extends Error {
@@ -26,6 +26,22 @@ function rating(value) {
   if (value == null) return null;
   if (!isRating(value)) throw new ActionError('rating must be a whole number from 1 to 5, or null');
   return value;
+}
+
+const UNDO = 24 * 60 * 60 * 1000;
+
+/**
+ * A series moved to Waiting has seen every episode out: that's kept, dated, for the stats. Moved back to pending
+ * within a day, it was a mistake and is forgotten; later, it's a new season and the catch-up stays.
+ */
+function trackCatchUp(item, status, now, settingUp) {
+  const last = item.caughtUp.at(-1);
+  if (status === 'waiting') {
+    const nothingNew = last && last.episodes != null && item.episodes != null && item.episodes <= last.episodes;
+    if (!nothingNew) item.caughtUp.push({ at: settingUp ? null : now, episodes: item.episodes });
+  } else if (status === 'pending' && item.status === 'waiting' && last?.at != null && now - last.at < UNDO) {
+    item.caughtUp.pop();
+  }
 }
 
 function getItem(state, itemId) {
@@ -64,9 +80,11 @@ const handlers = {
       dropped: false,
       hoursPlayed: null,
       ...details,                                  // what the search result had; the rest is looked up after adding
+      caughtUp: category !== 'series' ? null : status === 'waiting' ? [{ at: ctx.now, episodes: details.episodes }] : [],
       detailsAt: detailFields(category).every((field) => details[field] != null) ? ctx.now : null,
       addedAt: ctx.now,
       finishedAt: status === 'done' ? ctx.now : null,
+      beforeStats: status === 'done' && state.setupStep !== null,   // added while setting up: seen before
     };
     state.items.push(item);
     return { itemId: item.id };
@@ -77,8 +95,10 @@ const handlers = {
     const item = getItem(state, itemId);
     oneOf(status, statusesFor(item.category), 'status');
     if (item.status === status) return;
+    if (item.category === 'series') trackCatchUp(item, status, ctx.now, state.setupStep !== null);
     item.status = status;
     item.finishedAt = status === 'done' ? ctx.now : null;
+    item.beforeStats = status === 'done' && state.setupStep !== null;
     item.rating = null;
     item.dropped = false;
   },
@@ -90,6 +110,7 @@ const handlers = {
     if (dropped && item.status !== 'done') {
       item.status = 'done';
       item.finishedAt = ctx.now;
+      item.beforeStats = state.setupStep !== null;
       item.rating = null;
     }
     item.dropped = dropped;
@@ -108,6 +129,27 @@ const handlers = {
     if (item.status !== 'done') throw new ActionError('Hours played are for finished games');
     if (hours != null && parseHours(hours) == null) throw new ActionError('hours must be a number from 0.1 to 100000, or null');
     item.hoursPlayed = parseHours(hours);
+  },
+
+  /** Hides a kind from the home screen, stats and search, or shows it again. Its items are kept. One stays shown. */
+  setCategoryHidden(state, { category, hidden }) {
+    oneOf(category, CATEGORY_IDS, 'category');
+    if (typeof hidden !== 'boolean') throw new ActionError('hidden must be true or false');
+    const others = state.hiddenCategories.filter((id) => id !== category);
+    if (hidden && others.length === CATEGORY_IDS.length - 1) throw new ActionError('Keep at least one category shown');
+    state.hiddenCategories = hidden ? [...others, category] : others;
+  },
+
+  /**
+   * Moves setup along: 'categories', 'library', or 'done'. What's finished while setting up was seen before
+   * (beforeStats): it counts in the totals but in no month or year. Setting up again (an existing library: e.g. a
+   * new category's already seen) leaves everything else as it was.
+   */
+  setSetup(state, { step }, ctx) {
+    oneOf(step, [...SETUP_STEPS, 'done'], 'step');
+    if (state.setupStep === null && step !== 'done') state.setupSince = ctx.now;
+    state.setupStep = step === 'done' ? null : step;
+    if (step === 'done') state.setupSince = null;
   },
 
   removeItem(state, { itemId }) {

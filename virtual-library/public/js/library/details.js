@@ -2,7 +2,7 @@
 import { sendAction } from '../shared/api.js';
 import { $, closest, escapeHtml } from '../shared/dom.js';
 import { formatCount, formatRuntime } from '../shared/format.js';
-import { categoryOf, STATUS_LABELS, statusesFor } from '../shared/library.js';
+import { kindOf, STATUS_LABELS, statusesFor } from '../shared/library.js';
 import { celebrate } from '../ui/celebrate.js';
 import { coverHtml } from '../ui/cover.js';
 import { icon } from '../ui/icons.js';
@@ -37,10 +37,11 @@ export function createDetails({ getItem }) {
   }
 
   function render(item) {
-    const kind = categoryOf(item.category);
     const meta = [item.year, item.creator].filter(Boolean).map(escapeHtml).join(' · ');
-    // a quieter line under it: how long a movie or book is, how many seasons and episodes of a series are out
-    const facts = [formatRuntime(item.runtime), formatCount(item.seasons, 'season'), formatCount(item.episodes, 'episode'), formatCount(item.pages, 'page')]
+    // a quieter line under it: how long a movie or book is, how many seasons and episodes of a series are out,
+    // how many volumes of a comic
+    const facts = [formatRuntime(item.runtime), formatCount(item.seasons, 'season'), formatCount(item.episodes, 'episode'),
+      formatCount(item.pages, 'page'), formatCount(item.volumes, 'volume')]
       .filter(Boolean).join(' · ');
     const done = item.status === 'done';
     const glow = item.image
@@ -57,7 +58,7 @@ export function createDetails({ getItem }) {
       <div class="details-content">
         <div data-drag>${coverHtml(item, 'details-cover')}</div>
         <h2 class="details-title">${escapeHtml(item.title)}</h2>
-        <div class="details-meta"><span class="kind">${icon(item.category)}${kind.label}</span>${meta ? `<span>· ${meta}</span>` : ''}</div>
+        <div class="details-meta"><span class="kind">${icon(item.category)}${kindOf(item)}</span>${meta ? `<span>· ${meta}</span>` : ''}</div>
         ${facts ? `<div class="details-facts">${facts}</div>` : ''}
 
         <div class="segmented details-status" role="radiogroup" aria-label="Status">
@@ -78,7 +79,7 @@ export function createDetails({ getItem }) {
 
         ${done && item.category === 'game' ? `
           <form class="hours" data-hours>
-            <label class="rating-label" for="hoursInput">Playtime (optional)</label>
+            <label class="rating-label" for="hoursInput">Playtime${item.hoursPlayed ? '' : ' (optional)'}</label>
             <span class="hours-field">
               <input id="hoursInput" type="text" inputmode="decimal" autocomplete="off" maxlength="8" placeholder="–"
                 value="${item.hoursPlayed ?? ''}"><span aria-hidden="true">h</span>

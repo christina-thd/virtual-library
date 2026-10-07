@@ -1,5 +1,13 @@
 # Changelog
 
+## 3.2.0
+- Playtime hides "optional" once filled in, like the rating
+- Time spent and the year in review count the episodes of series in Waiting
+- **Manga/Comics**: a new kind, with its own stats: manga by volumes, comics by publisher
+- The home screen fits every kind without scrolling; search and stats pick the kind by its icon
+- Hide the categories you don't use from the home screen and stats, without losing them
+- Setup: pick your categories and add what you've already seen
+
 ## 3.1.0
 - More stats: streaks, year in review, top creators, records and release decades
 - "Hours played" is now "Playtime"

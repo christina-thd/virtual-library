@@ -1,11 +1,11 @@
 # Hoard Board Add-on
 
-A personal library of movies, series, books and games. Search for something, add it as
+A personal library of movies, series, books, manga, comics and games. Search for something, add it as
 **Pending** or **Done**, and rate what you've finished.
 
 ## Features
 
-- Movies, series, books and games in one place, each with its cover
+- Movies, series, books, manga, comics and games in one place, each with its cover
 - Search built in: no account or API key needed
 - Two lists: **Pending** and **Done** (series also **Waiting**, for a new season)
 - Optional 5-star rating for finished things

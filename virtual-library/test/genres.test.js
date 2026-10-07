@@ -19,6 +19,11 @@ test('books: genres picked out of subjects, the earlier ones first; subjects tha
   assert.deepEqual(cleanGenres('book', ['Fiction & Literature', 'Books', 'General']), []);
 });
 
+test('comics: genres from manga categories and comics subjects; themes and "comics" itself are left out', () => {
+  assert.deepEqual(cleanGenres('comic', ['Shounen', 'Super Power', 'Comedy', 'Pirate', 'Fantasy', 'Action', 'Adventure']), ['Comedy', 'Fantasy', 'Action']);
+  assert.deepEqual(cleanGenres('comic', ['Graphic novels', 'Comic books, strips', 'Superheroes', 'Science fiction', 'Fiction']), ['Superheroes', 'Sci-Fi']);
+});
+
 test('nothing usable is an empty list', () => {
   for (const value of [null, undefined, 'Drama', [], [null, 3, '  ']]) assert.deepEqual(cleanGenres('movie', value), []);
 });
