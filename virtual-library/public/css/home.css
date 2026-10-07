@@ -1,7 +1,9 @@
-/* Home: the title, and one tile per category with its newest covers fanned out. */
+/* Home: the title, and one tile per category with its newest covers fanned out. The tiles share the screen
+   between the title and the + button, so all of them fit without scrolling (only small phones scroll). */
+#homeView:not([hidden]) { display: flex; flex-direction: column; height: 100dvh; }
 
 .home-top {
-  padding: calc(34px + var(--safe-top)) 20px 18px;
+  padding: calc(22px + var(--safe-top)) 20px 14px;
   text-align: center;
 }
 .home-logo { display: block; margin: 0 auto 10px; border-radius: 14px; box-shadow: 0 10px 30px -8px var(--glow); }
@@ -20,9 +22,14 @@
 .tagline { margin: 6px 0 0; color: var(--muted); font-size: 14px; }
 
 .tiles {
+  flex: 1;
+  min-height: 0;
+  overflow-y: auto;
   display: grid;
-  gap: 14px;
-  padding: 8px 16px calc(110px + var(--safe-bottom));
+  grid-auto-rows: minmax(92px, 124px);
+  align-content: start;
+  gap: 10px;
+  padding: 4px 16px calc(96px + var(--safe-bottom));
 }
 
 .tile {
@@ -31,8 +38,7 @@
   grid-template-columns: auto 1fr auto;
   align-items: center;
   gap: 14px;
-  min-height: 124px;
-  padding: 16px 22px 16px 18px;
+  padding: 10px 22px 10px 18px;
   border-radius: 20px;
   border: 1px solid color-mix(in srgb, var(--tint) 22%, var(--line));
   background:
@@ -46,6 +52,7 @@
 .tile:nth-child(2) { animation-delay: 40ms; }
 .tile:nth-child(3) { animation-delay: 80ms; }
 .tile:nth-child(4) { animation-delay: 120ms; }
+.tile:nth-child(5) { animation-delay: 160ms; }
 .tile:active { transform: scale(0.98); }
 
 .tile-icon {
@@ -66,23 +73,23 @@
 /* newest covers, fanned like a hand of cards */
 .tile-covers {
   position: relative;
-  width: 104px;
-  height: 92px;
+  width: 96px;
+  height: 78px;
 }
 .tile-covers .cover {
   position: absolute;
   bottom: 0;
-  width: 58px;
+  width: 52px;
   border-radius: 7px;
   box-shadow: 0 8px 18px -8px rgb(0 0 0 / 0.95), 0 0 0 1px rgb(255 255 255 / 0.06);
   transform-origin: 50% 100%;
 }
 .tile-covers .cover:nth-child(1) { left: 0; transform: rotate(-12deg); }
-.tile-covers .cover:nth-child(2) { left: 23px; transform: rotate(0deg) translateY(-6px); }
-.tile-covers .cover:nth-child(3) { left: 46px; transform: rotate(12deg); }
-.tile-covers .cover:only-child { left: 23px; transform: none; }
+.tile-covers .cover:nth-child(2) { left: 22px; transform: rotate(0deg) translateY(-5px); }
+.tile-covers .cover:nth-child(3) { left: 44px; transform: rotate(12deg); }
+.tile-covers .cover:only-child { left: 22px; transform: none; }
 .tile-covers .cover:first-child:nth-last-child(2) { left: 10px; transform: rotate(-8deg); }
-.tile-covers .cover:nth-child(2):last-child { left: 36px; transform: rotate(8deg); }
+.tile-covers .cover:nth-child(2):last-child { left: 34px; transform: rotate(8deg); }
 .tile-covers .cover.ghost {
   background: color-mix(in srgb, var(--tint) 8%, var(--surface-2));
   border: 1px dashed color-mix(in srgb, var(--tint) 30%, transparent);

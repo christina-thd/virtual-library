@@ -20,6 +20,12 @@ const CHEERS = {
     { emoji: '✨', title: 'Another one read!', line: 'Your to-read pile trembles in fear.' },
     { emoji: '🕯️', title: 'Last page turned!', line: '"Just one more chapter" finally ran out of chapters.' },
   ],
+  comic: [
+    { emoji: '💥', title: 'KA-POW!', line: 'Another one bites the panel.' },
+    { emoji: '💬', title: 'To be continued… not!', line: 'That cliffhanger has nothing left on you.' },
+    { emoji: '🦸', title: 'Heroic reading!', line: 'Your spine-to-shelf ratio is legendary.' },
+    { emoji: '🖋️', title: 'Last panel read!', line: 'Right to left, left to right: you read it all.' },
+  ],
   game: [
     { emoji: '🎮', title: 'GG!', line: 'Achievement unlocked: actually finished a game.' },
     { emoji: '🏆', title: 'Victory!', line: 'Your backlog lost a soldier today.' },

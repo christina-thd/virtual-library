@@ -3,7 +3,7 @@
 // search.js decides what to search and when; this draws the outcome.
 import { escapeHtml } from '../shared/dom.js';
 import { metaLine } from '../shared/format.js';
-import { categoryOf, sameSource, STATUS_LABELS } from '../shared/library.js';
+import { categoryOf, kindOf, sameSource, STATUS_LABELS } from '../shared/library.js';
 import { coverHtml } from '../ui/cover.js';
 import { icon } from '../ui/icons.js';
 
@@ -69,7 +69,7 @@ export function createResults({ getItems }) {
         ${coverHtml({ image: result.thumbUrl, title: result.title, category: result.category })}
         <div class="result-info">
           <div class="result-title">${escapeHtml(result.title)}</div>
-          <div class="result-meta">${escapeHtml(metaLine(result) || categoryOf(result.category).label)}</div>
+          <div class="result-meta">${escapeHtml(metaLine(result) || kindOf(result))}</div>
           ${owned ? ownedHtml(owned) : addButtons(index)}
         </div>
       </li>`;

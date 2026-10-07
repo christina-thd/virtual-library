@@ -20,6 +20,7 @@
 
 .stats-filter { flex: 1; min-width: 0; }
 .stats-filter > button { font-size: 13px; min-height: 38px; }
+.stats-filter > button svg.icon { width: 20px; height: 20px; }
 
 .stats {
   display: grid;
@@ -51,6 +52,7 @@
 /* big numbers, two per row */
 .stats-summary { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; }
 .stats-summary:has(> :only-child) { grid-template-columns: 1fr; }   /* one category's time spent */
+.stats-summary > :last-child:nth-child(odd) { grid-column: 1 / -1; }      /* five kinds: the last one full width */
 .stats > .stats-summary .stats-number { background: var(--surface); border: 1px solid var(--line); }
 .stats-number {
   display: flex;
@@ -159,11 +161,10 @@
 
 /* backlog: a cover per category */
 .backlog-note { margin: -6px 0 12px; }
-.backlog-covers { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 10px; }
+.backlog-covers { display: grid; grid-template-columns: repeat(5, minmax(0, 1fr)); gap: 8px; }
 .backlog-cover { display: flex; flex-direction: column; align-items: center; gap: 6px; min-width: 0; }
 .backlog-cover .cover { width: 100%; border-radius: 8px; }
-.backlog-cover .stats-kind { gap: 3px; font-size: 11.5px; white-space: nowrap; }
-.backlog-cover .stats-kind svg.icon { width: 12px; height: 12px; }
+.backlog-cover .stats-kind { font-size: 10.5px; white-space: nowrap; }
 
 /* year in review: time tiles */
 .review-time { padding-top: 10px; border-top: 1px solid var(--line); }

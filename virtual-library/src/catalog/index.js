@@ -4,8 +4,10 @@ import { cleanGenres } from './genres.js';
 import { appleBooks } from './providers/apple-books.js';
 import { createCinemeta } from './providers/cinemeta.js';
 import { gog } from './providers/gog.js';
+import { kitsu } from './providers/kitsu.js';
+import { mangaDex } from './providers/mangadex.js';
 import { nintendo } from './providers/nintendo.js';
-import { openLibrary } from './providers/open-library.js';
+import { openLibrary, openLibraryComics } from './providers/open-library.js';
 import { createRawg } from './providers/rawg.js';
 import { steam } from './providers/steam.js';
 import { createTmdb } from './providers/tmdb.js';
@@ -29,7 +31,8 @@ export class SearchError extends Error {
  * Which catalogs search each category, best first: the next is asked only when the one before finds nothing
  * or doesn't answer. A catalog with an API key goes first when the key is set.
  * Games are split by platform (a switch on the search screen): each store answers every search with its own
- * look-alikes ("metroid" on Steam is "Metroidvania Maker"), so one can't fall back to the other.
+ * look-alikes ("metroid" on Steam is "Metroidvania Maker"), so one can't fall back to the other. Comics are split
+ * into manga and western comics the same way.
  */
 export function chooseProviders({ tmdbApiKey = null, rawgApiKey = null } = {}) {
   const withKey = (key, create) => (key ? [create(key)] : []);
@@ -41,6 +44,10 @@ export function chooseProviders({ tmdbApiKey = null, rawgApiKey = null } = {}) {
       // icon: on the switch (ui/icons.js); label: its name, for screen readers
       { id: 'pc', label: rawgApiKey ? 'All platforms' : 'PC & Steam Deck', icon: rawgApiKey ? 'game' : 'steam', providers: [...withKey(rawgApiKey, createRawg), steam, gog] },
       { id: 'nintendo', label: 'Nintendo', icon: 'nintendo', providers: [nintendo] },
+    ],
+    comic: [
+      { id: 'manga', label: 'Manga', providers: [kitsu, mangaDex, openLibraryComics] },
+      { id: 'comics', label: 'Comics', providers: [openLibraryComics] },
     ],
   };
 }
@@ -55,7 +62,7 @@ const clean = (value, max) => (typeof value === 'string' || typeof value === 'nu
  * Search across the catalogs, turning their results into what screens show and send back with `addItem`.
  * Every provider has the same shape:
  *   { id, name, url, imageHosts, search(query, http) → [{ id, title, year, creator, coverUrl, thumbUrl?, ...details }],
- *     details?(id, http) → { runtime | seasons, episodes | pages, genres } }
+ *     details?(id, http) → { runtime | seasons, episodes | pages | volumes, publisher, genres } }
  * `providers`: per category, a list of them (best first) or a list of sources to pick from ({ id, label, providers }).
  * @param {{ http: any, providers?: Record<string, any>, now?: () => number }} options
  */

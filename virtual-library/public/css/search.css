@@ -30,12 +30,8 @@
 }
 .search-close:active { transform: scale(0.96); }
 
-.category-picker > button svg.icon { width: 16px; height: 16px; }
-.category-picker > button { gap: 4px; font-size: 13px; }
-/* narrow phones: labels only, so all four fit */
-@media (max-width: 370px) {
-  .category-picker > button svg.icon { display: none; }
-}
+/* the kinds as icons (named for screen readers) */
+.category-picker > button svg.icon { width: 21px; height: 21px; }
 
 /* games: which store to ask (PC / Nintendo), a small switch inside the search field, on the right */
 .source-picker { flex: none; grid-auto-columns: auto; padding: 2px; }        /* each button as wide as its label */

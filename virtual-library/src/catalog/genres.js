@@ -3,6 +3,27 @@
 
 const MAX_GENRES = 3;
 
+/** Comics: genres picked out of manga categories ("Shounen", "Pirate" are left out) and comics' subjects. */
+const COMIC_GENRES = [
+  ['Action', /^action|martial arts/i],
+  ['Adventure', /adventure/i],
+  ['Comedy', /comedy|humou?r/i],
+  ['Drama', /drama/i],
+  ['Fantasy', /fantasy/i],
+  ['Sci-Fi', /science fiction|sci-fi|mecha/i],
+  ['Superheroes', /superhero/i],
+  ['Horror', /horror/i],
+  ['Mystery', /mystery|detective|crime/i],
+  ['Thriller', /thriller|suspense/i],
+  ['Psychological', /psychological/i],
+  ['Romance', /romance/i],
+  ['Slice of Life', /slice of life/i],
+  ['Sports', /^sports?$/i],
+  ['Supernatural', /supernatural/i],
+  ['Historical', /historical|^history/i],
+  ['Biography', /biography|memoir|autobiograph/i],
+];
+
 /** Same genre, different names: lower-case name → the one used. Some names are two genres. */
 const ALIASES = {
   'science-fiction': ['Sci-Fi'], 'science fiction': ['Sci-Fi'], 'sci-fi': ['Sci-Fi'], 'scifi': ['Sci-Fi'],
@@ -51,8 +72,9 @@ export function cleanGenres(category, list) {
     .map((g) => (typeof g === 'string' ? g : g?.name ?? g?.description))
     .filter((g) => typeof g === 'string' && g.trim())
     .map((g) => g.trim());
-  const found = category === 'book'
-    ? names.flatMap((subject) => BOOK_GENRES.filter(([, test]) => test.test(subject)).map(([genre]) => genre))
+  const picked = { book: BOOK_GENRES, comic: COMIC_GENRES }[category];
+  const found = picked
+    ? names.flatMap((subject) => picked.filter(([, test]) => test.test(subject)).map(([genre]) => genre))
     : names.flatMap((name) => ALIASES[name.toLowerCase()] ?? [titleCase(name.toLowerCase())]);
   return [...new Set(found)].filter((g) => g.length <= 30).slice(0, MAX_GENRES);
 }

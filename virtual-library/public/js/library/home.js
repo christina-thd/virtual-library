@@ -64,7 +64,7 @@ export function renderHome(library) {
   const done = library.filter((i) => i.status === 'done').length;
   $('summary').textContent = library.length
     ? `${library.length} ${library.length === 1 ? 'story' : 'stories'} hoarded · ${done} finished`
-    : 'Movies, series, books & games — hoard them all';
+    : 'Movies, series, books, comics & games — hoard them all';
   $('tiles').innerHTML = CATEGORIES.map((c) => tileHtml(c, library.filter((i) => i.category === c.id))).join('');
 }
 

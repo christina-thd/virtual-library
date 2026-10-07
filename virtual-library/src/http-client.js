@@ -14,10 +14,15 @@ const hostOf = (url) => new URL(url).hostname;
  * and errors that name the host but never the full URL (it can contain an API key).
  */
 export function createHttpClient({ fetch = globalThis.fetch, timeoutMs = 8000, userAgent = 'HoardBoard' } = {}) {
-  async function request(url, headers, timeout = timeoutMs) {
+  async function request(url, headers, timeout = timeoutMs, body = undefined) {
     let res;
     try {
-      res = await fetch(url, { headers: { 'User-Agent': userAgent, ...headers }, signal: AbortSignal.timeout(timeout) });
+      res = await fetch(url, {
+        method: body === undefined ? 'GET' : 'POST',
+        headers: { 'User-Agent': userAgent, ...headers, ...(body === undefined ? {} : { 'Content-Type': 'application/json' }) },
+        body: body === undefined ? undefined : JSON.stringify(body),
+        signal: AbortSignal.timeout(timeout),
+      });
     } catch {
       throw new UpstreamError(`${hostOf(url)} did not answer`);
     }
@@ -28,10 +33,11 @@ export function createHttpClient({ fetch = globalThis.fetch, timeoutMs = 8000, u
   return {
     /**
      * @param {string} url
-     * @param {{ headers?: Record<string, string>, timeoutMs?: number }} [options]  timeoutMs: shorter, for nice-to-haves
+     * @param {{ headers?: Record<string, string>, timeoutMs?: number, body?: unknown }} [options]
+     *   timeoutMs: shorter, for nice-to-haves; body: sent as JSON, in a POST
      */
-    async json(url, { headers = {}, timeoutMs: timeout } = {}) {
-      const res = await request(url, { Accept: 'application/json', ...headers }, timeout);
+    async json(url, { headers = {}, timeoutMs: timeout, body } = {}) {
+      const res = await request(url, { Accept: 'application/json', ...headers }, timeout, body);
       try {
         return await res.json();
       } catch {

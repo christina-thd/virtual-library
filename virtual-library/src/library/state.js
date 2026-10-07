@@ -7,7 +7,7 @@ import { CATEGORY_IDS, isRating, MAX_CREATOR, MAX_TITLE, sameSource, statusesFor
  * Each item is an Item (public/js/shared/library.js) with, instead of `image`:
  *   imageUrls    the catalog's images, best first (the next is tried if one fails)
  *   cover        file name of the saved copy (covers.js)
- *   detailsAt    when runtime / seasons / pages / genres were last looked up (catalog/details.js)
+ *   detailsAt    when runtime / seasons / pages / volumes / genres were last looked up (catalog/details.js)
  *   caughtUp     series: when they were moved to Waiting, with how many episodes were out (seen) then
  */
 export const SCHEMA_VERSION = 1;
@@ -35,7 +35,7 @@ export function parseYear(value) {
   return year >= 1000 && year <= 9999 ? year : null;
 }
 
-/** A count of seasons, episodes or pages: a whole number from 1, or null. */
+/** A count of seasons, episodes, pages or volumes: a whole number from 1, or null. */
 export const parseCount = (value) => (Number.isInteger(value) && value > 0 && value < 100_000 ? value : null);
 
 /** Minutes from a number or catalog text ("155 min", "2h 35min"), or null. */
@@ -61,9 +61,10 @@ const DETAIL_READERS = {
   movie: (raw) => ({ runtime: parseMinutes(raw.runtime), genres: parseGenres(raw.genres) }),
   series: (raw) => ({ seasons: parseCount(raw.seasons), episodes: parseCount(raw.episodes), genres: parseGenres(raw.genres) }),
   book: (raw) => ({ pages: parseCount(raw.pages), genres: parseGenres(raw.genres) }),
+  comic: (raw) => ({ volumes: parseCount(raw.volumes), publisher: toText(raw.publisher, 40) || null, genres: parseGenres(raw.genres) }),
   game: (raw) => ({ genres: parseGenres(raw.genres) }),
 };
-const NO_DETAILS = Object.freeze({ runtime: null, seasons: null, episodes: null, pages: null, genres: null });
+const NO_DETAILS = Object.freeze({ runtime: null, seasons: null, episodes: null, pages: null, volumes: null, publisher: null, genres: null });
 
 /**
  * A series' catch-ups: [{ at, episodes }]. One already waiting from before they were kept has seen what's out,

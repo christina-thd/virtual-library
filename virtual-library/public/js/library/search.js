@@ -62,7 +62,7 @@ export function createSearch({ getItems, openItem }) {
 
   picker.classList.add('segmented');
   picker.innerHTML = CATEGORIES.map((c) => `
-    <button type="button" role="radio" data-category="${c.id}">${icon(c.id)}${c.label}</button>`).join('');
+    <button type="button" role="radio" data-category="${c.id}" aria-label="${c.label}" title="${c.label}">${icon(c.id)}</button>`).join('');
   $('searchForm').querySelector('.search-icon').innerHTML = icon('search');
   $('searchClear').innerHTML = icon('close');
 

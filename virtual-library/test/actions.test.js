@@ -132,6 +132,7 @@ describe('setStatus', () => {
   });
 
   test('only series can wait', () => {
+    rejects({ type: 'addItem', category: 'comic', title: 'One Piece', status: 'waiting' }, 400);
     const movie = add({ category: 'movie', source: null, title: 'Dune' });
     rejects({ type: 'setStatus', itemId: movie, status: 'waiting' }, 400, /pending, done/);
     rejects({ type: 'addItem', category: 'book', title: 'Dune', status: 'waiting' }, 400);

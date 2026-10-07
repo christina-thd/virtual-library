@@ -54,19 +54,19 @@ test('moving an item back to pending (no finish date any more) takes it out of i
 });
 
 test('time spent: finished movies, episodes and pages; hours played on every done game, dropped too', () => {
-  assert.deepEqual(libraryStats(library, { now: NOW }).time, { movieMinutes: 465, episodes: 26, pages: 310, hours: 45.5 });
+  assert.deepEqual(libraryStats(library, { now: NOW }).time, { movieMinutes: 465, episodes: 26, pages: 310, volumes: 0, comics: 0, hours: 45.5 });
 });
 
 test('genres: one category has its top five; the whole library each category\'s top three', () => {
-  assert.deepEqual(libraryStats(library, { category: 'movie', now: NOW }).genres,
+  assert.deepEqual(libraryStats(library, { kind: 'movie', now: NOW }).genres,
     [{ name: 'Drama', count: 2 }, { name: 'Comedy', count: 1 }, { name: 'Sci-Fi', count: 1 }]);
   const all = libraryStats(library, { now: NOW });
-  assert.deepEqual(all.genresByCategory.series, [{ name: 'Drama', count: 1 }]);
-  assert.deepEqual(all.genresByCategory.game, []);
+  assert.deepEqual(all.genresByKind.series, [{ name: 'Drama', count: 1 }]);
+  assert.deepEqual(all.genresByKind.game, []);
 });
 
 test('ratings of finished items, and the oldest thing still pending', () => {
-  const movies = libraryStats(library, { category: 'movie', now: NOW });
+  const movies = libraryStats(library, { kind: 'movie', now: NOW });
   assert.deepEqual(movies.ratings, { rated: 4, average: 4.3, stars: { 1: 0, 2: 0, 3: 1, 4: 1, 5: 2 } });   // the dropped 1★ isn't in
   assert.equal(libraryStats(library, { now: NOW }).oldestPending.title, 'Oldest');
   assert.equal(movies.oldestPending, null);
@@ -92,14 +92,14 @@ test('year in review: what was finished that year, its favourite, genres, busies
   assert.equal(r.favourite.rating, 5);
   assert.deepEqual(r.genres.map((g) => g.name), ['Drama', 'Comedy', 'Sci-Fi']);
   assert.equal(r.busiestMonth, 2);                                                      // March (tied with October: the first)
-  assert.deepEqual(r.time, { movieMinutes: 365, episodes: 26, pages: 0, hours: 42.5 });
+  assert.deepEqual(r.time, { movieMinutes: 365, episodes: 26, pages: 0, volumes: 0, comics: 0, hours: 42.5 });
   assert.equal(libraryStats(library, { now: NOW, year: 2025 }).review.finished, 1);
 });
 
 test('records: the biggest of each kind; one kind has its top three; playtime counts dropped games', () => {
   const all = libraryStats(library, { now: NOW }).records.map((r) => [r.item.category, r.value]);
   assert.deepEqual(all, [['movie', 155], ['series', 26], ['book', 310], ['game', 42.5]]);
-  const movies = libraryStats(library, { category: 'movie', now: NOW }).records.map((r) => r.value);
+  const movies = libraryStats(library, { kind: 'movie', now: NOW }).records.map((r) => r.value);
   assert.deepEqual(movies, [155, 120, 100]);                                            // the dropped 95-minute one isn't a record
 });
 
@@ -116,6 +116,30 @@ test('episodes count when seen: each catch-up on a waiting series, and the rest 
   assert.equal(libraryStats(shows, { now: NOW, year: 2025 }).review.time.episodes, 8);
 });
 
+test('manga and comics are told apart: manga volumes, comics read, each with its own genres, creators and records', () => {
+  const manga = { provider: 'kitsu', id: '1' };
+  const shelf = [
+    ...library,
+    item({ category: 'comic', source: manga, volumes: 72, finishedAt: on(2026, 9), genres: ['Action'], creator: 'Kishimoto' }),
+    item({ category: 'comic', source: { provider: 'mangadex', id: '2' }, volumes: 30, finishedAt: on(2026, 9), creator: 'Kishimoto' }),
+    item({ category: 'comic', source: { provider: 'openlibrary', id: '3' }, volumes: 1, finishedAt: on(2026, 8), genres: ['Superheroes'], publisher: 'DC' }),
+    item({ category: 'comic', volumes: 1, finishedAt: on(2026, 8) }),                                 // typed in: a comic
+    item({ category: 'comic', status: 'pending', finishedAt: null, addedAt: on(2025, 2) }),
+  ];
+  const stats = libraryStats(shelf, { now: NOW });
+  assert.deepEqual([stats.time.volumes, stats.time.comics], [102, 2]);
+  assert.deepEqual(stats.records.filter((r) => r.item.category === 'comic').map((r) => [r.kind, r.value]), [['manga', 72]]);   // comics: no length
+  assert.deepEqual([stats.genresByKind.manga, stats.genresByKind.comic], [[{ name: 'Action', count: 1 }], [{ name: 'Superheroes', count: 1 }]]);
+  assert.equal(stats.creatorsByKind.manga, undefined);                                   // no creators for manga
+  assert.deepEqual(stats.oldestPendingByCategory.map((i) => i.category), ['book', 'comic', 'game']);
+  // a tab each: manga only, then comics only (typed in ones too)
+  const mangaTab = libraryStats(shelf, { kind: 'manga', now: NOW });
+  assert.deepEqual([mangaTab.total, mangaTab.records.map((r) => r.value), mangaTab.creators, mangaTab.publishers], [2, [72, 30], null, null]);
+  const comicsTab = libraryStats(shelf, { kind: 'comic', now: NOW });
+  assert.deepEqual([comicsTab.total, comicsTab.time.comics, comicsTab.records, comicsTab.genres, comicsTab.creators], [3, 2, [], [{ name: 'Superheroes', count: 1 }], null]);
+  assert.deepEqual(comicsTab.publishers, [{ name: 'DC', count: 1 }, { name: 'Other', count: 1 }]);   // another one: Other, last
+});
+
 test('release decades and top creators, of what was finished', () => {
   const shelf = [
     item({ year: 1982, creator: 'Ridley Scott' }), item({ year: 1979, creator: 'Ridley Scott' }), item({ year: 2017, creator: 'Denis Villeneuve' }),
@@ -126,7 +150,7 @@ test('release decades and top creators, of what was finished', () => {
   assert.deepEqual(stats.decades.map((d) => [d.decade, d.total]), [[1930, 1], [1970, 1], [1980, 1], [2010, 2], [2020, 2]]);
   assert.deepEqual(stats.decades[0].byCategory, { book: 1 });
   // a name seen once says nothing, so it's left out; games have no creators
-  assert.deepEqual(stats.creatorsByCategory.movie, [{ name: 'Denis Villeneuve', count: 3 }, { name: 'Ridley Scott', count: 2 }]);
-  assert.deepEqual(stats.creatorsByCategory.book, []);
-  assert.equal(libraryStats(shelf, { category: 'game', now: NOW }).creators, null);
+  assert.deepEqual(stats.creatorsByKind.movie, [{ name: 'Denis Villeneuve', count: 3 }, { name: 'Ridley Scott', count: 2 }]);
+  assert.deepEqual(stats.creatorsByKind.book, []);
+  assert.equal(libraryStats(shelf, { kind: 'game', now: NOW }).creators, null);
 });

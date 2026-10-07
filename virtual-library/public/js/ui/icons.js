@@ -4,6 +4,9 @@ const PATHS = {
   movie: '<rect x="3" y="4" width="18" height="16" rx="2"/><path d="M7.5 4v16M16.5 4v16M3 9h4.5M3 15h4.5M16.5 9H21M16.5 15H21"/>',
   series: '<rect x="3" y="7" width="18" height="13" rx="2"/><path d="m8 3 4 4 4-4"/>',
   book: '<path d="M5 5.5A2.5 2.5 0 0 1 7.5 3H19v14H7.5A2.5 2.5 0 0 0 5 19.5z"/><path d="M5 19.5A1.5 1.5 0 0 0 6.5 21H19v-4"/>',
+  comic: '<path d="M12 3.5c-4.97 0-9 3.13-9 7 0 2.1 1.19 3.98 3.07 5.26L5.5 20.5l4.3-2.4c.71.13 1.44.2 2.2.2 4.97 0 9-3.13 9-7s-4.03-7.8-9-7.8z"/><path d="M8.5 10.5h7M8.5 13.5h4.5"/>',
+  // 漫, from 漫画 (manga): apart from comics in the stats. Text in the phone's Japanese font, filled, not outlined
+  manga: '<text x="12" y="12.6" text-anchor="middle" dominant-baseline="central" font-size="19" font-weight="600" fill="currentColor" stroke="none" font-family="\'Hiragino Sans\', \'Yu Gothic\', \'Noto Sans JP\', \'Noto Sans CJK JP\', \'Microsoft YaHei\', sans-serif">漫</text>',
   game: '<path d="M6.5 11h4M8.5 9v4M15 12h.01M17.5 10h.01"/><path d="M17.3 5H6.7a4 4 0 0 0-3.96 3.43l-.9 6.3a2.6 2.6 0 0 0 4.56 2.04L7.9 15h8.2l1.5 1.77a2.6 2.6 0 0 0 4.56-2.04l-.9-6.3A4 4 0 0 0 17.3 5z"/>',
   // game platforms, on the search's PC / Nintendo switch
   // the Steam logo (filled, not a line icon), from Simple Icons (simpleicons.org, CC0)

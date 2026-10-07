@@ -91,7 +91,7 @@ describe('pages and static files', () => {
   test('info lists the categories and who searches them', async () => {
     const info = await (await fetch(`${base}/api/info`)).json();
     assert.equal(info.version, 'test');
-    assert.deepEqual(info.categories.map((c) => c.id), ['movie', 'series', 'book', 'game']);
+    assert.deepEqual(info.categories.map((c) => c.id), ['movie', 'series', 'book', 'comic', 'game']);
     assert.equal(info.sources.series[0].credits[0].name, 'Fake');
   });
 });
