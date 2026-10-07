@@ -77,7 +77,7 @@ function episodesSeen(series) {
       if (c.episodes > before) seen.push({ at: c.at, episodes: c.episodes - before });
       before = Math.max(before, c.episodes ?? 0);
     }
-    if (isFinished(item) && item.episodes > before) seen.push({ at: item.finishedAt, episodes: item.episodes - before });
+    if (isFinished(item) && item.episodes > before) seen.push({ at: item.beforeStats ? null : item.finishedAt, episodes: item.episodes - before });
   }
   return seen;
 }
@@ -194,7 +194,8 @@ export function libraryStats(items, { kind = null, now = Date.now(), since = 0, 
   const today = new Date(now);
   const mine = kind ? items.filter((item) => kindOfItem(item) === kind) : items;
   const finished = mine.filter(isFinished);
-  const dated = finished.filter((item) => item.finishedAt >= since);   // finished since the stats started
+  // finished since the stats started, and not while setting up (seen before)
+  const dated = finished.filter((item) => item.finishedAt >= since && !item.beforeStats);
   const pending = mine.filter((item) => item.status === 'pending');
   const seen = episodesSeen(mine.filter((item) => item.category === 'series'));
   const seenDated = seen.filter((s) => s.at != null && s.at >= since);

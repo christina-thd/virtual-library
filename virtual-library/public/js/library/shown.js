@@ -1,5 +1,6 @@
-// The sheet that shows or hides kinds on the home screen, in the stats and the search. A hidden kind keeps its
-// items: showing it again brings everything back. The choice is saved with the library (setCategoryHidden).
+// Which categories show on the home screen, in the stats and the search: a switch each, in the settings sheet and
+// on the welcome screen. A hidden category keeps its items: showing it again brings everything back.
+// The choice is saved with the library (setCategoryHidden).
 import { sendAction } from '../shared/api.js';
 import { $, closest } from '../shared/dom.js';
 import { CATEGORIES } from '../shared/library.js';
@@ -7,10 +8,9 @@ import { icon } from '../ui/icons.js';
 import { createSheet } from '../ui/sheet.js';
 import { toast } from '../ui/toast.js';
 
-export function createShownKinds() {
-  const sheet = createSheet($('kindsLayer'));
-  const list = $('kindsList');
-  let saved = [];                   // hidden kinds, as the server has them
+/** A switch per category in `list`; tapping one shows or hides it (one always stays shown). */
+function createSwitches(list) {
+  let saved = [];                   // hidden categories, as the server has them
   let hidden = [];                  // as shown: changes right away, the server confirms
 
   function render() {
@@ -38,15 +38,30 @@ export function createShownKinds() {
   });
 
   return {
-    open() {
-      render();
-      sheet.open();
-    },
-    /** @param {string[]} value  the hidden kinds, from the server */
+    render,
+    /** @param {string[]} value  the hidden categories, from the server */
     update(value) {
       saved = value;
       hidden = value;
-      if (sheet.isOpen) render();
+      render();
     },
   };
 }
+
+/** The settings sheet (the ⋯ on the home screen): which categories show, and adding what you'd already seen. */
+export function createShownKinds() {
+  const switches = createSwitches($('kindsList'));
+  const sheet = createSheet($('kindsLayer'));
+  return {
+    open() {
+      sheet.open();
+    },
+    close() {
+      sheet.close();
+    },
+    update: switches.update,
+  };
+}
+
+/** The welcome screen's switches: the first step of setting up. */
+export const createWelcomeSwitches = () => createSwitches($('welcomeKinds'));

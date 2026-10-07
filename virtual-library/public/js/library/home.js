@@ -60,8 +60,20 @@ function tileHtml(category, items) {
     </button>`;
 }
 
-/** The tiles of the kinds shown (`hidden` ones are left out, and so are their items in the counts). */
-export function renderHome(items, hidden = []) {
+/**
+ * The tiles of the categories shown (`hidden` ones are left out, and so are their items in the counts); while
+ * setting up ('library' step), a banner with how much was added since it started, to finish it: the first time that
+ * starts the stats.
+ * @param {{ step: string|null, since: number, first: boolean }} [setup]
+ */
+export function renderHome(items, hidden = [], setup = { step: null, since: 0, first: false }) {
+  $('setupBanner').hidden = setup.step !== 'library';
+  $('seenButton').hidden = setup.step !== null;                 // already adding: the banner finishes it
+  const added = `${items.filter((i) => i.addedAt >= setup.since).length} added`;
+  // the first time: what you've seen, then the stats start; later: what you'd already seen, not counted this year
+  $('setupTitle').textContent = setup.first ? 'Add what you\'ve seen' : 'Adding already seen';
+  $('setupCount').textContent = setup.first ? added : `${added} · not counted this year`;
+  $('setupDone').textContent = setup.first ? 'Start stats' : 'Done';
   const library = items.filter((i) => !hidden.includes(i.category));
   const done = library.filter((i) => i.status === 'done').length;
   $('summary').textContent = library.length

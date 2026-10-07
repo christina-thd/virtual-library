@@ -48,6 +48,13 @@ test('only what was finished since the stats started is dated: per month and thi
   assert.equal(libraryStats(library, { now: NOW, since: NOW }).months.length, 1);       // started today: this month
 });
 
+test('seen before (added while setting up): in the totals, but in no month, year or streak', () => {
+  const seen = library.map((i) => (i.category === 'movie' ? { ...i, beforeStats: true } : i));
+  const stats = libraryStats(seen, { now: NOW });
+  assert.deepEqual([stats.finished, stats.finishedThisYear, stats.time.movieMinutes], [7, 2, 465]);
+  assert.equal(stats.months[11].total, 0);                                                   // October: two movies, before
+});
+
 test('moving an item back to pending (no finish date any more) takes it out of its month', () => {
   const undone = library.map((i) => (i.id === library[0].id ? { ...i, status: 'pending', finishedAt: null } : i));
   assert.equal(libraryStats(undone, { now: NOW }).months[11].total, 1);

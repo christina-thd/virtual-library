@@ -96,9 +96,34 @@
   box-shadow: none;
 }
 
-/* show or hide categories: the button top right, next to the stats one, and its sheet of switches */
-.stats-button.kinds-button { right: 62px; }
+/* on the right, stacked: stats in the corner, and settings (⋯: which categories show, add already seen) under it */
+#statsButton.stats-button { right: 14px; }
+.stats-button.kinds-button { right: 14px; top: calc(62px + var(--safe-top)); }
+/* settings: the categories under a small label, then a line, then adding what you'd already seen */
+.settings-label { margin: 0 16px 6px; color: var(--faint); font-size: 12px; font-weight: 600; letter-spacing: 0.06em; text-transform: uppercase; }
+.settings-divider { flex: none; margin: 16px 16px 0; border: 0; border-top: 1px solid var(--line); }
+.settings-divider + .settings-label { margin-top: 14px; }
+.settings-label + .setup-again { margin-top: 2px; }
+/* adding what you'd already seen: a soft purple button */
+.setup-again {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  margin: 16px 16px 0;
+  min-height: 46px;
+  border-radius: 14px;
+  border: 1px solid color-mix(in srgb, var(--accent) 35%, transparent);
+  background: color-mix(in srgb, var(--accent) 14%, transparent);
+  color: var(--accent);
+  font-size: 15px;
+  font-weight: 600;
+}
+.setup-again svg.icon { width: 19px; height: 19px; }
+.setup-again:active { transform: scale(0.98); }
+.setup-again[hidden] { display: none; }
 .kinds-sheet { padding-bottom: calc(18px + var(--safe-bottom)); -webkit-user-select: none; user-select: none; }
+.welcome-view { -webkit-user-select: none; user-select: none; }
 .kinds-head { flex: none; padding: 0 16px 6px; }
 .kinds-list { display: grid; gap: 8px; padding: 4px 16px 0; overflow-y: auto; }
 .kind-row {
@@ -137,3 +162,55 @@
 }
 .kind-row[aria-checked="true"] .switch { background: var(--tint); }
 .kind-row[aria-checked="true"] .switch::after { transform: translateX(18px); background: #fff; }
+
+/* setting up: on home, until the stats start */
+.setup-banner {
+  flex: none;
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  margin: 0 16px 10px;
+  padding: 12px 12px 12px 16px;
+  border-radius: 18px;
+  border: 1px solid color-mix(in srgb, var(--accent) 35%, var(--line));
+  background: color-mix(in srgb, var(--accent) 12%, var(--surface));
+}
+.setup-text { display: flex; flex-direction: column; flex: 1; min-width: 0; }
+.setup-text strong { font-size: 14.5px; font-weight: 600; }
+.setup-text span { color: var(--muted); font-size: 13px; }
+.setup-done {
+  flex: none;
+  padding: 10px 14px;
+  border-radius: 999px;
+  background: linear-gradient(135deg, var(--accent), var(--accent-strong));
+  color: var(--accent-ink);
+  font-weight: 700;
+  font-size: 14px;
+}
+.setup-done:active, .welcome-next:active { transform: scale(0.96); }
+
+/* first run: welcome, and which categories you use */
+.welcome-view:not([hidden]) {
+  display: flex;
+  flex-direction: column;
+  min-height: 100dvh;
+  padding: calc(40px + var(--safe-top)) 0 calc(24px + var(--safe-bottom));
+  text-align: center;
+}
+.welcome-view h1 { margin: 0; padding: 0 20px; font-family: var(--font-display); font-weight: 600; font-size: 34px; line-height: 1.1; }
+.welcome-hello { display: block; margin-bottom: 4px; color: var(--muted); font-family: var(--font-body); font-weight: 500; font-size: 15px; }
+.welcome-view .tagline { margin: 8px 0 18px; }
+.welcome-view .kinds-list { text-align: left; }
+.welcome-next {
+  margin: auto 16px 0;
+  min-height: 52px;
+  border-radius: 999px;
+  background: linear-gradient(135deg, var(--accent), var(--accent-strong));
+  color: var(--accent-ink);
+  font-weight: 700;
+  font-size: 16px;
+  box-shadow: 0 10px 30px -10px var(--glow);
+}
+.welcome-note { margin: 14px 24px 0; color: var(--muted); font-size: 13px; }
+.welcome-note svg.icon { width: 16px; height: 16px; vertical-align: -3px; }
+.welcome-view .welcome-note + .welcome-next { margin-top: 22px; }

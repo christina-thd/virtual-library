@@ -24,6 +24,7 @@
  * @property {string[] | null} genres                null: not looked up yet
  * @property {number} addedAt                        ms
  * @property {number | null} finishedAt              ms
+ * @property {boolean} beforeStats                   done while setting up: seen before, in no month or year
  */
 
 export const CATEGORIES = Object.freeze([

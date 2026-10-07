@@ -61,7 +61,7 @@ function monthsHtml(s, kind) {
 }
 
 /** One kind (null: all of them). */
-// the kinds whose category isn't hidden (from the home screen's "Show categories")
+// the kinds whose category isn't hidden (from the home screen's settings)
 let shownKinds = STAT_KINDS;
 const kindsOf = (kind) => shownKinds.filter((k) => !kind || k.id === kind);
 /** The category whose color a kind has (manga and comics: Manga/Comics'). */
@@ -256,6 +256,7 @@ export function createStatsView({ onBack, onOpenItem }) {
   let kind = null;                  // a STAT_KINDS id; null: the whole library
   let library = [];                 // the items of the kinds shown
   let since = 0;                    // when the stats started counting (from the server)
+  let settingUp = false;            // setting up for the first time: no stats until it's done
   let year = new Date().getFullYear();   // the one in review
   let shown = false;
 
@@ -281,7 +282,9 @@ export function createStatsView({ onBack, onOpenItem }) {
     let s = libraryStats(library, { kind, since, year });
     // a year picked for another kind may not exist for this one (no switch to get back): its newest instead
     if (!s.years.includes(year)) s = libraryStats(library, { kind, since, year: (year = s.years[0]) });
-    body.innerHTML = s.total
+    body.innerHTML = settingUp
+      ? `<div class="empty">${icon('chart')}<h2>Stats start after setup</h2><p>Tap Start stats on the home screen.</p></div>`
+      : s.total
       ? summaryHtml(s) + monthsHtml(s, kind) + timeHtml(s, kind) + genresHtml(s, kind)
         + creatorsHtml(s, kind) + publishersHtml(s) + recordsHtml(s, kind) + decadesHtml(s, kind)
         + ratingsHtml(s, kind, library) + backlogHtml(s) + reviewHtml(s, kind)
@@ -322,10 +325,12 @@ export function createStatsView({ onBack, onOpenItem }) {
     /**
      * @param {import('../shared/library.js').Item[]} items  @param {number} statsSince  when the stats started counting
      * @param {string[]} hidden  categories left out (their items too)
+     * @param {boolean} setup  setting up for the first time: no stats yet
      */
-    update(items, statsSince = 0, hidden = []) {
+    update(items, statsSince = 0, hidden = [], setup = false) {
       library = items.filter((item) => !hidden.includes(item.category));
       since = statsSince;
+      settingUp = setup;
       const kinds = STAT_KINDS.filter((k) => !hidden.includes(k.category));
       if (kinds.length !== shownKinds.length) {
         shownKinds = kinds;

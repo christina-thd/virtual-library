@@ -11,11 +11,17 @@ and what's still pending.
 3. Tap **+**, pick the kind by its icon (movie, series, book, manga/comics, game), and type a title
 4. Tap **Pending** or **Done** next to the right result
 
+The first time, the app helps you set up: pick the categories you use, then add what you've already watched,
+read and played. Tap **Start stats** on the home screen when you're done. What you finished while setting up counts
+in the totals, but in no month or year: you'd seen it before. To add more past things later (say, a category you've
+just switched on), tap **⋯** at the top right, then **Add already seen**, and **Done** on the home screen when you've added them.
+Anything marked done until then counts as seen before; nothing else changes.
+
 ### The library
 
 - The home screen has one tile per kind (Movies, Series, Books, Manga/Comics, Games), with how many are pending
   and done, and a few random covers. Tap a tile to open it; the back button (or ‹) returns home.
-- Don't use a category? Tap the eye at the top right of the home screen and switch it off. It leaves the home
+- Don't use a category? Tap **⋯** at the top right of the home screen and switch it off. It leaves the home
   screen, the stats and the search, but everything in it is kept: switch it back on any time. One always stays on.
 - In each kind, **Pending** is everything you haven't seen, read or played yet, or haven't finished.
   **Done** is everything you've finished. Each kind opens on Pending, newest first; Done starts with your best rated.

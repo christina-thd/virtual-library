@@ -2,16 +2,23 @@ import { randomBytes } from 'node:crypto';
 import { CATEGORY_IDS, isRating, MAX_CREATOR, MAX_TITLE, sameSource, statusesFor } from '../../public/js/shared/library.js';
 
 /**
- * What's saved to disk (JSON): { schema, statsSince, hiddenCategories, items }.
+ * What's saved to disk (JSON): { schema, statsSince, hiddenCategories, setupStep, setupSince, items }.
  *   statsSince        when the stats started counting (what was finished before has no real date)
  *   hiddenCategories  kinds kept off the home screen, stats and search (their items stay)
+ *   setupStep         first-run setup: 'categories' (which ones you use), 'library' (adding what you've already
+ *                     seen), or null once set up
+ *   setupSince        when setup started (null once set up): what's been added since shows on the home screen
  * Each item is an Item (public/js/shared/library.js) with, instead of `image`:
  *   imageUrls    the catalog's images, best first (the next is tried if one fails)
  *   cover        file name of the saved copy (covers.js)
  *   detailsAt    when runtime / seasons / pages / volumes / genres were last looked up (catalog/details.js)
+ *   beforeStats  done while setting up: seen before, so it counts in the totals but in no month or year
  *   caughtUp     series: when they were moved to Waiting, with how many episodes were out (seen) then
  */
 export const SCHEMA_VERSION = 1;
+
+/** First-run setup, in order; 'done' is how actions finish it (saved as null). */
+export const SETUP_STEPS = Object.freeze(['categories', 'library']);
 
 /** File names of saved covers: `<item id>.<ext>`. */
 export const COVER_FILE = /^[a-f0-9]{1,32}\.(jpg|png|webp)$/;
@@ -20,7 +27,7 @@ export const MAX_IMAGE_URLS = 3;
 export const newId = () => randomBytes(6).toString('hex');
 
 export function createInitialState(now = Date.now()) {
-  return { schema: SCHEMA_VERSION, statsSince: now, hiddenCategories: [], items: [] };
+  return { schema: SCHEMA_VERSION, statsSince: now, hiddenCategories: [], setupStep: 'categories', setupSince: now, items: [] };
 }
 
 export const findItem = (state, itemId) => state.items.find((i) => i.id === itemId);
@@ -136,6 +143,7 @@ function normalizeItem(raw, now) {
     detailsAt: Number.isFinite(raw.detailsAt) && raw.detailsAt > 0 ? raw.detailsAt : null,
     addedAt,
     finishedAt: status === 'done' ? toTime(raw.finishedAt, addedAt) : null,
+    beforeStats: status === 'done' && raw.beforeStats === true,
   };
 }
 
@@ -152,7 +160,11 @@ export function normalizeState(raw, now = Date.now()) {
   const unique = [...new Map(items.map((i) => [i.id, i])).values()];
   // a library from before the stats: they count from now on, not from when it was filled in
   const statsSince = Number.isFinite(raw.statsSince) && raw.statsSince > 0 && raw.statsSince <= now ? raw.statsSince : now;
-  return { schema: SCHEMA_VERSION, statsSince, hiddenCategories: parseHidden(raw.hiddenCategories), items: unique };
+  // from before setup was kept: a library with something in it is set up already
+  const setupStep = SETUP_STEPS.includes(raw.setupStep) ? raw.setupStep
+    : raw.setupStep === null || unique.length ? null : 'categories';
+  const setupSince = setupStep ? toTime(raw.setupSince, statsSince) : null;
+  return { schema: SCHEMA_VERSION, statsSince, hiddenCategories: parseHidden(raw.hiddenCategories), setupStep, setupSince, items: unique };
 }
 
 /** An item as screens see it: `image` is the saved cover when there is one, else the catalog's. */
@@ -162,5 +174,12 @@ function itemView({ cover, imageUrls, ...item }) {
 
 /** What every screen receives. */
 export function toView(state, appVersion) {
-  return { version: appVersion, statsSince: state.statsSince, hiddenCategories: state.hiddenCategories, items: state.items.map(itemView) };
+  return {
+    version: appVersion,
+    statsSince: state.statsSince,
+    hiddenCategories: state.hiddenCategories,
+    setupStep: state.setupStep,
+    setupSince: state.setupSince,
+    items: state.items.map(itemView),
+  };
 }

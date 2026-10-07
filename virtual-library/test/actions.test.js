@@ -8,7 +8,7 @@ const ctx = { now: NOW, allowImage: (url) => url.startsWith('https://images.exam
 
 let state;
 beforeEach(() => {
-  state = createInitialState();
+  state = { ...createInitialState(), setupStep: null, setupSince: null };   // a library that's set up
 });
 
 const apply = (action, context = ctx) => applyAction(state, action, context);
@@ -144,6 +144,24 @@ describe('setStatus', () => {
     rejects({ type: 'setCategoryHidden', category: 'game', hidden: 'yes' }, 400);
   });
 
+  test('setup: what is done while setting up was seen before; setting up again leaves the rest as it was', () => {
+    state = createInitialState(NOW);
+    assert.equal(state.setupStep, 'categories');                                                // a new library
+    apply({ type: 'setSetup', step: 'library' });
+    const seen = add({ status: 'done' });
+    const later = add({ source: null, title: 'Severance' });
+    apply({ type: 'setStatus', itemId: later, status: 'done' });
+    apply({ type: 'setSetup', step: 'done' }, { ...ctx, now: NOW + 1000 });
+    assert.deepEqual([state.setupStep, state.setupSince, itemOf(seen).beforeStats, itemOf(later).beforeStats], [null, null, true, true]);
+    const statsSince = state.statsSince;
+    const now = add({ source: null, title: 'Dark', status: 'done' });                           // after setup: dated
+    apply({ type: 'setSetup', step: 'categories' }, { ...ctx, now: NOW + 5000 });                // again
+    assert.deepEqual([state.setupSince, state.statsSince, itemOf(now).beforeStats], [NOW + 5000, statsSince, false]);
+    apply({ type: 'setSetup', step: 'library' }, { ...ctx, now: NOW + 6000 });
+    assert.equal(state.setupSince, NOW + 5000);                                                 // still from when it started
+    rejects({ type: 'setSetup', step: 'later' }, 400, /step/);
+  });
+
   test('only series can wait', () => {
     rejects({ type: 'addItem', category: 'comic', title: 'One Piece', status: 'waiting' }, 400);
     const movie = add({ category: 'movie', source: null, title: 'Dune' });
@@ -261,6 +279,6 @@ describe('applyAction', () => {
   });
 
   test('lists every action', () => {
-    assert.deepEqual([...ACTION_TYPES].sort(), ['addItem', 'rateItem', 'removeItem', 'setCategoryHidden', 'setDropped', 'setHours', 'setStatus']);
+    assert.deepEqual([...ACTION_TYPES].sort(), ['addItem', 'rateItem', 'removeItem', 'setCategoryHidden', 'setDropped', 'setHours', 'setSetup', 'setStatus']);
   });
 });
