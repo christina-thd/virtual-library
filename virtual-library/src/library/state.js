@@ -2,8 +2,9 @@ import { randomBytes } from 'node:crypto';
 import { CATEGORY_IDS, isRating, MAX_CREATOR, MAX_TITLE, sameSource, statusesFor } from '../../public/js/shared/library.js';
 
 /**
- * What's saved to disk (JSON): { schema, statsSince, items }.
- *   statsSince   when the stats started counting (what was finished before has no real date)
+ * What's saved to disk (JSON): { schema, statsSince, hiddenCategories, items }.
+ *   statsSince        when the stats started counting (what was finished before has no real date)
+ *   hiddenCategories  kinds kept off the home screen, stats and search (their items stay)
  * Each item is an Item (public/js/shared/library.js) with, instead of `image`:
  *   imageUrls    the catalog's images, best first (the next is tried if one fails)
  *   cover        file name of the saved copy (covers.js)
@@ -19,7 +20,7 @@ export const MAX_IMAGE_URLS = 3;
 export const newId = () => randomBytes(6).toString('hex');
 
 export function createInitialState(now = Date.now()) {
-  return { schema: SCHEMA_VERSION, statsSince: now, items: [] };
+  return { schema: SCHEMA_VERSION, statsSince: now, hiddenCategories: [], items: [] };
 }
 
 export const findItem = (state, itemId) => state.items.find((i) => i.id === itemId);
@@ -138,6 +139,12 @@ function normalizeItem(raw, now) {
   };
 }
 
+/** Hidden kinds: known ones, each once, and never all of them. */
+export function parseHidden(value) {
+  const hidden = [...new Set(Array.isArray(value) ? value : [])].filter((id) => CATEGORY_IDS.includes(id));
+  return hidden.length < CATEGORY_IDS.length ? hidden : [];
+}
+
 /** Turns whatever was read from disk into a valid current-schema state (unusable items are dropped). */
 export function normalizeState(raw, now = Date.now()) {
   if (!raw || typeof raw !== 'object' || !Array.isArray(raw.items)) return createInitialState(now);
@@ -145,7 +152,7 @@ export function normalizeState(raw, now = Date.now()) {
   const unique = [...new Map(items.map((i) => [i.id, i])).values()];
   // a library from before the stats: they count from now on, not from when it was filled in
   const statsSince = Number.isFinite(raw.statsSince) && raw.statsSince > 0 && raw.statsSince <= now ? raw.statsSince : now;
-  return { schema: SCHEMA_VERSION, statsSince, items: unique };
+  return { schema: SCHEMA_VERSION, statsSince, hiddenCategories: parseHidden(raw.hiddenCategories), items: unique };
 }
 
 /** An item as screens see it: `image` is the saved cover when there is one, else the catalog's. */
@@ -155,5 +162,5 @@ function itemView({ cover, imageUrls, ...item }) {
 
 /** What every screen receives. */
 export function toView(state, appVersion) {
-  return { version: appVersion, statsSince: state.statsSince, items: state.items.map(itemView) };
+  return { version: appVersion, statsSince: state.statsSince, hiddenCategories: state.hiddenCategories, items: state.items.map(itemView) };
 }

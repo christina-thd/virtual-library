@@ -26,6 +26,7 @@
   <!-- ===== home: one tile per category ===== -->
   <div class="view" id="homeView">
     <header class="top home-top">
+      <button type="button" class="icon-button stats-button kinds-button" id="kindsButton" aria-label="Show or hide categories" title="Show or hide categories"></button>
       <button type="button" class="icon-button stats-button" id="statsButton" aria-label="Stats" title="Stats"></button>
       <img class="home-logo" src="img/logo.svg" alt="" width="56" height="56">
       <h1>Hoard Board</h1>
@@ -96,6 +97,21 @@
       </div>
       <div class="search-body" id="searchBody"></div>
       <p class="credits" id="searchCredits"></p>
+    </section>
+  </div>
+
+  <!-- ===== which kinds show on the home screen, stats and search ===== -->
+  <div class="layer" id="kindsLayer" hidden>
+    <div class="backdrop" data-close></div>
+    <section class="sheet kinds-sheet" role="dialog" aria-modal="true" aria-labelledby="kindsTitle">
+      <div class="grabber" data-drag data-close></div>
+      <div class="kinds-head" data-drag>
+        <div class="search-title-row">
+          <h2 class="search-title" id="kindsTitle">Show categories</h2>
+          <button type="button" class="search-close" data-close>Close</button>
+        </div>
+      </div>
+      <div class="kinds-list" id="kindsList"></div>
     </section>
   </div>
 

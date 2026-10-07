@@ -15,6 +15,8 @@ and what's still pending.
 
 - The home screen has one tile per kind (Movies, Series, Books, Manga/Comics, Games), with how many are pending
   and done, and a few random covers. Tap a tile to open it; the back button (or ‹) returns home.
+- Don't use a category? Tap the eye at the top right of the home screen and switch it off. It leaves the home
+  screen, the stats and the search, but everything in it is kept: switch it back on any time. One always stays on.
 - In each kind, **Pending** is everything you haven't seen, read or played yet, or haven't finished.
   **Done** is everything you've finished. Each kind opens on Pending, newest first; Done starts with your best rated.
   Use the sort button next to the tabs for A–Z, rating (on Done) or length: a movie's duration, a series' seasons,

@@ -60,12 +60,14 @@ function tileHtml(category, items) {
     </button>`;
 }
 
-export function renderHome(library) {
+/** The tiles of the kinds shown (`hidden` ones are left out, and so are their items in the counts). */
+export function renderHome(items, hidden = []) {
+  const library = items.filter((i) => !hidden.includes(i.category));
   const done = library.filter((i) => i.status === 'done').length;
   $('summary').textContent = library.length
     ? `${library.length} ${library.length === 1 ? 'story' : 'stories'} hoarded · ${done} finished`
     : 'Movies, series, books, comics & games — hoard them all';
-  $('tiles').innerHTML = CATEGORIES.map((c) => tileHtml(c, library.filter((i) => i.category === c.id))).join('');
+  $('tiles').innerHTML = CATEGORIES.filter((c) => !hidden.includes(c.id)).map((c) => tileHtml(c, library.filter((i) => i.category === c.id))).join('');
 }
 
 /** Calls `onOpen(categoryId)` when a tile is tapped. */

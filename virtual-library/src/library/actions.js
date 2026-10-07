@@ -128,6 +128,15 @@ const handlers = {
     item.hoursPlayed = parseHours(hours);
   },
 
+  /** Hides a kind from the home screen, stats and search, or shows it again. Its items are kept. One stays shown. */
+  setCategoryHidden(state, { category, hidden }) {
+    oneOf(category, CATEGORY_IDS, 'category');
+    if (typeof hidden !== 'boolean') throw new ActionError('hidden must be true or false');
+    const others = state.hiddenCategories.filter((id) => id !== category);
+    if (hidden && others.length === CATEGORY_IDS.length - 1) throw new ActionError('Keep at least one category shown');
+    state.hiddenCategories = hidden ? [...others, category] : others;
+  },
+
   removeItem(state, { itemId }) {
     getItem(state, itemId);
     state.items = state.items.filter((i) => i.id !== itemId);

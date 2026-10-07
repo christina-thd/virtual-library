@@ -4,6 +4,7 @@ import { createCategoryView } from './library/category.js';
 import { createDetails } from './library/details.js';
 import { onTileTap, renderHome, reshuffleHome } from './library/home.js';
 import { createSearch } from './library/search.js';
+import { createShownKinds } from './library/shown.js';
 import { createStatsView } from './library/stats.js';
 import { fetchInfo, subscribe } from './shared/api.js';
 import { $, closest } from './shared/dom.js';
@@ -14,12 +15,14 @@ import { icon } from './ui/icons.js';
 import { trackVisibleViewport } from './ui/viewport.js';
 
 let items = [];
+let hidden = [];                     // kinds hidden from home, stats and search (their items are kept)
 const getItem = (id) => items.find((i) => i.id === id);
 
 const categoryView = createCategoryView({ onBack: goBack });
 const details = createDetails({ getItem });
 const search = createSearch({ getItems: () => items, openItem: (id, how) => details.open(id, how) });
 const statsView = createStatsView({ onBack: goBack, onOpenItem: (id) => details.open(id) });
+const shownKinds = createShownKinds();
 
 // ----- home ↔ category, stats -----
 
@@ -50,13 +53,15 @@ function showHome() {
   categoryView.hide();
   statsView.hide();
   reshuffleHome();                                 // new random covers each time you come back
-  renderHome(items);
+  renderHome(items, hidden);
   showView('homeView');
 }
 
 onTileTap(openCategory);
 $('statsButton').innerHTML = icon('chart');
 $('statsButton').addEventListener('click', openStats);
+$('kindsButton').innerHTML = icon('eye');
+$('kindsButton').addEventListener('click', () => shownKinds.open());
 
 // ----- start -----
 
@@ -74,9 +79,12 @@ fetchInfo().then(({ sources }) => search.setSources(sources)).catch(() => {});
 
 subscribe((view) => {
   items = view.items;
-  renderHome(items);
+  hidden = view.hiddenCategories ?? [];
+  renderHome(items, hidden);
   categoryView.update(items);
-  statsView.update(items, view.statsSince);
+  statsView.update(items, view.statsSince, hidden);
+  search.setHidden(hidden);
+  shownKinds.update(hidden);
   details.refresh();
   search.refresh();
 });

@@ -29,6 +29,12 @@ describe('normalizeState', () => {
     assert.equal(createInitialState(NOW).statsSince, NOW);
   });
 
+  test('hidden kinds: known ones, once each, never all of them', () => {
+    const hiddenOf = (hiddenCategories) => normalizeState({ hiddenCategories, items: [] }, NOW).hiddenCategories;
+    assert.deepEqual([hiddenOf(undefined), hiddenOf(['book', 'book', 'music']), hiddenOf('book')], [[], ['book'], []]);
+    assert.deepEqual(hiddenOf(['movie', 'series', 'book', 'comic', 'game']), []);
+  });
+
   test('drops items without a title or with an unknown category', () => {
     const state = normalizeState({ items: [item({ title: ' ' }), item({ category: 'podcast' }), null, 'x'] }, NOW);
     assert.equal(state.items.length, 0);

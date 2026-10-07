@@ -131,6 +131,19 @@ describe('setStatus', () => {
     assert.equal(itemOf(add({ category: 'movie', source: null, title: 'Dune' })).caughtUp, null);
   });
 
+  test('a kind can be hidden and shown again; its items stay; one is always shown', () => {
+    const id = add({ category: 'book', source: null, title: 'Dune' });
+    apply({ type: 'setCategoryHidden', category: 'book', hidden: true });
+    apply({ type: 'setCategoryHidden', category: 'book', hidden: true });                       // twice: once
+    assert.deepEqual([state.hiddenCategories, itemOf(id).title], [['book'], 'Dune']);
+    apply({ type: 'setCategoryHidden', category: 'book', hidden: false });
+    assert.deepEqual(state.hiddenCategories, []);
+    for (const category of ['movie', 'series', 'book', 'comic']) apply({ type: 'setCategoryHidden', category, hidden: true });
+    rejects({ type: 'setCategoryHidden', category: 'game', hidden: true }, 400, /at least one/);
+    rejects({ type: 'setCategoryHidden', category: 'music', hidden: true }, 400);
+    rejects({ type: 'setCategoryHidden', category: 'game', hidden: 'yes' }, 400);
+  });
+
   test('only series can wait', () => {
     rejects({ type: 'addItem', category: 'comic', title: 'One Piece', status: 'waiting' }, 400);
     const movie = add({ category: 'movie', source: null, title: 'Dune' });
@@ -248,6 +261,6 @@ describe('applyAction', () => {
   });
 
   test('lists every action', () => {
-    assert.deepEqual([...ACTION_TYPES].sort(), ['addItem', 'rateItem', 'removeItem', 'setDropped', 'setHours', 'setStatus']);
+    assert.deepEqual([...ACTION_TYPES].sort(), ['addItem', 'rateItem', 'removeItem', 'setCategoryHidden', 'setDropped', 'setHours', 'setStatus']);
   });
 });

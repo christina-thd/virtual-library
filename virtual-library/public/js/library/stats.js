@@ -51,7 +51,7 @@ function monthsHtml(s, kind) {
         <span class="bar-month">${monthName(m)}</span>
       </div>`;
   }).join('');
-  const legend = category ? '' : `<div class="stats-legend">${CATEGORIES.map((c) =>
+  const legend = category ? '' : `<div class="stats-legend">${CATEGORIES.filter((c) => shownKinds.some((k) => k.category === c.id)).map((c) =>
     `<span data-category="${c.id}"><i></i>${c.plural}</span>`).join('')}</div>`;
   // the busiest month, when one stands out; and since when it counts (what was finished before has no date)
   const counting = s.since ? `Counting since ${DAY.format(new Date(s.since))}` : '';
@@ -61,7 +61,9 @@ function monthsHtml(s, kind) {
 }
 
 /** One kind (null: all of them). */
-const kindsOf = (kind) => STAT_KINDS.filter((k) => !kind || k.id === kind);
+// the kinds whose category isn't hidden (from the home screen's "Show categories")
+let shownKinds = STAT_KINDS;
+const kindsOf = (kind) => shownKinds.filter((k) => !kind || k.id === kind);
 /** The category whose color a kind has (manga and comics: Manga/Comics'). */
 const tintOf = (kind) => (kind ? STAT_KINDS.find((k) => k.id === kind).category : null);
 const kindIcon = (kind) => icon(STAT_KINDS.find((k) => k.id === kind).icon);
@@ -213,7 +215,7 @@ function ratingsHtml(s, kind, items) {
       <span class="genre-bar"><i style="width:${(r.stars[n] / most) * 100}%"></i></span>
       <span class="genre-count">${r.stars[n]}</span>
     </div>`).join('');
-  const perCategory = kind ? '' : `<div class="stats-averages">${STAT_KINDS.map((k) => {
+  const perCategory = kind ? '' : `<div class="stats-averages">${shownKinds.map((k) => {
     const { average } = libraryStats(items, { kind: k.id }).ratings;   // all time: no dates needed
     return average ? `<span data-category="${k.category}" title="${k.plural}">${icon(k.icon)}${average.toFixed(1)}</span>` : '';
   }).join('')}</div>`;
@@ -252,7 +254,7 @@ export function createStatsView({ onBack, onOpenItem }) {
   const body = $('statsBody');
   const filter = $('statsFilter');
   let kind = null;                  // a STAT_KINDS id; null: the whole library
-  let library = [];
+  let library = [];                 // the items of the kinds shown
   let since = 0;                    // when the stats started counting (from the server)
   let year = new Date().getFullYear();   // the one in review
   let shown = false;
@@ -262,8 +264,11 @@ export function createStatsView({ onBack, onOpenItem }) {
   $('statsTitle').innerHTML = `${icon('chart')}<span>Stats</span>`;
   filter.classList.add('segmented');
   // "All", then each kind as its icon (named for screen readers)
-  filter.innerHTML = `<button type="button" role="tab" data-filter="">All</button>${STAT_KINDS.map((k) =>
-    `<button type="button" role="tab" data-filter="${k.id}" aria-label="${k.plural}" title="${k.plural}">${icon(k.icon)}</button>`).join('')}`;
+  function renderTabs() {
+    filter.innerHTML = `<button type="button" role="tab" data-filter="">All</button>${shownKinds.map((k) =>
+      `<button type="button" role="tab" data-filter="${k.id}" aria-label="${k.plural}" title="${k.plural}">${icon(k.icon)}</button>`).join('')}`;
+  }
+  renderTabs();
 
   function render() {
     if (!shown) return;
@@ -314,10 +319,19 @@ export function createStatsView({ onBack, onOpenItem }) {
     hide() {
       shown = false;
     },
-    /** @param {object[]} items  @param {number} statsSince  when the stats started counting */
-    update(items, statsSince = 0) {
-      library = items;
+    /**
+     * @param {import('../shared/library.js').Item[]} items  @param {number} statsSince  when the stats started counting
+     * @param {string[]} hidden  categories left out (their items too)
+     */
+    update(items, statsSince = 0, hidden = []) {
+      library = items.filter((item) => !hidden.includes(item.category));
       since = statsSince;
+      const kinds = STAT_KINDS.filter((k) => !hidden.includes(k.category));
+      if (kinds.length !== shownKinds.length) {
+        shownKinds = kinds;
+        renderTabs();
+        if (kind && !kinds.some((k) => k.id === kind)) kind = null;   // its tab is gone: the whole library
+      }
       render();
     },
   };
