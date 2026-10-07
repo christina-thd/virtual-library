@@ -78,7 +78,7 @@ export function createDetails({ getItem }) {
 
         ${done && item.category === 'game' ? `
           <form class="hours" data-hours>
-            <label class="rating-label" for="hoursInput">Playtime (optional)</label>
+            <label class="rating-label" for="hoursInput">Playtime${item.hoursPlayed ? '' : ' (optional)'}</label>
             <span class="hours-field">
               <input id="hoursInput" type="text" inputmode="decimal" autocomplete="off" maxlength="8" placeholder="–"
                 value="${item.hoursPlayed ?? ''}"><span aria-hidden="true">h</span>
