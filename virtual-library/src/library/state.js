@@ -8,6 +8,7 @@ import { CATEGORY_IDS, isRating, MAX_CREATOR, MAX_TITLE, sameSource, statusesFor
  *   imageUrls    the catalog's images, best first (the next is tried if one fails)
  *   cover        file name of the saved copy (covers.js)
  *   detailsAt    when runtime / seasons / pages / genres were last looked up (catalog/details.js)
+ *   caughtUp     series: when they were moved to Waiting, with how many episodes were out (seen) then
  */
 export const SCHEMA_VERSION = 1;
 
@@ -64,6 +65,17 @@ const DETAIL_READERS = {
 };
 const NO_DETAILS = Object.freeze({ runtime: null, seasons: null, episodes: null, pages: null, genres: null });
 
+/**
+ * A series' catch-ups: [{ at, episodes }]. One already waiting from before they were kept has seen what's out,
+ * when isn't known.
+ */
+export function parseCaughtUp(value, status, episodes) {
+  if (!Array.isArray(value)) return status === 'waiting' ? [{ at: null, episodes }] : [];
+  return value.filter((c) => c && typeof c === 'object')
+    .map((c) => ({ at: Number.isFinite(c.at) && c.at > 0 ? Math.trunc(c.at) : null, episodes: parseCount(c.episodes) }))
+    .slice(-50);
+}
+
 /** Up to three genre names, or null when they haven't been looked up ([] when the catalog has none). */
 export function parseGenres(value) {
   if (!Array.isArray(value)) return null;
@@ -118,6 +130,7 @@ function normalizeItem(raw, now) {
     dropped: status === 'done' && raw.dropped === true,
     hoursPlayed: raw.category === 'game' ? parseHours(raw.hoursPlayed) : null,   // kept if moved back from done
     ...itemDetails(raw.category, raw),
+    caughtUp: raw.category === 'series' ? parseCaughtUp(raw.caughtUp, status, parseCount(raw.episodes)) : null,
     detailsAt: Number.isFinite(raw.detailsAt) && raw.detailsAt > 0 ? raw.detailsAt : null,
     addedAt,
     finishedAt: status === 'done' ? toTime(raw.finishedAt, addedAt) : null,

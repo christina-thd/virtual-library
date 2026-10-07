@@ -111,6 +111,26 @@ describe('setStatus', () => {
     assert.equal(itemOf(add({ source: null, title: 'Severance', status: 'waiting' })).status, 'waiting');
   });
 
+  test('moving a series to waiting keeps when and how many episodes were out; back to pending soon after undoes it', () => {
+    const id = add({ episodes: 10 });
+    assert.deepEqual(itemOf(id).caughtUp, []);
+    apply({ type: 'setStatus', itemId: id, status: 'waiting' });
+    assert.deepEqual(itemOf(id).caughtUp, [{ at: NOW, episodes: 10 }]);
+    apply({ type: 'setStatus', itemId: id, status: 'pending' }, { ...ctx, now: NOW + 60_000 });   // a mistake
+    assert.deepEqual(itemOf(id).caughtUp, []);
+    apply({ type: 'setStatus', itemId: id, status: 'waiting' });
+    const WEEKS = 30 * 24 * 60 * 60 * 1000;
+    itemOf(id).episodes = 18;                                                                    // a new season is out
+    apply({ type: 'setStatus', itemId: id, status: 'pending' }, { ...ctx, now: NOW + WEEKS });
+    apply({ type: 'setStatus', itemId: id, status: 'waiting' }, { ...ctx, now: NOW + 2 * WEEKS });
+    assert.deepEqual(itemOf(id).caughtUp, [{ at: NOW, episodes: 10 }, { at: NOW + 2 * WEEKS, episodes: 18 }]);
+    apply({ type: 'setStatus', itemId: id, status: 'done' });
+    apply({ type: 'setStatus', itemId: id, status: 'waiting' });                                // nothing new: not again
+    assert.equal(itemOf(id).caughtUp.length, 2);
+    assert.deepEqual(itemOf(add({ source: null, title: 'Severance', status: 'waiting', episodes: 19 })).caughtUp, [{ at: NOW, episodes: 19 }]);
+    assert.equal(itemOf(add({ category: 'movie', source: null, title: 'Dune' })).caughtUp, null);
+  });
+
   test('only series can wait', () => {
     const movie = add({ category: 'movie', source: null, title: 'Dune' });
     rejects({ type: 'setStatus', itemId: movie, status: 'waiting' }, 400, /pending, done/);

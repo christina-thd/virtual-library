@@ -31,6 +31,7 @@ export function createDetailsSync({ state, catalog, onChange, now = Date.now, lo
       if (!state.items.includes(item)) continue;       // removed meanwhile
       for (const field of detailFields(item.category)) item[field] = details?.[field] ?? item[field] ?? null;
       item.genres ??= [];                              // looked up: none known (not "not looked up yet")
+      for (const c of item.caughtUp ?? []) c.episodes ??= item.episodes;   // caught up before they were known
       item.detailsAt = now();
       onChange();
     }

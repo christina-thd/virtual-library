@@ -2,6 +2,7 @@
 
 ## 3.2.0
 - Playtime hides "optional" once filled in, like the rating
+- Time spent and the year in review count the episodes of series in Waiting
 
 ## 3.1.0
 - More stats: streaks, year in review, top creators, records and release decades

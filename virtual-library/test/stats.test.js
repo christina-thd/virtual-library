@@ -103,6 +103,19 @@ test('records: the biggest of each kind; one kind has its top three; playtime co
   assert.deepEqual(movies, [155, 120, 100]);                                            // the dropped 95-minute one isn't a record
 });
 
+test('episodes count when seen: each catch-up on a waiting series, and the rest when finished', () => {
+  const shows = [
+    item({ category: 'series', status: 'waiting', finishedAt: null, episodes: 30, caughtUp: [{ at: on(2026, 7), episodes: 20 }, { at: on(2026, 9), episodes: 30 }] }),
+    item({ category: 'series', finishedAt: on(2026, 8), episodes: 12, caughtUp: [{ at: on(2025, 3), episodes: 8 }] }),
+    item({ category: 'series', status: 'waiting', finishedAt: null, episodes: 9, caughtUp: [{ at: null, episodes: 9 }] }),   // when isn't known
+    item({ category: 'series', status: 'pending', finishedAt: null, episodes: 40, caughtUp: [] }),
+  ];
+  const stats = libraryStats(shows, { now: NOW });
+  assert.equal(stats.time.episodes, 20 + 10 + 12 + 9);
+  assert.equal(stats.review.time.episodes, 20 + 4 + 10);                                        // Aug, Sep, Oct 2026
+  assert.equal(libraryStats(shows, { now: NOW, year: 2025 }).review.time.episodes, 8);
+});
+
 test('release decades and top creators, of what was finished', () => {
   const shelf = [
     item({ year: 1982, creator: 'Ridley Scott' }), item({ year: 1979, creator: 'Ridley Scott' }), item({ year: 2017, creator: 'Denis Villeneuve' }),

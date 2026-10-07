@@ -3,6 +3,7 @@
 // clears when it was finished, so an undone item no longer counts in the month it was finished.
 // What was finished before `since` (when the stats started: a library filled in on day one marks everything
 // finished that day) has no real date, so the per-month and this-year counts leave it out.
+// Episodes count when seen: a series moved to Waiting has seen what's out, and finishing it adds the rest.
 
 const MONTHS = 12;
 const TOP_GENRES = 5;
@@ -52,6 +53,20 @@ function timeSpent(done) {
   };
 }
 
+/** Series episodes as seen: [{ at, episodes }], what's new at each catch-up and, once finished, the rest. */
+function episodesSeen(series) {
+  const seen = [];
+  for (const item of series) {
+    let before = 0;
+    for (const c of item.caughtUp ?? []) {
+      if (c.episodes > before) seen.push({ at: c.at, episodes: c.episodes - before });
+      before = Math.max(before, c.episodes ?? 0);
+    }
+    if (isFinished(item) && item.episodes > before) seen.push({ at: item.finishedAt, episodes: item.episodes - before });
+  }
+  return seen;
+}
+
 /** Months in a row with something finished: the run still going (it lasts until a month ends empty) and the best. */
 function streaks(dated, now, since) {
   const busy = new Set(dated.map((item) => monthKey(new Date(item.finishedAt))));
@@ -69,8 +84,9 @@ function streaks(dated, now, since) {
 }
 
 /** One year: how much was finished, of what, the favourite, top genres, busiest month and time spent. */
-function yearReview(dated, year) {
+function yearReview(dated, seen, year) {
   const items = dated.filter((item) => new Date(item.finishedAt).getFullYear() === year);
+  const episodes = sum(seen.filter((s) => new Date(s.at).getFullYear() === year), (s) => s.episodes);
   const byCategory = {};
   const perMonth = new Array(12).fill(0);
   for (const item of items) {
@@ -87,7 +103,7 @@ function yearReview(dated, year) {
     favourite,
     genres: topGenres(items, 3),
     busiestMonth: most > 1 ? perMonth.indexOf(most) : null,      // only when one stands out
-    time: timeSpent(items),
+    time: { ...timeSpent(items), episodes },
   };
 }
 
@@ -153,6 +169,8 @@ export function libraryStats(items, { category = null, now = Date.now(), since =
   const finished = mine.filter(isFinished);
   const dated = finished.filter((item) => item.finishedAt >= since);   // finished since the stats started
   const pending = mine.filter((item) => item.status === 'pending');
+  const seen = episodesSeen(mine.filter((item) => item.category === 'series'));
+  const seenDated = seen.filter((s) => s.at != null && s.at >= since);
   const months = finishedPerMonth(dated, today, new Date(Math.min(since, now)));
   const busiest = months.reduce((best, m) => (m.total > (best?.total ?? 0) ? m : best), null);
   const of = (kind) => finished.filter((item) => item.category === kind);
@@ -170,11 +188,11 @@ export function libraryStats(items, { category = null, now = Date.now(), since =
     waiting: mine.filter((item) => item.status === 'waiting').length,
     months,
     busiest,                                                    // the month with the most finished, or null
-    // time played is time played: dropped games count too
-    time: { ...timeSpent(finished), hours: timeSpent(done).hours },
+    // seen is seen: dropped games' playtime and the episodes of series not finished count too
+    time: { ...timeSpent(finished), episodes: sum(seen, (s) => s.episodes), hours: timeSpent(done).hours },
     streak: streaks(dated, today, new Date(Math.min(since, now))),
     years,                                                      // years to review, newest first
-    review: yearReview(dated, year),
+    review: yearReview(dated, seenDated, year),
     decades: decades(finished),
     records: records(done, category),
     creators: category ? (CREATOR_KINDS.includes(category) ? topCreators(finished, 5) : null) : null,

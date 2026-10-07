@@ -17,6 +17,7 @@
  * @property {number | null} runtime                 movies, minutes
  * @property {number | null} seasons                 series
  * @property {number | null} episodes                series
+ * @property {{ at: number | null, episodes: number | null }[] | null} caughtUp   series: each move to Waiting, with the episodes out then
  * @property {number | null} pages                   books
  * @property {string[] | null} genres                null: not looked up yet
  * @property {number} addedAt                        ms

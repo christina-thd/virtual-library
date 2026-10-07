@@ -28,6 +28,22 @@ function rating(value) {
   return value;
 }
 
+const UNDO = 24 * 60 * 60 * 1000;
+
+/**
+ * A series moved to Waiting has seen every episode out: that's kept, dated, for the stats. Moved back to pending
+ * within a day, it was a mistake and is forgotten; later, it's a new season and the catch-up stays.
+ */
+function trackCatchUp(item, status, now) {
+  const last = item.caughtUp.at(-1);
+  if (status === 'waiting') {
+    const nothingNew = last && last.episodes != null && item.episodes != null && item.episodes <= last.episodes;
+    if (!nothingNew) item.caughtUp.push({ at: now, episodes: item.episodes });
+  } else if (status === 'pending' && item.status === 'waiting' && last?.at != null && now - last.at < UNDO) {
+    item.caughtUp.pop();
+  }
+}
+
 function getItem(state, itemId) {
   const item = findItem(state, itemId);
   if (!item) throw new ActionError(`No item ${itemId} in the library`, 404);
@@ -64,6 +80,7 @@ const handlers = {
       dropped: false,
       hoursPlayed: null,
       ...details,                                  // what the search result had; the rest is looked up after adding
+      caughtUp: category !== 'series' ? null : status === 'waiting' ? [{ at: ctx.now, episodes: details.episodes }] : [],
       detailsAt: detailFields(category).every((field) => details[field] != null) ? ctx.now : null,
       addedAt: ctx.now,
       finishedAt: status === 'done' ? ctx.now : null,
@@ -77,6 +94,7 @@ const handlers = {
     const item = getItem(state, itemId);
     oneOf(status, statusesFor(item.category), 'status');
     if (item.status === status) return;
+    if (item.category === 'series') trackCatchUp(item, status, ctx.now);
     item.status = status;
     item.finishedAt = status === 'done' ? ctx.now : null;
     item.rating = null;

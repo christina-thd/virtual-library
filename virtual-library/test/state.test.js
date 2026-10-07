@@ -7,7 +7,7 @@ const NOW = 1_700_000_000_000;
 const item = (overrides = {}) => ({
   id: 'abc123', category: 'movie', title: 'Dune', year: 2021, creator: 'Denis Villeneuve',
   source: { provider: 'cinemeta', id: 'tt1160419' }, imageUrls: ['https://images.metahub.space/poster/medium/tt1160419/img'],
-  cover: null, status: 'done', rating: 5, dropped: false, hoursPlayed: null, runtime: 155, seasons: null, episodes: null, pages: null, genres: ['Sci-Fi'], detailsAt: NOW, addedAt: NOW - 1000, finishedAt: NOW, ...overrides,
+  cover: null, status: 'done', rating: 5, dropped: false, hoursPlayed: null, runtime: 155, seasons: null, episodes: null, caughtUp: null, pages: null, genres: ['Sci-Fi'], detailsAt: NOW, addedAt: NOW - 1000, finishedAt: NOW, ...overrides,
 });
 
 describe('normalizeState', () => {
@@ -54,6 +54,17 @@ describe('normalizeState', () => {
     ] }, NOW).items;
     assert.deepEqual([series.status, series.rating, series.finishedAt], ['waiting', null, null]);
     assert.equal(movie.status, 'pending');
+  });
+
+  test('a series waiting from before catch-ups were kept has seen what is out, undated; saved ones are kept', () => {
+    const [old, saved, pending] = normalizeState({ items: [
+      item({ id: 'a1', category: 'series', status: 'waiting', episodes: 20 }),
+      item({ id: 'b2', category: 'series', status: 'pending', episodes: 30, caughtUp: [{ at: NOW, episodes: 20 }, { at: 'x', episodes: -1 }] }),
+      item({ id: 'c3', category: 'series', status: 'pending' }),
+    ] }, NOW).items;
+    assert.deepEqual(old.caughtUp, [{ at: null, episodes: 20 }]);
+    assert.deepEqual(saved.caughtUp, [{ at: NOW, episodes: 20 }, { at: null, episodes: null }]);
+    assert.deepEqual(pending.caughtUp, []);
   });
 
   test('only a done item can be dropped', () => {
