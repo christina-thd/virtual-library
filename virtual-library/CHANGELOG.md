@@ -3,6 +3,7 @@
 ## 3.3.0
 - Fix longest series count
 - Tap a message to dismiss it
+- Genres on each item's page
 
 ## 3.2.0
 - Playtime hides "optional" once filled in, like the rating

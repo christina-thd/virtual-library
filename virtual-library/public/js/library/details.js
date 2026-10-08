@@ -60,6 +60,7 @@ export function createDetails({ getItem }) {
         <h2 class="details-title">${escapeHtml(item.title)}</h2>
         <div class="details-meta"><span class="kind">${icon(item.category)}${kindOf(item)}</span>${meta ? `<span>· ${meta}</span>` : ''}</div>
         ${facts ? `<div class="details-facts">${facts}</div>` : ''}
+        ${item.genres?.length ? `<div class="details-genres">${item.genres.map((g) => `<span>${escapeHtml(g)}</span>`).join('')}</div>` : ''}
 
         <div class="segmented details-status" role="radiogroup" aria-label="Status">
           ${statusesFor(item.category).map((status) => `
