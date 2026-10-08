@@ -7,7 +7,6 @@ import { CATEGORIES, kindOf } from '../shared/library.js';
 import { libraryStats, STAT_KINDS } from '../shared/stats.js';
 import { coverHtml } from '../ui/cover.js';
 import { icon, star } from '../ui/icons.js';
-import { starsHtml } from '../ui/stars.js';
 
 const SHORT_MONTH = new Intl.DateTimeFormat('en', { month: 'short' });
 const MONTH_YEAR = new Intl.DateTimeFormat('en', { month: 'short', year: 'numeric' });
@@ -117,7 +116,7 @@ function genresHtml(s, kind) {
   return section('Top genres', groupsHtml(s.genresByKind, (k) => k.plural, genreRows) || empty);
 }
 
-/** The chosen year: how much of each kind, the favourite, top genres, busiest month, time spent. A switch per year. */
+/** The chosen year: how much of each kind, top genres, busiest month, time spent. A switch per year. */
 function reviewHtml(s, kind) {
   const r = s.review;
   const years = s.years.length > 1 ? `<div class="stats-years">${s.years.map((y) =>
@@ -135,15 +134,10 @@ function reviewHtml(s, kind) {
     r.genres.length ? ['Top genres', r.genres.map((g) => escapeHtml(g.name)).join(', ')] : null,
     r.busiestMonth != null ? ['Busiest month', LONG_MONTH.format(new Date(r.year, r.busiestMonth, 1))] : null,
   ].filter(Boolean).map(([label, value]) => `<div class="review-fact"><span>${label}</span><strong>${value}</strong></div>`).join('');
-  const favourite = r.favourite ? `
-    <button type="button" class="stats-oldest" data-item="${r.favourite.id}">
-      ${coverHtml(r.favourite)}
-      <span><span class="stats-note">Your favourite</span><strong>${escapeHtml(r.favourite.title)}</strong>${starsHtml(r.favourite.rating)}</span>
-    </button>` : '';
   return section('Year in review', `${years}
     <div class="review-total"><strong>${number(r.finished)}</strong><span>finished in ${r.year}</span></div>
     ${kind ? '' : `<div class="stats-averages">${kinds}</div>`}
-    ${favourite}${facts}${time}`);
+    ${facts}${time}`);
 }
 
 const CREATOR_TITLES = { movie: 'Directors', series: 'Networks', book: 'Authors' };
@@ -306,7 +300,7 @@ export function createStatsView({ onBack, onOpenItem }) {
       year = Number(yearButton.dataset.year);
       return render();
     }
-    const item = closest(e, '[data-item]');               // the backlog, a favourite or a record
+    const item = closest(e, '[data-item]');               // the backlog or a record
     if (item) onOpenItem(item.dataset.item);
   });
 

@@ -91,12 +91,11 @@ test('streak: months in a row with something finished; this month still empty do
   assert.equal(libraryStats(library, { now: inDecember }).streak.current, 0);
 });
 
-test('year in review: what was finished that year, its favourite, genres, busiest month and time', () => {
+test('year in review: what was finished that year, its genres, busiest month and time', () => {
   const stats = libraryStats(library, { now: NOW });
   assert.deepEqual(stats.years, [2026, 2025, 2024]);
   const r = stats.review;
   assert.deepEqual([r.year, r.finished, r.byCategory], [2026, 5, { movie: 3, series: 1, game: 1 }]);
-  assert.equal(r.favourite.rating, 5);
   assert.deepEqual(r.genres.map((g) => g.name), ['Drama', 'Comedy', 'Sci-Fi']);
   assert.equal(r.busiestMonth, 2);                                                      // March (tied with October: the first)
   assert.deepEqual(r.time, { movieMinutes: 365, episodes: 26, pages: 0, volumes: 0, comics: 0, hours: 42.5 });

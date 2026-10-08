@@ -98,7 +98,7 @@ function streaks(dated, now, since) {
   return { current, best };
 }
 
-/** One year: how much was finished, of what, the favourite, top genres, busiest month and time spent. */
+/** One year: how much was finished, of what, top genres, busiest month and time spent. */
 function yearReview(dated, seen, year) {
   const items = dated.filter((item) => new Date(item.finishedAt).getFullYear() === year);
   const episodes = sum(seen.filter((s) => new Date(s.at).getFullYear() === year), (s) => s.episodes);
@@ -109,13 +109,10 @@ function yearReview(dated, seen, year) {
     perMonth[new Date(item.finishedAt).getMonth()] += 1;
   }
   const most = Math.max(...perMonth);
-  const favourite = items.filter((item) => item.rating)
-    .sort((a, b) => b.rating - a.rating || b.finishedAt - a.finishedAt)[0] ?? null;
   return {
     year,
     finished: items.length,
     byCategory,
-    favourite,
     genres: topGenres(items, 3),
     busiestMonth: most > 1 ? perMonth.indexOf(most) : null,      // only when one stands out
     time: { ...timeSpent(items), episodes },
