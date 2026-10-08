@@ -40,8 +40,8 @@ export function createDetails({ getItem }) {
     const meta = [item.year, item.creator].filter(Boolean).map(escapeHtml).join(' · ');
     // a quieter line under it: how long a movie or book is, how many seasons and episodes of a series are out,
     // how many volumes of a comic
-    const facts = [formatRuntime(item.runtime), formatCount(item.seasons, 'season'), formatCount(item.episodes, 'episode'),
-      formatCount(item.pages, 'page'), formatCount(item.volumes, 'volume')]
+    const facts = [item.category === 'series' ? '' : formatRuntime(item.runtime),     // a series': for the stats only
+      formatCount(item.seasons, 'season'), formatCount(item.episodes, 'episode'), formatCount(item.pages, 'page'), formatCount(item.volumes, 'volume')]
       .filter(Boolean).join(' · ');
     const done = item.status === 'done';
     const glow = item.image
@@ -60,6 +60,7 @@ export function createDetails({ getItem }) {
         <h2 class="details-title">${escapeHtml(item.title)}</h2>
         <div class="details-meta"><span class="kind">${icon(item.category)}${kindOf(item)}</span>${meta ? `<span>· ${meta}</span>` : ''}</div>
         ${facts ? `<div class="details-facts">${facts}</div>` : ''}
+        ${item.genres?.length ? `<div class="details-genres">${item.genres.map((g) => `<span>${escapeHtml(g)}</span>`).join('')}</div>` : ''}
 
         <div class="segmented details-status" role="radiogroup" aria-label="Status">
           ${statusesFor(item.category).map((status) => `

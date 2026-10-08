@@ -14,7 +14,7 @@
  * @property {number | null} rating                  1–5, finished items only
  * @property {boolean} dropped                       done, but given up on
  * @property {number | null} hoursPlayed             games
- * @property {number | null} runtime                 movies, minutes
+ * @property {number | null} runtime                 minutes: a movie's, or one episode of a series
  * @property {number | null} seasons                 series
  * @property {number | null} episodes                series
  * @property {{ at: number | null, episodes: number | null }[] | null} caughtUp   series: each move to Waiting, with the episodes out then

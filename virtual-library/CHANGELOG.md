@@ -1,5 +1,12 @@
 # Changelog
 
+## 3.3.0
+- Fix longest series count
+- Tap a message to dismiss it
+- Genres on each item's page
+- No favourite in the year in review
+- Fix covers that don't load showing on the home screen
+
 ## 3.2.0
 - Playtime hides "optional" once filled in, like the rating
 - Time spent and the year in review count the episodes of series in Waiting

@@ -34,15 +34,26 @@ export function coverHtml({ image, title, category, source = null, dropped = fal
     ? `<img src="${escapeHtml(image)}" alt="" loading="lazy" decoding="async" referrerpolicy="no-referrer">`
     : generatedHtml(category, title, kindOf({ category, source }));
   const badge = dropped ? `<span class="cover-dropped">${icon('trash')}<span>Dropped</span></span>` : '';
-  return `<div class="cover ${className} ${dropped ? 'dropped' : ''}" data-category="${category}" data-title="${escapeHtml(title)}">${inner}${badge}</div>`;
+  const kind = escapeHtml(kindOf({ category, source }));
+  return `<div class="cover ${className} ${dropped ? 'dropped' : ''}" data-category="${category}" data-title="${escapeHtml(title)}" data-kind="${kind}">${inner}${badge}</div>`;
 }
 
-/** Swaps images that fail to load for a generated cover. Call once. */
+/** Images that didn't load (since the page opened): the home screen leaves their items off its tiles. */
+export const failedImages = new Set();
+
+/**
+ * Swaps images that fail to load for a generated cover, and tells the page ('cover-failed', with the image's
+ * address as `detail`). Call once.
+ */
 export function installCoverFallback() {
   document.addEventListener('error', (e) => {
     const img = e.target instanceof HTMLImageElement ? e.target : null;
     const frame = img?.parentElement;
+    if (!frame?.classList.contains('cover')) return;
+    const src = img.getAttribute('src');
+    failedImages.add(src);
     // only the image is replaced, so a "Dropped" band stays
-    if (frame?.classList.contains('cover')) img.outerHTML = generatedHtml(frame.dataset.category, frame.dataset.title);
+    img.outerHTML = generatedHtml(frame.dataset.category, frame.dataset.title, frame.dataset.kind ?? '');
+    document.dispatchEvent(new CustomEvent('cover-failed', { detail: src }));
   }, true);   // error events don't bubble, so listen while capturing
 }

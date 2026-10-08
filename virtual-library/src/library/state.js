@@ -67,7 +67,8 @@ export function parseHours(value) {
 // The details each category keeps, read from saved data, a search result or a catalog lookup.
 const DETAIL_READERS = {
   movie: (raw) => ({ runtime: parseMinutes(raw.runtime), genres: parseGenres(raw.genres) }),
-  series: (raw) => ({ seasons: parseCount(raw.seasons), episodes: parseCount(raw.episodes), genres: parseGenres(raw.genres) }),
+  // a series' runtime: how long one episode is
+  series: (raw) => ({ seasons: parseCount(raw.seasons), episodes: parseCount(raw.episodes), runtime: parseMinutes(raw.runtime), genres: parseGenres(raw.genres) }),
   book: (raw) => ({ pages: parseCount(raw.pages), genres: parseGenres(raw.genres) }),
   comic: (raw) => ({ volumes: parseCount(raw.volumes), publisher: toText(raw.publisher, 40) || null, genres: parseGenres(raw.genres) }),
   game: (raw) => ({ genres: parseGenres(raw.genres) }),

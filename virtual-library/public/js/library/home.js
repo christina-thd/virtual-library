@@ -1,7 +1,7 @@
 // Home: one tile per category, with how many are pending and done, and a few covers picked at random.
 import { $, closest } from '../shared/dom.js';
 import { CATEGORIES, statusesFor } from '../shared/library.js';
-import { coverHtml } from '../ui/cover.js';
+import { coverHtml, failedImages } from '../ui/cover.js';
 import { icon } from '../ui/icons.js';
 
 const TILE_COVERS = 3;
@@ -24,9 +24,9 @@ function shuffled(list) {
   return copy;
 }
 
-/** Up to TILE_COVERS random items of the category with a real picture, not dropped. */
+/** Up to TILE_COVERS random items of the category with a real picture (that loads), not dropped. */
 function tileItems(categoryId, items) {
-  const byId = new Map(items.filter((item) => item.image && !item.dropped).map((item) => [item.id, item]));
+  const byId = new Map(items.filter((item) => item.image && !failedImages.has(item.image) && !item.dropped).map((item) => [item.id, item]));
   const kept = (picked.get(categoryId) ?? []).filter((id) => byId.has(id));
   const others = shuffled([...byId.values()].filter((item) => !kept.includes(item.id)));
   const ids = [...kept, ...others.map((item) => item.id)].slice(0, TILE_COVERS);
@@ -44,11 +44,15 @@ function countsText(categoryId, items) {
     .join(' · ');
 }
 
-function tileHtml(category, items) {
-  const shown = tileItems(category.id, items);
-  const covers = shown.length
+function coversHtml(categoryId, items) {
+  const shown = tileItems(categoryId, items);
+  return shown.length
     ? shown.map((item) => coverHtml(item)).join('')
     : '<div class="cover ghost"></div>'.repeat(TILE_COVERS);
+}
+
+function tileHtml(category, items) {
+  const covers = coversHtml(category.id, items);
   return `
     <button type="button" class="tile" data-open-category="${category.id}" data-category="${category.id}">
       <span class="tile-icon">${icon(category.id)}</span>
@@ -79,8 +83,18 @@ export function renderHome(items, hidden = [], setup = { step: null, since: 0, f
   $('summary').textContent = library.length
     ? `${library.length} ${library.length === 1 ? 'story' : 'stories'} hoarded · ${done} finished`
     : 'Movies, series, books, comics & games — hoard them all';
+  shownLibrary = library;
   $('tiles').innerHTML = CATEGORIES.filter((c) => !hidden.includes(c.id)).map((c) => tileHtml(c, library.filter((i) => i.category === c.id))).join('');
 }
+
+let shownLibrary = [];
+
+// a cover on a tile that doesn't load: that tile gets another (only its covers change, so it doesn't jump)
+document.addEventListener('cover-failed', (e) => {
+  const item = shownLibrary.find((i) => i.image === /** @type {CustomEvent} */ (e).detail);
+  const covers = item && $('tiles').querySelector(`[data-open-category="${item.category}"] .tile-covers`);
+  if (covers) covers.innerHTML = coversHtml(item.category, shownLibrary.filter((i) => i.category === item.category));
+});
 
 /** Calls `onOpen(categoryId)` when a tile is tapped. */
 export function onTileTap(onOpen) {

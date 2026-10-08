@@ -15,6 +15,7 @@ export function createDetailsSync({ state, catalog, onChange, now = Date.now, lo
   function needsLookUp(item) {
     if (!item.source || !detailFields(item.category).length || tried.has(item.id)) return false;
     if (item.detailsAt == null || item.genres == null) return true;     // genres: looked up before they were kept
+    if (item.category === 'series' && item.runtime == null) return true;  // an episode's length, the same (once a run)
     return ['series', 'comic'].includes(item.category) && item.status !== 'done' && now() - item.detailsAt > WEEK;
   }
 

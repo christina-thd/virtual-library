@@ -75,6 +75,16 @@
   font-size: 14px;
 }
 .details-facts { margin-top: 4px; color: var(--faint); font-size: 13px; }
+/* its genres, as small pills in the category's color */
+.details-genres { display: flex; flex-wrap: wrap; justify-content: center; gap: 6px; margin-top: 10px; }
+.details-genres span {
+  padding: 3px 10px;
+  border-radius: 999px;
+  background: color-mix(in srgb, var(--tint) 14%, transparent);
+  color: color-mix(in srgb, var(--tint) 75%, var(--ink));
+  font-size: 12px;
+  font-weight: 600;
+}
 .details-meta .kind { display: inline-flex; align-items: center; gap: 5px; color: var(--tint); font-weight: 600; }
 .details-meta .kind svg.icon { width: 15px; height: 15px; }
 

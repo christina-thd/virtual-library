@@ -26,15 +26,17 @@ export const tvmaze = {
   },
 
   /**
-   * How many seasons and episodes are out, from the show's episode list (its season list also has announced
-   * ones), and its genres: the show with its episodes, in one request.
+   * How many seasons and episodes are out and how long one is, from the show's episode list (its season list also
+   * has announced ones), and its genres: the show with its episodes, in one request.
    */
   async details(id, http) {
     const show = await http.json(`${API}/shows/${encodeURIComponent(id)}?embed=episodes`);
     const episodes = show?._embedded?.episodes;
-    return {
-      ...airedCounts((Array.isArray(episodes) ? episodes : []).map((e) => ({ season: e.season, date: e.airstamp ?? e.airdate }))),
+    const counts = {
+      ...airedCounts((Array.isArray(episodes) ? episodes : []).map((e) => ({ season: e.season, date: e.airstamp ?? e.airdate, runtime: e.runtime }))),
       genres: show?.genres ?? [],
     };
+    if (counts.runtime == null) counts.runtime = show?.averageRuntime ?? show?.runtime ?? null;   // no episode lengths
+    return counts;
   },
 };

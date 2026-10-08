@@ -50,14 +50,19 @@ export function createTmdb(category, apiKey) {
       }));
     },
   };
-  /** From the movie's or show's own page (search results don't have these): minutes; seasons and episodes. */
+  /** From the movie's or show's own page (search results don't have these): minutes; seasons, episodes and an episode's minutes. */
   provider.details = async (id, http) => {
     const path = category === 'movie' ? 'movie' : 'tv';
     const data = await http.json(`${API}/${path}/${encodeURIComponent(id)}?language=en-US${auth.query}`, { headers: auth.headers });
     const genres = data.genres ?? [];
     return category === 'movie'
       ? { runtime: data.runtime, genres }
-      : { seasons: data.number_of_seasons, episodes: data.number_of_episodes, genres };
+      : {
+        seasons: data.number_of_seasons,
+        episodes: data.number_of_episodes,
+        runtime: data.episode_run_time?.[0] ?? data.last_episode_to_air?.runtime ?? null,
+        genres,
+      };
   };
   return provider;
 }

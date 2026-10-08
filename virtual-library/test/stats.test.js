@@ -17,7 +17,7 @@ const library = [
   item({ category: 'movie', finishedAt: on(2026, 2), rating: 3, runtime: 90, genres: ['Comedy'] }),
   item({ category: 'movie', finishedAt: on(2024, 5), rating: 5, runtime: 100 }),              // more than a year ago
   item({ category: 'movie', dropped: true, finishedAt: on(2026, 9), rating: 1, runtime: 95 }), // dropped
-  item({ category: 'series', finishedAt: on(2026, 2), episodes: 26, genres: ['Drama'] }),
+  item({ category: 'series', finishedAt: on(2026, 2), episodes: 26, runtime: 50, genres: ['Drama'] }),
   item({ category: 'series', status: 'waiting', finishedAt: null, episodes: 19 }),
   item({ category: 'book', finishedAt: on(2025, 11), pages: 310, rating: 5 }),
   item({ category: 'book', status: 'pending', finishedAt: null, addedAt: on(2024, 2), title: 'Oldest' }),
@@ -91,12 +91,11 @@ test('streak: months in a row with something finished; this month still empty do
   assert.equal(libraryStats(library, { now: inDecember }).streak.current, 0);
 });
 
-test('year in review: what was finished that year, its favourite, genres, busiest month and time', () => {
+test('year in review: what was finished that year, its genres, busiest month and time', () => {
   const stats = libraryStats(library, { now: NOW });
   assert.deepEqual(stats.years, [2026, 2025, 2024]);
   const r = stats.review;
   assert.deepEqual([r.year, r.finished, r.byCategory], [2026, 5, { movie: 3, series: 1, game: 1 }]);
-  assert.equal(r.favourite.rating, 5);
   assert.deepEqual(r.genres.map((g) => g.name), ['Drama', 'Comedy', 'Sci-Fi']);
   assert.equal(r.busiestMonth, 2);                                                      // March (tied with October: the first)
   assert.deepEqual(r.time, { movieMinutes: 365, episodes: 26, pages: 0, volumes: 0, comics: 0, hours: 42.5 });
@@ -105,9 +104,12 @@ test('year in review: what was finished that year, its favourite, genres, busies
 
 test('records: the biggest of each kind; one kind has its top three; playtime counts dropped games', () => {
   const all = libraryStats(library, { now: NOW }).records.map((r) => [r.item.category, r.value]);
-  assert.deepEqual(all, [['movie', 155], ['series', 26], ['book', 310], ['game', 42.5]]);
+  assert.deepEqual(all, [['movie', 155], ['series', 26 * 50], ['book', 310], ['game', 42.5]]);   // a series: minutes to watch
   const movies = libraryStats(library, { kind: 'movie', now: NOW }).records.map((r) => r.value);
   assert.deepEqual(movies, [155, 120, 100]);                                            // the dropped 95-minute one isn't a record
+  // the longest series to watch, not the one with the most episodes
+  const shows = [item({ category: 'series', episodes: 100, runtime: 22 }), item({ category: 'series', episodes: 62, runtime: 55 }), item({ category: 'series', episodes: 300 })];
+  assert.deepEqual(libraryStats(shows, { kind: 'series', now: NOW }).records.map((r) => r.item.episodes), [62, 100]);   // no length: not a record
 });
 
 test('episodes count when seen: each catch-up on a waiting series, and the rest when finished', () => {
