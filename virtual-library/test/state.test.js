@@ -117,13 +117,13 @@ describe('helpers', () => {
       [155, 155, 60, 90, 45, null, null, null, null, null, null]);
   });
 
-  test('only movies keep a duration, only series seasons and episodes', () => {
+  test('movies and series keep a duration (a series: one episode), only series seasons and episodes', () => {
     const [movie, series] = normalizeState({ items: [
       item({ id: 'a1', runtime: '2h', seasons: 3 }),
       item({ id: 'b2', category: 'series', runtime: 50, seasons: 3, episodes: 26.5, detailsAt: 'x' }),
     ] }, NOW).items;
     assert.deepEqual([movie.runtime, movie.seasons], [120, null]);
-    assert.deepEqual([series.runtime, series.seasons, series.episodes, series.detailsAt], [null, 3, null, null]);
+    assert.deepEqual([series.runtime, series.seasons, series.episodes, series.detailsAt], [50, 3, null, null]);
   });
 
   test('parseYear reads years from numbers and dates', () => {

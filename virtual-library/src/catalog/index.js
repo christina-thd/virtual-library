@@ -62,7 +62,7 @@ const clean = (value, max) => (typeof value === 'string' || typeof value === 'nu
  * Search across the catalogs, turning their results into what screens show and send back with `addItem`.
  * Every provider has the same shape:
  *   { id, name, url, imageHosts, search(query, http) → [{ id, title, year, creator, coverUrl, thumbUrl?, ...details }],
- *     details?(id, http) → { runtime | seasons, episodes | pages | volumes, publisher, genres } }
+ *     details?(id, http) → { runtime | seasons, episodes, runtime | pages | volumes, publisher, genres } }
  * `providers`: per category, a list of them (best first) or a list of sources to pick from ({ id, label, providers }).
  * @param {{ http: any, providers?: Record<string, any>, now?: () => number }} options
  */

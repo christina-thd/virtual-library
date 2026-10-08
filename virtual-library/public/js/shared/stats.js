@@ -136,8 +136,14 @@ function decades(finished) {
   return [...byDecade.values()].sort((a, b) => a.decade - b.decade);
 }
 
-/** What makes a record, per kind: the longest movie, biggest book, longest series and manga, most-played game. */
-const RECORDS = { movie: (i) => i.runtime, book: (i) => i.pages, series: (i) => i.episodes, manga: (i) => i.volumes, game: (i) => i.hoursPlayed };
+/**
+ * What makes a record, per kind: the longest movie, biggest book, longest series (to watch: its episodes times an
+ * episode's minutes), longest manga, most-played game.
+ */
+const RECORDS = {
+  movie: (i) => i.runtime, book: (i) => i.pages, series: (i) => (i.episodes && i.runtime ? i.episodes * i.runtime : null),
+  manga: (i) => i.volumes, game: (i) => i.hoursPlayed,
+};
 
 /** The biggest of each kind (or one kind's top three): [{ item, kind, value }]. Playtime counts dropped games too. */
 function records(done, kind) {

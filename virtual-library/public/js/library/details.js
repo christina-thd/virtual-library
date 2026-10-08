@@ -40,8 +40,8 @@ export function createDetails({ getItem }) {
     const meta = [item.year, item.creator].filter(Boolean).map(escapeHtml).join(' · ');
     // a quieter line under it: how long a movie or book is, how many seasons and episodes of a series are out,
     // how many volumes of a comic
-    const facts = [formatRuntime(item.runtime), formatCount(item.seasons, 'season'), formatCount(item.episodes, 'episode'),
-      formatCount(item.pages, 'page'), formatCount(item.volumes, 'volume')]
+    const facts = [item.category === 'series' ? '' : formatRuntime(item.runtime),     // a series': for the stats only
+      formatCount(item.seasons, 'season'), formatCount(item.episodes, 'episode'), formatCount(item.pages, 'page'), formatCount(item.volumes, 'volume')]
       .filter(Boolean).join(' · ');
     const done = item.status === 'done';
     const glow = item.image

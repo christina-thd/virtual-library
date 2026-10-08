@@ -166,9 +166,11 @@ function publishersHtml(s) {
     : '<p class="stats-empty">No publishers yet: they show up for finished comics.</p>');
 }
 
-/** How a record reads: "2h 47m", "608 pages", "26 episodes", "140h played". */
+/** How a record reads: "2h 47m", "608 pages", "62 episodes" (ranked by the time to watch them), "140h played". */
 const RECORD_TEXT = {
-  movie: (v) => formatRuntime(v), book: (v) => formatCount(v, 'page'), series: (v) => formatCount(v, 'episode'), manga: (v) => formatCount(v, 'volume'), game: (v) => `${v}h played`,
+  movie: (v) => formatRuntime(v), book: (v) => formatCount(v, 'page'),
+  series: (v, item) => formatCount(item.episodes, 'episode'),
+  manga: (v) => formatCount(v, 'volume'), game: (v) => `${v}h played`,
 };
 const RECORD_NAME = { movie: 'Longest movie', book: 'Biggest book', series: 'Longest series', manga: 'Longest manga', game: 'Most played' };
 
@@ -182,7 +184,7 @@ function recordsHtml(s, kind) {
       ${coverHtml(item)}
       <span><span class="stats-note">${one ? `#${i + 1}` : RECORD_NAME[k]}</span>
         <strong>${escapeHtml(item.title)}</strong>
-        <span class="stats-kind" data-category="${item.category}">${kindIcon(k)}${RECORD_TEXT[k](value)}</span></span>
+        <span class="stats-kind" data-category="${item.category}">${kindIcon(k)}${RECORD_TEXT[k](value, item)}</span></span>
     </button>`).join('');
   return section('Records', `<div class="stats-list">${rows}</div>`);
 }

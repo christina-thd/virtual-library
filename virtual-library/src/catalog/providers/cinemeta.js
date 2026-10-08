@@ -33,13 +33,13 @@ export function createCinemeta(type) {
       }));
     },
   };
-  /** From the full entry: a movie's runtime ("155 min"), or a series' seasons and episodes out so far. */
+  /** From the full entry: a movie's runtime ("155 min"), or a series' seasons and episodes out so far and an episode's. */
   provider.details = async (id, http) => {
     const { meta } = await http.json(`${API}/meta/${type}/${encodeURIComponent(id)}.json`);
     const genres = meta?.genres ?? meta?.genre ?? [];
     return type === 'movie'
       ? { runtime: meta?.runtime, genres }
-      : { ...airedCounts((meta?.videos ?? []).map((v) => ({ season: v.season, date: v.released ?? v.firstAired }))), genres };
+      : { ...airedCounts((meta?.videos ?? []).map((v) => ({ season: v.season, date: v.released ?? v.firstAired }))), runtime: meta?.runtime, genres };
   };
   return provider;
 }

@@ -231,23 +231,23 @@ describe('details: movie durations, series seasons and episodes, book pages', ()
     assert.match(http.calls.at(-1).url, /\/movie\/693134\?language=en-US&api_key=k$/);
   });
 
-  test('series: seasons and episodes out so far (not announced ones, not specials), on TVmaze, Cinemeta or TMDB', async () => {
+  test('series: seasons and episodes out so far (not announced ones, not specials) and an episode\'s length, on TVmaze, Cinemeta or TMDB', async () => {
     const http = fakeHttp({
       'https://api.tvmaze.com/shows/44933?embed=episodes': { genres: ['Drama', 'Science-Fiction', 'Thriller'], _embedded: { episodes: [
-        { season: 1, airstamp: '2022-02-18T02:00:00+00:00' }, { season: 1, airstamp: '2022-02-25T02:00:00+00:00' },
-        { season: 2, airdate: '2025-01-17' }, { season: 3, airdate: '2999-01-01' }, { season: 3, airdate: null },
+        { season: 1, airstamp: '2022-02-18T02:00:00+00:00', runtime: 57 }, { season: 1, airstamp: '2022-02-25T02:00:00+00:00', runtime: 55 },
+        { season: 2, airdate: '2025-01-17', runtime: null }, { season: 3, airdate: '2999-01-01', runtime: 90 }, { season: 3, airdate: null },
       ] } },
-      'https://v3-cinemeta.strem.io/meta/series/tt5753856.json': { meta: { videos: [
+      'https://v3-cinemeta.strem.io/meta/series/tt5753856.json': { meta: { runtime: '60 min', videos: [
         { season: 0, released: '2017-01-01T00:00:00Z' }, { season: 1, released: '2017-12-01T12:00:00Z' },
         { season: 2, firstAired: '2019-06-21T12:00:00Z' },
       ] } },
-      'https://api.themoviedb.org/3/tv/70523': { number_of_seasons: 3, number_of_episodes: 26, genres: [{ name: 'Sci-Fi & Fantasy' }, { name: 'Drama' }] },
+      'https://api.themoviedb.org/3/tv/70523': { number_of_seasons: 3, number_of_episodes: 26, episode_run_time: [], last_episode_to_air: { runtime: 53 }, genres: [{ name: 'Sci-Fi & Fantasy' }, { name: 'Drama' }] },
     });
     const keyless = createCatalog({ http, providers: chooseProviders() });
-    assert.deepEqual(await keyless.detailsOf('series', { provider: 'tvmaze', id: '44933' }), { seasons: 2, episodes: 3, genres: ['Drama', 'Sci-Fi', 'Thriller'] });
-    assert.deepEqual(await keyless.detailsOf('series', { provider: 'cinemeta', id: 'tt5753856' }), { seasons: 2, episodes: 2, genres: [] });
+    assert.deepEqual(await keyless.detailsOf('series', { provider: 'tvmaze', id: '44933' }), { seasons: 2, episodes: 3, runtime: 56, genres: ['Drama', 'Sci-Fi', 'Thriller'] });   // aired ones' average
+    assert.deepEqual(await keyless.detailsOf('series', { provider: 'cinemeta', id: 'tt5753856' }), { seasons: 2, episodes: 2, runtime: 60, genres: [] });
     const tmdb = createCatalog({ http, providers: chooseProviders({ tmdbApiKey: 'k' }) });
-    assert.deepEqual(await tmdb.detailsOf('series', { provider: 'tmdb', id: '70523' }), { seasons: 3, episodes: 26, genres: ['Sci-Fi', 'Fantasy', 'Drama'] });
+    assert.deepEqual(await tmdb.detailsOf('series', { provider: 'tmdb', id: '70523' }), { seasons: 3, episodes: 26, runtime: 53, genres: ['Sci-Fi', 'Fantasy', 'Drama'] });
   });
 
   test('nothing for catalogs that do not know, or items typed by hand', async () => {

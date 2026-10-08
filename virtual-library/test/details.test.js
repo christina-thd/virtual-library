@@ -37,16 +37,26 @@ test('a series you are still watching (or waiting for) is looked up again after 
   const old = NOW - 8 * DAY;
   /** @type {{ items: any[] }} */
   const state = { items: [
-    series('a', { seasons: 2, episodes: 18, genres: [], detailsAt: old }),
-    series('b', { status: 'waiting', seasons: 2, episodes: 18, genres: [], detailsAt: old }),
-    series('c', { status: 'done', seasons: 2, episodes: 18, genres: [], detailsAt: old }),
-    series('d', { seasons: 2, episodes: 18, genres: [], detailsAt: NOW - DAY }),
+    series('a', { seasons: 2, episodes: 18, runtime: 50, genres: [], detailsAt: old }),
+    series('b', { status: 'waiting', seasons: 2, episodes: 18, runtime: 50, genres: [], detailsAt: old }),
+    series('c', { status: 'done', seasons: 2, episodes: 18, runtime: 50, genres: [], detailsAt: old }),
+    series('d', { seasons: 2, episodes: 18, runtime: 50, genres: [], detailsAt: NOW - DAY }),
     movie('e', { runtime: 100, genres: [], detailsAt: old }),
   ] };
   const asked = [];
   await syncWith(state, { async detailsOf(c, source) { asked.push(source.id); return { seasons: 3, episodes: 27 }; } }).sync();
   assert.deepEqual(asked, ['tta', 'ttb']);
   assert.deepEqual([state.items[1].seasons, state.items[1].episodes], [3, 27]);
+});
+
+test('a series looked up before episode lengths were kept is looked up once more, finished or not', async () => {
+  /** @type {{ items: any[] }} */
+  const state = { items: [series('a', { status: 'done', seasons: 2, episodes: 18, genres: [], detailsAt: NOW - DAY })] };
+  const asked = [];
+  const sync = syncWith(state, { async detailsOf(c, source) { asked.push(source.id); return { seasons: 2, episodes: 18, runtime: 47 }; } });
+  await sync.sync();
+  await sync.sync();
+  assert.deepEqual([asked, state.items[0].runtime], [['tta'], 47]);
 });
 
 test('looked up but unknown: not asked again; a catalog that fails: tried again when the add-on restarts', async () => {
