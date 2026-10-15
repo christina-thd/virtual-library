@@ -131,3 +131,72 @@
 
 
 .details-remove { margin-top: 28px; }
+
+/* games: a note, under the playtime */
+.note { display: flex; flex-direction: column; gap: 8px; width: 100%; max-width: 340px; margin: 18px auto 0; }
+.note textarea {
+  width: 100%;
+  min-height: 76px;
+  padding: 10px 12px;
+  border-radius: 14px;
+  border: 1px solid var(--line);
+  background: var(--surface-2);
+  color: var(--ink);
+  font: inherit;
+  font-size: 16px;                               /* 16px: iPhone doesn't zoom in when it's tapped */
+  line-height: 1.4;
+  resize: vertical;
+}
+.note textarea:focus { outline: none; border-color: color-mix(in srgb, var(--accent) 60%, transparent); }
+.note textarea::placeholder { color: var(--faint); }
+
+/* games: "Add a note" opens the note box */
+.note-toggle {
+  position: relative;
+  display: inline-grid;
+  place-items: center;
+  width: 42px;
+  height: 42px;
+  margin-left: 8px;
+  vertical-align: bottom;
+  border-radius: 50%;
+  border: 1px solid var(--line);
+  background: var(--surface-2);
+  color: var(--muted);
+}
+.note-toggle svg.icon { width: 18px; height: 18px; }
+.note-toggle[aria-expanded="true"] { background: color-mix(in srgb, var(--accent) 18%, var(--surface-2)); color: var(--accent); }
+.note-toggle.has-note {
+  border-color: transparent;
+  background: linear-gradient(135deg, var(--accent), var(--accent-strong));
+  color: var(--accent-ink);
+  box-shadow: 0 6px 18px -8px var(--glow);
+}
+.note-toggle.has-note::after {
+  content: "";
+  position: absolute;
+  top: -1px;
+  right: -1px;
+  width: 12px;
+  height: 12px;
+  border-radius: 50%;
+  border: 2px solid var(--surface);
+  background: var(--star);
+}
+.note-toggle:active { transform: scale(0.94); }
+
+/* Save: shows once the rating, playtime or note changes */
+.details-save {
+  display: block;
+  width: 100%;
+  max-width: 300px;
+  min-height: 46px;
+  margin: 20px auto 0;
+  border-radius: 999px;
+  background: linear-gradient(135deg, var(--accent), var(--accent-strong));
+  color: var(--accent-ink);
+  font-size: 15px;
+  font-weight: 700;
+  box-shadow: 0 8px 24px -10px var(--glow);
+}
+.details-save:active { transform: scale(0.97); }

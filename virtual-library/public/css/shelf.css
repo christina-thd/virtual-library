@@ -155,3 +155,21 @@
 }
 .fab:active { transform: scale(0.92); }
 .fab svg.icon { width: 26px; height: 26px; stroke-width: 2.4; }
+
+/* a game with a note: a small round badge in the cover's bottom-right corner (above the Dropped band) */
+.card-note {
+  position: absolute;
+  right: 6px;
+  bottom: 6px;
+  z-index: 2;
+  display: grid;
+  place-items: center;
+  width: 24px;
+  height: 24px;
+  border-radius: 50%;
+  background: rgb(9 8 13 / 0.78);
+  color: var(--ink);
+  box-shadow: 0 2px 8px rgb(0 0 0 / 0.5);
+}
+.card-note svg.icon { width: 14px; height: 14px; }
+.cover.dropped .card-note { bottom: calc(6px + 18%); }

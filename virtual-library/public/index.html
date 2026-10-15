@@ -139,6 +139,19 @@
     <section class="sheet details-sheet" id="details" role="dialog" aria-modal="true"></section>
   </div>
 
+  <!-- ===== a question with two answers, on top of another sheet (js/ui/ask.js) ===== -->
+  <div class="layer" id="askLayer" hidden>
+    <div class="backdrop" data-close></div>
+    <section class="sheet ask-sheet" role="alertdialog" aria-modal="true" aria-labelledby="askTitle">
+      <div class="grabber" data-drag data-close></div>
+      <h2 class="ask-title" id="askTitle" data-drag></h2>
+      <div class="ask-answers">
+        <button type="button" class="ask-no" id="askNo"></button>
+        <button type="button" class="ask-yes" id="askYes"></button>
+      </div>
+    </section>
+  </div>
+
   <div class="toast" id="toast" role="status" aria-live="polite"></div>
   <div class="cheer" id="cheer" role="status" aria-live="polite"></div>
 </body>

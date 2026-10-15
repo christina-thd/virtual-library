@@ -4,6 +4,8 @@
 - Use Home Assistant's certificate
 - Fix iPhone keyboard gap
 - Sort games by platform
+- Add a note to finished games
+- Save button for rating, playtime and note
 
 ## 3.3.0
 - Fix longest series count

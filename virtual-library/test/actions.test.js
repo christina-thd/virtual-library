@@ -184,6 +184,24 @@ describe('details', () => {
   });
 });
 
+describe('setNote', () => {
+  test('a finished game can have a note; empty removes it; it stays if moved back', () => {
+    const id = add({ category: 'game', source: null, title: 'Hades', status: 'done' });
+    apply({ type: 'setNote', itemId: id, note: '  Loved the music.  ' });
+    assert.equal(itemOf(id).note, 'Loved the music.');
+    apply({ type: 'setNote', itemId: id, note: 'x'.repeat(1200) });
+    assert.equal(itemOf(id).note.length, 1000);
+    apply({ type: 'setStatus', itemId: id, status: 'pending' });
+    assert.equal(itemOf(id).note.length, 1000);                                  // kept, like the playtime
+    rejects({ type: 'setNote', itemId: id, note: 'Again' }, 400, /finished/);
+    apply({ type: 'setStatus', itemId: id, status: 'done' });
+    apply({ type: 'setNote', itemId: id, note: '   ' });
+    assert.equal(itemOf(id).note, null);
+    rejects({ type: 'setNote', itemId: id, note: 5 }, 400, /text/);
+    rejects({ type: 'setNote', itemId: add({ status: 'done' }), note: 'A series' }, 400, /games/);
+  });
+});
+
 describe('setDropped', () => {
   test('dropping a pending item makes it done (and new items are not dropped)', () => {
     const id = add();
@@ -279,6 +297,6 @@ describe('applyAction', () => {
   });
 
   test('lists every action', () => {
-    assert.deepEqual([...ACTION_TYPES].sort(), ['addItem', 'rateItem', 'removeItem', 'setCategoryHidden', 'setDropped', 'setHours', 'setSetup', 'setStatus']);
+    assert.deepEqual([...ACTION_TYPES].sort(), ['addItem', 'rateItem', 'removeItem', 'setCategoryHidden', 'setDropped', 'setHours', 'setNote', 'setSetup', 'setStatus']);
   });
 });

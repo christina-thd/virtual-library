@@ -65,7 +65,7 @@ function cardHtml(item, index, sort) {
   const fact = sort === 'length' ? LENGTHS[item.category]?.show(item) : sort === 'platform' ? platformOf(item) ?? '' : '';
   return `
     <button type="button" class="card" data-item="${item.id}" style="--i:${Math.min(index, 20)}">
-      ${coverHtml(item)}
+      ${coverHtml(item, '', item.note ? `<span class="card-note" title="Has a note">${icon('note')}</span>` : '')}
       <div class="card-title">${escapeHtml(item.title)}</div>
       <div class="card-meta">${meta}</div>
       ${fact ? `<div class="card-fact">${escapeHtml(fact)}</div>` : ''}

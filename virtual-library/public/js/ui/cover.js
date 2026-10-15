@@ -27,15 +27,16 @@ const generatedHtml = (category, title, kind) => `
 
 /**
  * A cover image in a 2:3 frame, or a generated cover when there's no image (or it fails to load).
- * A dropped item (given up on) is greyed out, with a red "Dropped" band across the bottom.
+ * A dropped item (given up on) is greyed out, with a red "Dropped" band across the bottom. `extra`: more on top
+ * of it (e.g. the note badge on a shelf card).
  */
-export function coverHtml({ image, title, category, source = null, dropped = false }, className = '') {
+export function coverHtml({ image, title, category, source = null, dropped = false }, className = '', extra = '') {
   const inner = image
     ? `<img src="${escapeHtml(image)}" alt="" loading="lazy" decoding="async" referrerpolicy="no-referrer">`
     : generatedHtml(category, title, kindOf({ category, source }));
   const badge = dropped ? `<span class="cover-dropped">${icon('trash')}<span>Dropped</span></span>` : '';
   const kind = escapeHtml(kindOf({ category, source }));
-  return `<div class="cover ${className} ${dropped ? 'dropped' : ''}" data-category="${category}" data-title="${escapeHtml(title)}" data-kind="${kind}">${inner}${badge}</div>`;
+  return `<div class="cover ${className} ${dropped ? 'dropped' : ''}" data-category="${category}" data-title="${escapeHtml(title)}" data-kind="${kind}">${inner}${badge}${extra}</div>`;
 }
 
 /** Images that didn't load (since the page opened): the home screen leaves their items off its tiles. */

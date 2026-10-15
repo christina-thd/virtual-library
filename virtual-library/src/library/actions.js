@@ -1,5 +1,5 @@
 import { CATEGORY_IDS, isRating, MAX_CREATOR, MAX_TITLE, statusesFor } from '../../public/js/shared/library.js';
-import { detailFields, findBySource, findItem, itemDetails, newId, parseHours, parseImageUrls, parseSource, parseYear, SETUP_STEPS } from './state.js';
+import { detailFields, findBySource, findItem, itemDetails, newId, parseHours, parseImageUrls, parseNote, parseSource, parseYear, SETUP_STEPS } from './state.js';
 
 /** A rejected action. `status` is the HTTP status the API answers with. */
 export class ActionError extends Error {
@@ -79,6 +79,7 @@ const handlers = {
       rating: status === 'done' ? rating(action.rating) : null,
       dropped: false,
       hoursPlayed: null,
+      note: null,
       ...details,                                  // what the search result had; the rest is looked up after adding
       caughtUp: category !== 'series' ? null : status === 'waiting' ? [{ at: ctx.now, episodes: details.episodes }] : [],
       detailsAt: detailFields(category).every((field) => details[field] != null) ? ctx.now : null,
@@ -150,6 +151,15 @@ const handlers = {
     if (state.setupStep === null && step !== 'done') state.setupSince = ctx.now;
     state.setupStep = step === 'done' ? null : step;
     if (step === 'done') state.setupSince = null;
+  },
+
+  /** A note on a game you finished (what you thought of it); empty or null removes it. */
+  setNote(state, { itemId, note }) {
+    const item = getItem(state, itemId);
+    if (item.category !== 'game') throw new ActionError('Only games have notes');
+    if (item.status !== 'done') throw new ActionError('Notes are for finished games');
+    if (note != null && typeof note !== 'string') throw new ActionError('note must be text, or null');
+    item.note = parseNote(note);
   },
 
   removeItem(state, { itemId }) {

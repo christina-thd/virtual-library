@@ -14,6 +14,7 @@
  * @property {number | null} rating                  1–5, finished items only
  * @property {boolean} dropped                       done, but given up on
  * @property {number | null} hoursPlayed             games
+ * @property {string | null} note                    games: what you thought, once finished
  * @property {number | null} runtime                 minutes: a movie's, or one episode of a series
  * @property {number | null} seasons                 series
  * @property {number | null} episodes                series
@@ -51,6 +52,7 @@ export const MAX_RATING = 5;
 export const MAX_TITLE = 150;
 export const MAX_CREATOR = 100;
 export const MAX_QUERY = 100;
+export const MAX_NOTE = 1000;
 
 export const categoryOf = (id) => CATEGORIES.find((c) => c.id === id);
 

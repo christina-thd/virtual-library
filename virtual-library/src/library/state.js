@@ -1,5 +1,5 @@
 import { randomBytes } from 'node:crypto';
-import { CATEGORY_IDS, isRating, MAX_CREATOR, MAX_TITLE, sameSource, statusesFor } from '../../public/js/shared/library.js';
+import { CATEGORY_IDS, isRating, MAX_CREATOR, MAX_NOTE, MAX_TITLE, sameSource, statusesFor } from '../../public/js/shared/library.js';
 
 /**
  * What's saved to disk (JSON): { schema, statsSince, hiddenCategories, setupStep, setupSince, items }.
@@ -57,6 +57,9 @@ export function parseMinutes(value) {
   }
   return Number.isInteger(minutes) && minutes > 0 && minutes <= 24 * 60 ? minutes : null;
 }
+
+/** A note: its text, trimmed and cut to MAX_NOTE, or null when there's none. */
+export const parseNote = (value) => (typeof value === 'string' ? value.trim().slice(0, MAX_NOTE) : '') || null;
 
 /** Hours played, to a tenth of an hour (42.5): from 0.1 up to 100,000, or null. */
 export function parseHours(value) {
@@ -139,6 +142,7 @@ function normalizeItem(raw, now) {
     rating: status === 'done' && isRating(raw.rating) ? raw.rating : null,
     dropped: status === 'done' && raw.dropped === true,
     hoursPlayed: raw.category === 'game' ? parseHours(raw.hoursPlayed) : null,   // kept if moved back from done
+    note: raw.category === 'game' ? parseNote(raw.note) : null,                  // the same
     ...itemDetails(raw.category, raw),
     caughtUp: raw.category === 'series' ? parseCaughtUp(raw.caughtUp, status, parseCount(raw.episodes)) : null,
     detailsAt: Number.isFinite(raw.detailsAt) && raw.detailsAt > 0 ? raw.detailsAt : null,
