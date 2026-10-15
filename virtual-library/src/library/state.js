@@ -1,13 +1,15 @@
 import { randomBytes } from 'node:crypto';
 import { CATEGORY_IDS, isRating, LEFT_OFF, MAX_CREATOR, MAX_NOTE, MAX_TITLE, sameSource, statusesFor } from '../../public/js/shared/library.js';
+import { activityView, ITEM_ACTIONS, MAX_ACTIVITY } from './activity.js';
 
 /**
- * What's saved to disk (JSON): { schema, statsSince, hiddenCategories, setupStep, setupSince, items }.
+ * What's saved to disk (JSON): { schema, statsSince, hiddenCategories, setupStep, setupSince, items, activity }.
  *   statsSince        when the stats started counting (what was finished before has no real date)
  *   hiddenCategories  kinds kept off the home screen, stats and search (their items stay)
  *   setupStep         first-run setup: 'categories' (which ones you use), 'library' (adding what you've already
  *                     seen), or null once set up
  *   setupSince        when setup started (null once set up): what's been added since shows on the home screen
+ *   activity          the latest changes to items, newest first, with each item as it was before (activity.js)
  * Each item is an Item (public/js/shared/library.js) with, instead of `image`:
  *   imageUrls    the catalog's images, best first (the next is tried if one fails)
  *   cover        file name of the saved copy (covers.js)
@@ -27,7 +29,7 @@ export const MAX_IMAGE_URLS = 3;
 export const newId = () => randomBytes(6).toString('hex');
 
 export function createInitialState(now = Date.now()) {
-  return { schema: SCHEMA_VERSION, statsSince: now, hiddenCategories: [], setupStep: 'categories', setupSince: now, items: [] };
+  return { schema: SCHEMA_VERSION, statsSince: now, hiddenCategories: [], setupStep: 'categories', setupSince: now, items: [], activity: [] };
 }
 
 export const findItem = (state, itemId) => state.items.find((i) => i.id === itemId);
@@ -173,6 +175,21 @@ export function parseHidden(value) {
   return hidden.length < CATEGORY_IDS.length ? hidden : [];
 }
 
+const ID = /^[a-f0-9]{1,32}$/;
+
+/** Recent activity: entries that can still be undone safely (an item as it was, or none for one that was added). */
+function parseActivity(value, now) {
+  if (!Array.isArray(value)) return [];
+  return value.slice(0, MAX_ACTIVITY)
+    .filter((e) => e && typeof e === 'object' && ITEM_ACTIONS.has(e.type) && ID.test(e.id) && ID.test(e.itemId))
+    .map((e) => ({
+      id: e.id, at: toTime(e.at, now), type: e.type, itemId: e.itemId, title: toText(e.title, MAX_TITLE) || '?',
+      category: CATEGORY_IDS.includes(e.category) ? e.category : CATEGORY_IDS[0], text: toText(e.text, 80),
+      before: e.before == null ? null : normalizeItem(e.before, now), undone: e.undone === true,
+    }))
+    .filter((e) => (e.before ? e.before.id === e.itemId : e.type === 'addItem'));
+}
+
 /** Turns whatever was read from disk into a valid current-schema state (unusable items are dropped). */
 export function normalizeState(raw, now = Date.now()) {
   if (!raw || typeof raw !== 'object' || !Array.isArray(raw.items)) return createInitialState(now);
@@ -184,7 +201,10 @@ export function normalizeState(raw, now = Date.now()) {
   const setupStep = SETUP_STEPS.includes(raw.setupStep) ? raw.setupStep
     : raw.setupStep === null || unique.length ? null : 'categories';
   const setupSince = setupStep ? toTime(raw.setupSince, statsSince) : null;
-  return { schema: SCHEMA_VERSION, statsSince, hiddenCategories: parseHidden(raw.hiddenCategories), setupStep, setupSince, items: unique };
+  return {
+    schema: SCHEMA_VERSION, statsSince, hiddenCategories: parseHidden(raw.hiddenCategories), setupStep, setupSince, items: unique,
+    activity: parseActivity(raw.activity, now),
+  };
 }
 
 /** An item as screens see it: `image` is the saved cover when there is one, else the catalog's. */
@@ -201,5 +221,6 @@ export function toView(state, appVersion) {
     setupStep: state.setupStep,
     setupSince: state.setupSince,
     items: state.items.map(itemView),
+    activity: activityView(state),
   };
 }

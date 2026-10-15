@@ -141,6 +141,22 @@
       <hr class="settings-divider">
       <p class="settings-label">Forgot something?</p>
       <button type="button" class="setup-again" id="seenButton"></button>
+      <button type="button" class="settings-quiet" id="activityButton"></button>
+    </section>
+  </div>
+
+  <!-- ===== recent activity, with undo (from settings) ===== -->
+  <div class="layer" id="activityLayer" hidden>
+    <div class="backdrop" data-close></div>
+    <section class="sheet kinds-sheet" role="dialog" aria-modal="true" aria-labelledby="activityTitle">
+      <div class="grabber" data-drag data-close></div>
+      <div class="kinds-head" data-drag>
+        <div class="search-title-row">
+          <h2 class="search-title" id="activityTitle">Recent activity</h2>
+          <button type="button" class="search-close" data-close>Close</button>
+        </div>
+      </div>
+      <ul class="activity-list" id="activityList"></ul>
     </section>
   </div>
 

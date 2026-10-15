@@ -161,7 +161,7 @@ describe('helpers', () => {
 
 describe('toView', () => {
   test('shows the saved cover when there is one, else the catalog image', () => {
-    const state = { schema: 1, items: [item({ cover: 'abc123.jpg' }), item({ id: 'def456' }), item({ id: 'aaa', imageUrls: [] })] };
+    const state = { schema: 1, items: [item({ cover: 'abc123.jpg' }), item({ id: 'def456' }), item({ id: 'aaa', imageUrls: [] })], activity: [] };
     const view = toView(state, '1.2.3');
     assert.equal(view.version, '1.2.3');
     assert.deepEqual(view.items.map((i) => i.image), ['covers/abc123.jpg', item().imageUrls[0], null]);

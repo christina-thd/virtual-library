@@ -356,6 +356,6 @@ describe('applyAction', () => {
   });
 
   test('lists every action', () => {
-    assert.deepEqual([...ACTION_TYPES].sort(), ['addItem', 'rateItem', 'removeItem', 'setCategoryHidden', 'setDropped', 'setHours', 'setLeftOff', 'setNote', 'setSeenUpTo', 'setSetup', 'setStatus']);
+    assert.deepEqual([...ACTION_TYPES].sort(), ['addItem', 'rateItem', 'removeItem', 'setCategoryHidden', 'setDropped', 'setHours', 'setLeftOff', 'setNote', 'setSeenUpTo', 'setSetup', 'setStatus', 'undo']);
   });
 });

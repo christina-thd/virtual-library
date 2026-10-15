@@ -1,4 +1,5 @@
 import { CATEGORY_IDS, isRating, LEFT_OFF, MAX_CREATOR, MAX_TITLE, statusesFor } from '../../public/js/shared/library.js';
+import { ITEM_ACTIONS, latestOf, logChange } from './activity.js';
 import { detailFields, findBySource, findItem, itemDetails, newId, parseCount, parseHours, parseImageUrls, parseNote, parseSource, parseYear, SETUP_STEPS } from './state.js';
 
 /** A rejected action. `status` is the HTTP status the API answers with. */
@@ -202,6 +203,22 @@ const handlers = {
     getItem(state, itemId);
     state.items = state.items.filter((i) => i.id !== itemId);
   },
+
+  /**
+   * Undoes a change from the recent activity: the item goes back to how it was (a removed one comes back, an added
+   * one goes). An item's changes undo newest first.
+   */
+  undo(state, { entryId }) {
+    const entry = state.activity.find((e) => e.id === entryId);
+    if (!entry) throw new ActionError('That change is no longer in the recent activity', 404);
+    if (entry.undone) throw new ActionError('That change is undone already');
+    if (latestOf(state, entry.itemId) !== entry) throw new ActionError(`Undo the newer changes to "${entry.title}" first`);
+    const current = findItem(state, entry.itemId);
+    state.items = state.items.filter((i) => i.id !== entry.itemId);
+    // its saved cover is kept while it's in the library; a removed one's comes again
+    if (entry.before) state.items.push({ ...structuredClone(entry.before), cover: current?.cover ?? null });
+    entry.undone = true;
+  },
 };
 
 export const ACTION_TYPES = Object.freeze(Object.keys(handlers));
@@ -213,5 +230,12 @@ export const ACTION_TYPES = Object.freeze(Object.keys(handlers));
 export function applyAction(state, action, { now = Date.now(), allowImage = () => false } = {}) {
   if (!action || typeof action !== 'object') throw new ActionError('Action must be a JSON object');
   if (!Object.hasOwn(handlers, action.type)) throw new ActionError(`Unknown action: ${action.type}`);
-  return handlers[action.type](state, action, { now, allowImage }) ?? { ok: true };
+  if (!ITEM_ACTIONS.has(action.type)) return handlers[action.type](state, action, { now, allowImage }) ?? { ok: true };
+  // a change to an item: kept in the recent activity, with the item as it was
+  const before = findItem(state, action.itemId);
+  const snapshot = before ? structuredClone(before) : null;
+  const result = handlers[action.type](state, action, { now, allowImage }) ?? { ok: true };
+  const after = findItem(state, result.itemId ?? action.itemId);
+  logChange(state, action.type, snapshot, after ? structuredClone(after) : null, now);
+  return result;
 }
