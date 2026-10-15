@@ -25,6 +25,7 @@ const PATHS = {
   clock: '<circle cx="12" cy="12" r="8.5"/><path d="M12 7.5V12l3 2"/>',
   // a clock turning back: what you'd already seen
   history: '<path d="M3.5 12a8.5 8.5 0 1 0 2.5-6"/><path d="M3.5 4v4h4"/><path d="M12 7.5V12l3 2"/>',  hourglass: '<path d="M6.5 3.5h11M6.5 20.5h11M7.5 3.5v2.2a4 4 0 0 0 1.6 3.2L12 11l2.9-2.1a4 4 0 0 0 1.6-3.2V3.5M7.5 20.5v-2.2a4 4 0 0 1 1.6-3.2L12 13l2.9 2.1a4 4 0 0 1 1.6 3.2v2.2"/>',
+  bookmark: '<path d="M7 3.5h10a1 1 0 0 1 1 1v16l-6-4-6 4v-16a1 1 0 0 1 1-1z"/>',
   note: '<path d="M6 3.5h9l4 4V20a.5.5 0 0 1-.5.5h-12A.5.5 0 0 1 6 20z"/><path d="M14.5 3.5V8h4.5M9 12h6M9 15.5h6"/>',
   trash: '<path d="M4 7h16M10 11v6M14 11v6M5.5 7l1 12.5A1.5 1.5 0 0 0 8 21h8a1.5 1.5 0 0 0 1.5-1.5L18.5 7M9 7V4.5A1.5 1.5 0 0 1 10.5 3h3A1.5 1.5 0 0 1 15 4.5V7"/>',
   close: '<path d="M6 6l12 12M18 6 6 18"/>',

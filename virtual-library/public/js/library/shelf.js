@@ -1,7 +1,7 @@
 // The grid of covers, or a message when there's nothing to show.
 import { $, escapeHtml } from '../shared/dom.js';
 import { byRecent, formatCount, formatRuntime } from '../shared/format.js';
-import { categoryOf, isManga, kindOf, platformOf } from '../shared/library.js';
+import { categoryOf, isManga, kindOf, LEFT_OFF, platformOf } from '../shared/library.js';
 import { coverHtml } from '../ui/cover.js';
 import { icon } from '../ui/icons.js';
 import { starsHtml } from '../ui/stars.js';
@@ -65,11 +65,17 @@ const TYPE_SORT = {
 export const sortsFor = (category, status) =>
   [...SORTS, lengthSort(category), category === 'game' ? PLATFORM_SORT : null, category === 'comic' ? TYPE_SORT : null].filter((s) => s && (!s.doneOnly || status === 'done'));
 
+/** Where you left off a pending book or comic, or a series not done: "Page 120", "Vol. 3", "S2 · E5". */
+function leftOffText({ category, leftOff, seenUpTo }) {
+  if (seenUpTo) return seenUpTo.episode ? `S${seenUpTo.season} · E${seenUpTo.episode}` : `Season ${seenUpTo.season}`;
+  return leftOff ? `${LEFT_OFF[category] === 'page' ? 'Page' : 'Vol.'} ${leftOff}` : '';
+}
+
 function cardHtml(item, index, sort) {
   const meta = item.rating ? starsHtml(item.rating) : escapeHtml(item.year ?? '');
   // sorting by length: show it, so the order makes sense
   const fact = sort === 'length' ? LENGTHS[item.category]?.show(item) : sort === 'platform' ? platformOf(item) ?? ''
-    : sort === 'type' ? kindOf(item) : '';
+    : sort === 'type' ? kindOf(item) : leftOffText(item);
   return `
     <button type="button" class="card" data-item="${item.id}" style="--i:${Math.min(index, 20)}">
       ${coverHtml(item, '', item.note ? `<span class="card-note" title="Has a note">${icon('note')}</span>` : '')}

@@ -50,6 +50,12 @@ export function createTmdb(category, apiKey) {
       }));
     },
   };
+  /** How many episodes of each season are out: up to the last one aired (a season's count has announced ones too). */
+  const airedPerSeason = ({ seasons, last_episode_to_air: last }) => {
+    if (!Array.isArray(seasons) || !last?.season_number) return null;
+    return Array.from({ length: last.season_number }, (_, i) => (i + 1 === last.season_number
+      ? last.episode_number : seasons.find((s) => s.season_number === i + 1)?.episode_count) ?? null);
+  };
   /** From the movie's or show's own page (search results don't have these): minutes; seasons, episodes and an episode's minutes. */
   provider.details = async (id, http) => {
     const path = category === 'movie' ? 'movie' : 'tv';
@@ -61,6 +67,7 @@ export function createTmdb(category, apiKey) {
         seasons: data.number_of_seasons,
         episodes: data.number_of_episodes,
         runtime: data.episode_run_time?.[0] ?? data.last_episode_to_air?.runtime ?? null,
+        seasonEpisodes: airedPerSeason(data),
         genres,
       };
   };

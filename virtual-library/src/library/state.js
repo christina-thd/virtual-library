@@ -1,5 +1,5 @@
 import { randomBytes } from 'node:crypto';
-import { CATEGORY_IDS, isRating, MAX_CREATOR, MAX_NOTE, MAX_TITLE, sameSource, statusesFor } from '../../public/js/shared/library.js';
+import { CATEGORY_IDS, isRating, LEFT_OFF, MAX_CREATOR, MAX_NOTE, MAX_TITLE, sameSource, statusesFor } from '../../public/js/shared/library.js';
 
 /**
  * What's saved to disk (JSON): { schema, statsSince, hiddenCategories, setupStep, setupSince, items }.
@@ -61,6 +61,18 @@ export function parseMinutes(value) {
 /** A note: its text, trimmed and cut to MAX_NOTE, or null when there's none. */
 export const parseNote = (value) => (typeof value === 'string' ? value.trim().slice(0, MAX_NOTE) : '') || null;
 
+/** How many episodes of each season are out: [season 1's, season 2's, …] (null for one not known), or null. */
+export function parseSeasonEpisodes(value) {
+  if (!Array.isArray(value) || !value.length) return null;
+  return value.slice(0, 200).map(parseCount);
+}
+
+/** A series' last seen episode: { season, episode } (episode may be null: just the season), or null. */
+export function parseSeenUpTo(value) {
+  const season = parseCount(value?.season);
+  return season ? { season, episode: parseCount(value.episode) } : null;
+}
+
 /** Hours played, to a tenth of an hour (42.5): from 0.1 up to 100,000, or null. */
 export function parseHours(value) {
   const hours = typeof value === 'number' && Number.isFinite(value) ? Math.round(value * 10) / 10 : NaN;
@@ -71,12 +83,13 @@ export function parseHours(value) {
 const DETAIL_READERS = {
   movie: (raw) => ({ runtime: parseMinutes(raw.runtime), genres: parseGenres(raw.genres) }),
   // a series' runtime: how long one episode is
-  series: (raw) => ({ seasons: parseCount(raw.seasons), episodes: parseCount(raw.episodes), runtime: parseMinutes(raw.runtime), genres: parseGenres(raw.genres) }),
+  series: (raw) => ({ seasons: parseCount(raw.seasons), episodes: parseCount(raw.episodes), seasonEpisodes: parseSeasonEpisodes(raw.seasonEpisodes),
+    runtime: parseMinutes(raw.runtime), genres: parseGenres(raw.genres) }),
   book: (raw) => ({ pages: parseCount(raw.pages), genres: parseGenres(raw.genres) }),
   comic: (raw) => ({ volumes: parseCount(raw.volumes), publisher: toText(raw.publisher, 40) || null, genres: parseGenres(raw.genres) }),
   game: (raw) => ({ genres: parseGenres(raw.genres) }),
 };
-const NO_DETAILS = Object.freeze({ runtime: null, seasons: null, episodes: null, pages: null, volumes: null, publisher: null, genres: null });
+const NO_DETAILS = Object.freeze({ runtime: null, seasons: null, episodes: null, seasonEpisodes: null, pages: null, volumes: null, publisher: null, genres: null });
 
 /**
  * A series' catch-ups: [{ at, episodes }]. One already waiting from before they were kept has seen what's out,
@@ -143,6 +156,8 @@ function normalizeItem(raw, now) {
     dropped: status === 'done' && raw.dropped === true,
     hoursPlayed: raw.category === 'game' ? parseHours(raw.hoursPlayed) : null,   // kept if moved back from done
     note: raw.category === 'game' ? parseNote(raw.note) : null,                  // the same
+    leftOff: LEFT_OFF[raw.category] && status === 'pending' ? parseCount(raw.leftOff) : null,
+    seenUpTo: raw.category === 'series' && status !== 'done' ? parseSeenUpTo(raw.seenUpTo) : null,
     ...itemDetails(raw.category, raw),
     caughtUp: raw.category === 'series' ? parseCaughtUp(raw.caughtUp, status, parseCount(raw.episodes)) : null,
     detailsAt: Number.isFinite(raw.detailsAt) && raw.detailsAt > 0 ? raw.detailsAt : null,

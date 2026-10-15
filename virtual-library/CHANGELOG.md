@@ -7,6 +7,7 @@
 - Sort manga/comics by type, and flip any sort
 - Add a note to finished games
 - Save button for rating, playtime and note
+- Keep where you left off on pending books, manga/comics and series
 - Go to top and bottom buttons
 - Search inside a category
 

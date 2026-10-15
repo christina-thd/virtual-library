@@ -15,9 +15,12 @@
  * @property {boolean} dropped                       done, but given up on
  * @property {number | null} hoursPlayed             games
  * @property {string | null} note                    games: what you thought, once finished
+ * @property {number | null} leftOff                 pending books and comics: the page or volume you got to
+ * @property {{ season: number, episode: number | null } | null} seenUpTo   series not done: the last episode you saw
  * @property {number | null} runtime                 minutes: a movie's, or one episode of a series
  * @property {number | null} seasons                 series
  * @property {number | null} episodes                series
+ * @property {(number | null)[] | null} seasonEpisodes   series: how many episodes of each season are out
  * @property {{ at: number | null, episodes: number | null }[] | null} caughtUp   series: each move to Waiting, with the episodes out then
  * @property {number | null} pages                   books
  * @property {number | null} volumes                 comics
@@ -45,6 +48,9 @@ export const STATUSES = Object.freeze(['pending', 'waiting', 'done']);
 export const STATUS_LABELS = Object.freeze({ pending: 'Pending', waiting: 'Waiting', done: 'Done' });
 
 const OTHER_STATUSES = Object.freeze(['pending', 'done']);
+
+/** The categories where you can keep where you left off (a page, a volume), while pending. */
+export const LEFT_OFF = Object.freeze({ book: 'page', comic: 'volume' });
 /** The statuses a category uses, in tab order. */
 export const statusesFor = (category) => (category === 'series' ? STATUSES : OTHER_STATUSES);
 

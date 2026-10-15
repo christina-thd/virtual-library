@@ -1,9 +1,10 @@
-// Item sheet: the cover, its status, drop it, rate it (games: playtime and a note), remove it. The rating, playtime
-// and note are saved with a Save button that shows once one of them changes; closing before asks first.
+// Item sheet: the cover, its status, drop it, rate it (games: playtime and a note), where you left off (pending books
+// and comics, series not done), remove it. These are saved with a Save button that shows once one of them changes; closing before
+// asks first.
 import { sendAction } from '../shared/api.js';
 import { $, closest, escapeHtml } from '../shared/dom.js';
 import { formatCount, formatRuntime } from '../shared/format.js';
-import { kindOf, MAX_NOTE, STATUS_LABELS, statusesFor } from '../shared/library.js';
+import { kindOf, LEFT_OFF, MAX_NOTE, STATUS_LABELS, statusesFor } from '../shared/library.js';
 import { ask } from '../ui/ask.js';
 import { celebrate } from '../ui/celebrate.js';
 import { coverHtml } from '../ui/cover.js';
@@ -23,10 +24,11 @@ export function createDetails({ getItem }) {
   const sheet = createSheet($('detailsLayer'), { onClose: () => { itemId = null; draft = null; }, beforeClose: askToSave });
 
   let itemId = null;
-  // changes not saved yet: { rating, hours (as typed), note } (each undefined while unchanged), and whether the note
-  // box is open
+  // changes not saved yet: { rating, hours and leftOff (as typed), note } (each undefined while unchanged), and
+  // whether the note box and the left off field are open
   let draft = null;
   let noteOpen = false;
+  let leftOffOpen = false;
   let options = {};                 // how it was opened: { fromSearch }
   let waitingFor = null;            // just added: opens when the item arrives with the next view
   let removeArmed = false;          // remove needs a second tap
@@ -44,14 +46,27 @@ export function createDetails({ getItem }) {
     rating: draft?.rating !== undefined ? draft.rating : item.rating,
     hours: draft?.hours !== undefined ? draft.hours : item.hoursPlayed == null ? '' : String(item.hoursPlayed),
     note: draft?.note !== undefined ? draft.note : item.note ?? '',
+    leftOff: draft?.leftOff !== undefined ? draft.leftOff : item.leftOff == null ? '' : String(item.leftOff),
+    season: draft?.season !== undefined ? draft.season : String(item.seenUpTo?.season ?? ''),
+    episode: draft?.episode !== undefined ? draft.episode : String(item.seenUpTo?.episode ?? ''),
   });
+
+  /** Where you left off: a pending book or comic. */
+  const keepsLeftOff = (item) => item.status === 'pending' && Boolean(LEFT_OFF[item.category]);
+  /** The last episode you saw: a series not done yet. */
+  const keepsSeen = (item) => item.category === 'series' && item.status !== 'done';
 
   /** Something changed and isn't saved yet. */
   function dirty(item) {
     if (!draft || !item) return false;
     const now = shown(item);
-    const saved = { rating: item.rating, hours: item.hoursPlayed == null ? '' : String(item.hoursPlayed), note: item.note ?? '' };
-    return now.rating !== saved.rating || now.hours.trim() !== saved.hours || now.note.trim() !== saved.note;
+    const saved = { rating: item.rating, hours: item.hoursPlayed == null ? '' : String(item.hoursPlayed), note: item.note ?? '',
+      leftOff: item.leftOff == null ? '' : String(item.leftOff) };
+    if (keepsLeftOff(item)) return now.leftOff.trim() !== saved.leftOff;
+    if (keepsSeen(item)) {
+      return now.season.trim() !== String(item.seenUpTo?.season ?? '') || now.episode.trim() !== String(item.seenUpTo?.episode ?? '');
+    }
+    return item.status === 'done' && (now.rating !== saved.rating || now.hours.trim() !== saved.hours || now.note.trim() !== saved.note);
   }
 
   function render(item) {
@@ -98,7 +113,7 @@ export function createDetails({ getItem }) {
           </div>` : ''}
 
         ${done && item.category === 'game' ? `
-          <form class="hours" data-hours>
+          <form class="hours" data-field>
             <label class="rating-label" for="hoursInput">Playtime${value.hours.trim() ? '' : ' (optional)'}</label>
             <span class="hours-field">
               <input id="hoursInput" type="text" inputmode="decimal" autocomplete="off" maxlength="8" placeholder="–"
@@ -112,12 +127,62 @@ export function createDetails({ getItem }) {
               <textarea id="noteInput" rows="3" maxlength="${MAX_NOTE}" placeholder="Thoughts?" aria-label="Note">${escapeHtml(value.note)}</textarea>
             </div>` : ''}` : ''}
 
-        ${done && dirty(item) ? '<button type="button" class="details-save" data-save>Save</button>' : ''}
+        ${keepsLeftOff(item) ? leftOffHtml(item, value.leftOff) : ''}
+        ${keepsSeen(item) ? seenHtml(item, value) : ''}
+
+        ${dirty(item) ? '<button type="button" class="details-save" data-save>Save</button>' : ''}
 
         <button type="button" class="pill danger details-remove ${removeArmed ? 'armed' : ''}" data-remove>
           ${removeArmed ? 'Tap again to remove' : 'Remove from library'}
         </button>
       </div>`;
+  }
+
+  /**
+   * A pending book's page or comic's volume, "of 412" when it's known: a bookmark button (with the saved one on it)
+   * that opens the field.
+   */
+  function leftOffHtml(item, typed) {
+    const saved = item.leftOff != null;
+    const unit = LEFT_OFF[item.category];
+    const short = unit === 'page' ? 'Page' : 'Vol.';
+    const total = unit === 'page' ? item.pages : item.volumes;
+    return `
+      <button type="button" class="pill left-off-toggle ${item.leftOff ? 'on' : ''}" data-left-off-toggle aria-expanded="${leftOffOpen}"
+        aria-controls="leftOffInput">${icon('bookmark')}${item.leftOff ? `${short} ${item.leftOff}` : 'Left off at'}</button>
+      ${leftOffOpen ? `
+      <form class="hours left-off" data-field>
+        <span class="hours-field">
+          <span aria-hidden="true">${short}</span>
+          <input id="leftOffInput" type="text" inputmode="numeric" autocomplete="off" maxlength="5" placeholder="–"
+            aria-label="Left off at ${unit}" value="${escapeHtml(typed)}">${total ? `<span aria-hidden="true">of ${total}</span>` : ''}
+        </span>
+        ${saved ? `<button type="button" class="icon-button left-off-clear" data-left-off-clear aria-label="Clear" title="Clear">${icon('close')}</button>` : ''}
+      </form>` : ''}`;
+  }
+
+  /** A series' last seen episode: the same bookmark button ("S2 · E5" on it), opening a season and an episode field. */
+  function seenHtml(item, value) {
+    const seen = item.seenUpTo;
+    const saved = seen != null;
+    const label = !seen ? 'Left off at' : seen.episode ? `S${seen.season} · E${seen.episode}` : `Season ${seen.season}`;
+    return `
+      <button type="button" class="pill left-off-toggle ${seen ? 'on' : ''}" data-left-off-toggle aria-expanded="${leftOffOpen}"
+        aria-controls="seasonInput">${icon('bookmark')}${label}</button>
+      ${leftOffOpen ? `
+      <form class="hours left-off" data-field>
+        <span class="hours-field">
+          <span aria-hidden="true">Season</span>
+          <input id="seasonInput" class="short-input" type="text" inputmode="numeric" autocomplete="off" maxlength="3" placeholder="–"
+            aria-label="Season" value="${escapeHtml(value.season)}">${item.seasons ? `<span aria-hidden="true">of ${item.seasons}</span>` : ''}
+        </span>
+        <span class="hours-field">
+          <span aria-hidden="true">Ep.</span>
+          <input id="episodeInput" class="short-input" type="text" inputmode="numeric" autocomplete="off" maxlength="4" placeholder="–"
+            aria-label="Episode" value="${escapeHtml(value.episode)}">
+        </span>
+        ${saved ? `<button type="button" class="icon-button left-off-clear" data-left-off-clear aria-label="Clear" title="Clear">${icon('close')}</button>` : ''}
+      </form>` : ''}`;
   }
 
   /** Pending → Done: confetti in the category's color, and a (hopefully) funny line. */
@@ -167,6 +232,20 @@ export function createDetails({ getItem }) {
       return;
     }
 
+    // no longer keeping track: cleared straight away
+    if (closest(e, '[data-left-off-clear]')) {
+      const action = item.category === 'series' ? { type: 'setSeenUpTo', itemId, season: null } : { type: 'setLeftOff', itemId, at: null };
+      send(action).then(() => saved('Cleared'), () => {});
+      return;
+    }
+
+    if (closest(e, '[data-left-off-toggle]')) {
+      leftOffOpen = !leftOffOpen;
+      render(item);
+      if (leftOffOpen) /** @type {HTMLElement} */ (panel.querySelector('#leftOffInput, #seasonInput')).focus();
+      return;
+    }
+
     if (closest(e, '[data-save]')) return save(item);
 
     if (closest(e, '[data-remove]')) {
@@ -185,27 +264,30 @@ export function createDetails({ getItem }) {
     }
   });
 
-  // playtime: Enter hides the keyboard
+  // playtime, where you left off: Enter hides the keyboard
   panel.addEventListener('submit', (e) => {
-    if (!closest(e, '[data-hours]')) return;
+    if (!closest(e, '[data-field]')) return;
     e.preventDefault();
-    $('hoursInput').blur();
+    /** @type {HTMLElement} */ (document.activeElement)?.blur();
   });
 
-  // typing the playtime or a note: kept in the draft; the Save button shows (or goes) without redrawing the field
+  // typing the playtime, a note or where you left off: kept in the draft; the Save button shows (or goes) without redrawing the field
   panel.addEventListener('input', (e) => {
     const field = /** @type {HTMLInputElement} */ (e.target);
     const item = itemId && getItem(itemId);
-    if (!item || !['hoursInput', 'noteInput'].includes(field.id)) return;
-    draft = { ...draft, [field.id === 'hoursInput' ? 'hours' : 'note']: field.value };
+    const key = { hoursInput: 'hours', noteInput: 'note', leftOffInput: 'leftOff', seasonInput: 'season', episodeInput: 'episode' }[field.id];
+    if (!item || !key) return;
+    draft = { ...draft, [key]: field.value };
     const button = panel.querySelector('[data-save]');
     if (dirty(item) && !button) panel.querySelector('.details-remove').insertAdjacentHTML('beforebegin', '<button type="button" class="details-save" data-save>Save</button>');
     if (!dirty(item)) button?.remove();
   });
 
-  /** Saves what changed (rating, playtime, note): true once saved, false when something's wrong (it says what). */
+  /** Saves what changed (rating, playtime, note, where you left off): true once saved, false when something's wrong (it says what). */
   async function save(item) {
     const value = shown(item);
+    if (keepsLeftOff(item)) return saveLeftOff(item, value.leftOff.trim());
+    if (keepsSeen(item)) return saveSeen(value.season.trim(), value.episode.trim());
     const text = value.hours.trim().replace(',', '.');           // "42,5" too, as many phones write it
     const hours = text === '' ? null : Math.round(Number(text) * 10) / 10;
     if (hours !== null && !(hours >= 0.1 && hours <= 100_000)) {
@@ -225,6 +307,45 @@ export function createDetails({ getItem }) {
     }
     draft = null;
     noteOpen = false;
+    toast('Saved', { icon: 'check' });
+    const now = itemId && getItem(itemId);
+    if (now) render(now);
+    return true;
+  }
+
+  async function saveSeen(seasonText, episodeText) {
+    const whole = (text) => (text === '' ? null : Number.isInteger(Number(text)) && Number(text) >= 1 && Number(text) < 100_000 ? Number(text) : NaN);
+    const [season, episode] = [whole(seasonText), whole(episodeText)];
+    if (Number.isNaN(season) || (season === null && episode !== null) || Number.isNaN(episode)) {
+      toast(Number.isNaN(episode) && season !== null ? 'Type an episode number' : 'Type a season number', { error: true });
+      return false;
+    }
+    return send({ type: 'setSeenUpTo', itemId, season, episode }).then(() => saved(), () => false);
+  }
+
+  /** Saved (or cleared): the fields close and the page shows what's saved. */
+  function saved(message = 'Saved') {
+    draft = null;
+    leftOffOpen = false;
+    toast(message, { icon: 'check' });
+    const now = itemId && getItem(itemId);
+    if (now) render(now);
+    return true;
+  }
+
+  async function saveLeftOff(item, typed) {
+    const at = typed === '' ? null : Number(typed);
+    if (at !== null && !(Number.isInteger(at) && at >= 1 && at <= 99_999)) {
+      toast(`Type a ${LEFT_OFF[item.category]} number, like 42`, { error: true });
+      return false;
+    }
+    try {
+      await send({ type: 'setLeftOff', itemId, at });
+    } catch {
+      return false;                                              // it said why
+    }
+    draft = null;
+    leftOffOpen = false;
     toast('Saved', { icon: 'check' });
     const now = itemId && getItem(itemId);
     if (now) render(now);
@@ -253,6 +374,7 @@ export function createDetails({ getItem }) {
       itemId = id;
       draft = null;
       noteOpen = false;
+      leftOffOpen = false;
       disarm();
       render(item);
       panel.scrollTop = 0;
@@ -268,7 +390,7 @@ export function createDetails({ getItem }) {
         draft = null;
         return sheet.close({ force: true });
       }
-      if (['hoursInput', 'noteInput'].includes(document.activeElement?.id)) return;   // typing: redrawn on leaving
+      if (['hoursInput', 'noteInput', 'leftOffInput', 'seasonInput', 'episodeInput'].includes(document.activeElement?.id)) return;   // typing: redrawn on leaving
       render(item);
     },
   };
