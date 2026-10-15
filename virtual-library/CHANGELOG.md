@@ -1,5 +1,8 @@
 # Changelog
 
+## 4.0.0
+- Use Home Assistant's certificate
+
 ## 3.3.0
 - Fix longest series count
 - Tap a message to dismiss it
