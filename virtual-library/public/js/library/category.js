@@ -18,6 +18,7 @@ export function createCategoryView({ onBack }) {
   // the order on each tab, while it's shown
   const sorts = { ...START_SORT };
   let library = [];
+  let reversed = false;              // the order the other way round
   let query = '';                   // searching inside the category: by title or creator, on every tab
 
   const view = $('categoryView');
@@ -29,6 +30,7 @@ export function createCategoryView({ onBack }) {
   $('backButton').innerHTML = icon('back');
   $('backButton').addEventListener('click', onBack);
   $('sortPicker').querySelector('.sort-icon').innerHTML = icon('sort');
+  $('sortDirection').innerHTML = icon('arrow');
 
   /** The order used on this tab. */
   const currentSort = () => sortsFor(category, status).find((s) => s.id === sorts[status]) ?? SORTS[0];
@@ -39,11 +41,12 @@ export function createCategoryView({ onBack }) {
       button.classList.toggle('selected', selected);
       button.setAttribute('aria-selected', String(selected));
     }
-    // the phone's own list (a wheel on iPhone) opens on tap; the button shows the short name
+    // the phone's own list (a wheel on iPhone) opens on tap
     const current = currentSort();
-    sortSelect.innerHTML = sortsFor(category, status).map((s) => `<option value="${s.id}">${escapeHtml(s.name)}</option>`).join('');
+    sortSelect.innerHTML = sortsFor(category, status).map((s) => `<option value="${s.id}">${escapeHtml(s.label)}</option>`).join('');
     sortSelect.value = current.id;
     $('sortLabel').textContent = current.label;
+    $('sortDirection').setAttribute('aria-pressed', String(reversed));
   }
 
   function render({ animate = false } = {}) {
@@ -54,7 +57,7 @@ export function createCategoryView({ onBack }) {
       const count = found.filter((i) => i.status === button.dataset.status).length;
       button.querySelector('.count').textContent = count ? String(count) : '';
     }
-    const context = { category, status, inCategory: inCategory.length, sort: currentSort().id, query };
+    const context = { category, status, inCategory: inCategory.length, sort: currentSort().id, reversed, query };
     renderShelf(found.filter((i) => i.status === status), context, { animate });
     updateJump();
   }
@@ -64,12 +67,20 @@ export function createCategoryView({ onBack }) {
     if (!button || button.dataset.status === status) return;
     status = button.dataset.status;
     sorts[status] = START_SORT[status];
+    reversed = false;
+    markSelected();
+    render({ animate: true });
+  });
+
+  $('sortDirection').addEventListener('click', () => {
+    reversed = !reversed;
     markSelected();
     render({ animate: true });
   });
 
   sortSelect.addEventListener('change', () => {
     sorts[status] = sortSelect.value;
+    reversed = false;
     markSelected();
     render({ animate: true });
   });
@@ -141,6 +152,7 @@ export function createCategoryView({ onBack }) {
       for (const button of tabButtons()) button.hidden = !statusesFor(id).includes(button.dataset.status);
       $('filters').classList.toggle('three-tabs', statusesFor(id).length > 2);   // sort button: icon only
       Object.assign(sorts, START_SORT);
+      reversed = false;
       markSelected();
       $('categoryTitle').innerHTML = `${icon(id)}<span>${categoryOf(id).plural}</span>`;
       $('jumpButtons').hidden = false;

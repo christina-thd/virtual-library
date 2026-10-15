@@ -4,6 +4,7 @@
 - Use Home Assistant's certificate
 - Fix iPhone keyboard gap
 - Sort games by platform
+- Sort manga/comics by type, and flip any sort
 - Add a note to finished games
 - Save button for rating, playtime and note
 - Go to top and bottom buttons

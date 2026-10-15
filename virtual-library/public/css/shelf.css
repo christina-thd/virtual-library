@@ -125,6 +125,23 @@
 }
 .sort-picker:has(select:focus-visible) { outline: 2px solid var(--accent); outline-offset: 2px; }
 
+/* turns the order the other way round: the arrow points the way it goes */
+.sort-direction {
+  flex: none;
+  display: grid;
+  place-items: center;
+  width: 46px;
+  height: 46px;
+  border-radius: 50%;
+  background: var(--surface);
+  border: 1px solid var(--line);
+  color: var(--muted);
+}
+.sort-direction svg.icon { width: 18px; height: 18px; stroke-width: 2; transition: transform 200ms var(--ease); }
+.sort-direction[aria-pressed="true"] { color: var(--accent); border-color: color-mix(in srgb, var(--accent) 45%, transparent); }
+.sort-direction[aria-pressed="true"] svg.icon { transform: rotate(180deg); }
+.sort-direction:active { transform: scale(0.94); }
+
 /* ----- grid ----- */
 
 .shelf {
