@@ -16,4 +16,17 @@ export function trackVisibleViewport() {
   viewport.addEventListener('resize', update);
   viewport.addEventListener('scroll', update);      // iOS pans the page when the keyboard opens
   update();
+
+  if (/** @type {any} */ (navigator).standalone) {
+    const settle = () => {
+      const { scrollY } = window;
+      window.scrollTo(0, scrollY + 1);
+      window.scrollTo(0, scrollY);
+      update();
+    };
+    window.addEventListener('load', () => requestAnimationFrame(settle), { once: true });
+    window.addEventListener('pageshow', (e) => {
+      if (e.persisted) requestAnimationFrame(settle);
+    });
+  }
 }

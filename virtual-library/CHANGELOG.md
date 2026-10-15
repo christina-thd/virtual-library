@@ -2,6 +2,7 @@
 
 ## 4.0.0
 - Use Home Assistant's certificate
+- Fix iPhone keyboard gap
 
 ## 3.3.0
 - Fix longest series count

@@ -141,10 +141,23 @@ svg.icon { width: 1.2em; height: 1.2em; flex: none; fill: none; stroke: currentC
   justify-content: flex-end;
 }
 .layer + .layer { z-index: 21; }
+.layer::after {
+  content: "";
+  position: absolute;
+  top: 100%;
+  left: 0;
+  right: 0;
+  height: 50vh;
+  background: var(--surface);
+  opacity: 0;
+  transition: opacity 200ms;
+  pointer-events: none;
+}
+.layer.open::after { opacity: 1; }
 
 .backdrop {
   position: absolute;
-  inset: 0;
+  inset: -50vh 0;
   background: rgb(4 3 8 / 0.72);
   backdrop-filter: blur(6px);
   -webkit-backdrop-filter: blur(6px);
