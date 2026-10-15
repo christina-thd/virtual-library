@@ -30,8 +30,8 @@ Keep track of what you've watched, read and played, and what's still pending.
 
 **Features:**
 - Movies, series, books, manga, comics and games in one place, each with its cover
-- Search built in, no account or API key needed
-- A home screen per kind, Pending and Done lists (series also Waiting, for a new season), and an optional 5-star rating
+- A home screen per kind, Pending and Done lists (series also Waiting, for a new season)
+- Where you left off (a page, a volume, an episode), notes on games, and undo for mistakes
 - Stats: what you finished each month, your top genres, time spent and more
 
 [Documentation →](./virtual-library/README.md)
