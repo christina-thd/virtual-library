@@ -50,6 +50,7 @@ export function createCategoryView({ onBack }) {
     }
     const context = { category, status, inCategory: inCategory.length, sort: currentSort().id };
     renderShelf(inCategory.filter((i) => i.status === status), context, { animate });
+    updateJump();
   }
 
   tabs.addEventListener('click', (e) => {
@@ -71,6 +72,20 @@ export function createCategoryView({ onBack }) {
   new IntersectionObserver(([entry]) => $('categoryHead').classList.toggle('stuck', !entry.isIntersecting))
     .observe($('headSentinel'));
 
+  // go to top / bottom: each shows once there's a screen's worth to go that way
+  const JUMP_MIN = 300;
+  $('jumpTop').innerHTML = icon('up');
+  $('jumpBottom').innerHTML = icon('down');
+  function updateJump() {
+    const below = document.documentElement.scrollHeight - window.innerHeight - window.scrollY;
+    $('jumpTop').classList.toggle('off', window.scrollY < JUMP_MIN);
+    $('jumpBottom').classList.toggle('off', below < JUMP_MIN);
+  }
+  $('jumpTop').addEventListener('click', () => window.scrollTo({ top: 0, behavior: 'smooth' }));
+  $('jumpBottom').addEventListener('click', () => window.scrollTo({ top: document.documentElement.scrollHeight, behavior: 'smooth' }));
+  window.addEventListener('scroll', updateJump, { passive: true });
+  window.addEventListener('resize', updateJump);
+
   markSelected();
 
   return {
@@ -89,11 +104,14 @@ export function createCategoryView({ onBack }) {
       Object.assign(sorts, START_SORT);
       markSelected();
       $('categoryTitle').innerHTML = `${icon(id)}<span>${categoryOf(id).plural}</span>`;
+      $('jumpButtons').hidden = false;
       render({ animate: true });
+      requestAnimationFrame(updateJump);           // once the view is on screen
     },
 
     hide() {
       category = null;
+      $('jumpButtons').hidden = true;
     },
 
     update(items) {

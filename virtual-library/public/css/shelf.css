@@ -156,6 +156,36 @@
 .fab:active { transform: scale(0.92); }
 .fab svg.icon { width: 26px; height: 26px; stroke-width: 2.4; }
 
+/* ----- go to top / bottom, above the add button ----- */
+
+.jump {
+  position: fixed;
+  right: 30px;
+  bottom: calc(94px + var(--safe-bottom));
+  z-index: 10;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+.jump[hidden] { display: none; }
+.jump-button {
+  display: grid;
+  place-items: center;
+  width: 40px;
+  height: 40px;
+  border-radius: 50%;
+  border: 1px solid var(--line);
+  background: rgb(9 8 13 / 0.78);
+  backdrop-filter: blur(10px);
+  -webkit-backdrop-filter: blur(10px);
+  color: var(--ink);
+  box-shadow: 0 6px 18px -6px rgb(0 0 0 / 0.7);
+  transition: transform 140ms var(--ease);
+}
+.jump-button.off { display: none; }
+.jump-button:active { transform: scale(0.92); }
+.jump-button svg.icon { width: 20px; height: 20px; stroke-width: 2.2; }
+
 /* a game with a note: a small round badge in the cover's bottom-right corner (above the Dropped band) */
 .card-note {
   position: absolute;

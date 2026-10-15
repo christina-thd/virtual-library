@@ -6,6 +6,7 @@
 - Sort games by platform
 - Add a note to finished games
 - Save button for rating, playtime and note
+- Go to top and bottom buttons
 
 ## 3.3.0
 - Fix longest series count
