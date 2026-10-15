@@ -1,7 +1,7 @@
 // The grid of covers, or a message when there's nothing to show.
 import { $, escapeHtml } from '../shared/dom.js';
 import { byRecent, formatCount, formatRuntime } from '../shared/format.js';
-import { categoryOf } from '../shared/library.js';
+import { categoryOf, platformOf } from '../shared/library.js';
 import { coverHtml } from '../ui/cover.js';
 import { icon } from '../ui/icons.js';
 import { starsHtml } from '../ui/stars.js';
@@ -46,14 +46,23 @@ function lengthSort(category) {
   return { id: 'length', label: length.label, name: length.name, doneOnly: length.doneOnly, compare };
 }
 
+/** Games by platform (A–Z, then the games A–Z); ones without a platform last. */
+const PLATFORM_SORT = {
+  id: 'platform', label: 'Platform', name: 'Platform (A–Z)',
+  compare: (a, b) => {
+    const [pa, pb] = [platformOf(a), platformOf(b)];
+    return Number(!pa) - Number(!pb) || (pa && pb ? pa.localeCompare(pb) : 0) || byTitle(a, b);
+  },
+};
+
 /** The sorts offered on a tab of a kind. */
 export const sortsFor = (category, status) =>
-  [...SORTS, lengthSort(category)].filter((s) => s && (!s.doneOnly || status === 'done'));
+  [...SORTS, lengthSort(category), category === 'game' ? PLATFORM_SORT : null].filter((s) => s && (!s.doneOnly || status === 'done'));
 
 function cardHtml(item, index, sort) {
   const meta = item.rating ? starsHtml(item.rating) : escapeHtml(item.year ?? '');
   // sorting by length: show it, so the order makes sense
-  const fact = sort === 'length' ? LENGTHS[item.category]?.show(item) : '';
+  const fact = sort === 'length' ? LENGTHS[item.category]?.show(item) : sort === 'platform' ? platformOf(item) ?? '' : '';
   return `
     <button type="button" class="card" data-item="${item.id}" style="--i:${Math.min(index, 20)}">
       ${coverHtml(item)}

@@ -62,6 +62,16 @@ export const isManga = ({ category, source }) => category === 'comic' && MANGA_C
 /** What one item is: its category's name, but a manga or a comic rather than "Manga or comic". */
 export const kindOf = (item) => (item.category === 'comic' ? (isManga(item) ? 'Manga' : 'Comic') : categoryOf(item.category)?.label ?? '');
 
+/**
+ * A game's platform, from where it was found: Steam and GOG are PC; Nintendo's store and RAWG keep theirs as the
+ * game's creator ("Nintendo Switch", "PC, PlayStation 5": the first one). null: typed in by hand.
+ */
+export function platformOf({ category, source, creator }) {
+  if (category !== 'game' || !source) return null;
+  if (source.provider === 'steam' || source.provider === 'gog') return 'PC';
+  return creator?.split(',')[0].trim() || null;
+}
+
 /** A rating is a whole number of stars, 1–5. No rating is `null`. */
 export const isRating = (value) => Number.isInteger(value) && value >= 1 && value <= MAX_RATING;
 
