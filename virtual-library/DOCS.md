@@ -25,12 +25,20 @@ Anything marked done until then counts as seen before; nothing else changes.
   screen, the stats and the search, but everything in it is kept: switch it back on any time. One always stays on.
 - In each kind, **Pending** is everything you haven't seen, read or played yet, or haven't finished.
   **Done** is everything you've finished. Each kind opens on Pending, newest first; Done starts with your best rated.
-  Use the sort button next to the tabs for A–Z, rating (on Done) or length: a movie's duration, a series' seasons,
-  a book's pages, a manga's or comic's volumes, or the hours you played a game (on Done).
+  Use the sort button next to the tabs for name, rating (on Done) or length: a movie's duration, a series' seasons,
+  a book's pages, a manga's or comic's volumes, or the hours you played a game (on Done). Games can also be sorted by
+  platform, and Manga/Comics by type (comics first). The arrow next to it turns any order the other way round.
+- Looking for something? Tap the search icon next to the kind's title and type: it finds things by title or creator,
+  on every tab (the tabs show how many match). **✕** closes it.
+- On a long list, the arrows above **+** take you to the top or the bottom.
 - **Series** have a third tab, **Waiting**: series you've caught up on, waiting for a new season. Move a series there
   from its page; when the new season is out, move it back to Pending.
 - Tap a cover to open it: move it between Pending, (Waiting) and Done, rate it, or remove it. A finished game also
-  has a **Playtime** field, if you want to keep track.
+  has a **Playtime** field and a note (the button next to Playtime), if you want to keep track; a game with a note has
+  a small badge on its cover. A rating, playtime or note is saved with **Save**; closing with changes not saved asks first.
+- **Left off at** (the bookmark button on an item's page) keeps your place: the page of a pending book, the volume of a
+  pending manga or comic, or the season and episode of a series in Pending or Waiting (picked from a list, up to what's out).
+  It shows on the cover's card too. **✕** clears it, and finishing the item clears it too. It isn't counted in the stats.
 - Gave up on something because it wasn't worth finishing? Tap **Dropped it** on its page. It goes to Done (no confetti),
   greyed out with a red **Dropped** band across its cover. Tap it again to undo, or move it back to Pending.
 - **+** inside a kind adds to that kind only (e.g. "Add a game"). **+** on the home screen lets you pick the kind
@@ -54,6 +62,13 @@ Finished things can have a rating from 1 to 5 stars. It's optional: tap a star t
 and tap the same star again to clear it. Adding something straight to **Done** opens it, so
 you can rate it right away. Moving an item back to Pending (or Waiting) clears its rating.
 
+### Undo a mistake
+
+Tap **⋯** at the top right of the home screen, then **Recent activity** at the bottom: your latest 50 changes to items
+(added, removed, moved, rated…), newest first. **Undo** puts the item back as it was before that change; a removed item
+comes back with everything it had. An item's changes undo newest first, so only its latest one has the button.
+Changes to settings aren't in it.
+
 ### Not in the search?
 
 If the search doesn't find it, you can still add it by its title (**Add "…" anyway?**).
@@ -68,6 +83,20 @@ You can change the port, or turn it off, in the add-on's **Network** settings. T
 
 The direct address has no login: anyone on your home network who knows it can open the library.
 Turn it off if that's a concern; the sidebar and the Home Assistant app use your Home Assistant login.
+
+## Install as an app on Android
+
+Chrome on Android only installs an app from a secure (https) address with a trusted certificate. If Home Assistant
+already has one for your own domain (e.g. Let's Encrypt, in its `ssl` folder), the add-on can use it:
+
+1. In the add-on's **Configuration** tab, turn on **ssl**. `certfile` and `keyfile` are the certificate's files in the
+   `ssl` folder (`fullchain.pem` and `privkey.pem` by default). Restart the add-on.
+2. Make your domain point to Home Assistant's address on your home network, e.g. with a DNS rewrite in your router or
+   AdGuard Home (`ha.example.com` → `192.168.1.10`).
+3. On the phone, open `https://<your-domain>:3101/` in Chrome, then ⋮ → **Install app**.
+
+Don't forward port 3101 on your router: there are no passwords, so keep it on your home network. The plain address on
+port 3100 keeps working as before, and a renewed certificate is picked up by itself.
 
 ## Search and covers
 
@@ -100,7 +129,7 @@ so the library keeps its pictures even if a website changes.
 
 ## Configuration
 
-Both options are optional. Leave them empty to use the catalogs above.
+All options are optional. Leave the keys empty to use the catalogs above.
 
 **tmdb_api_key** (optional)
 - Searches movies and series on [TMDB](https://www.themoviedb.org/) first, which has the best posters and finds more
@@ -110,6 +139,10 @@ Both options are optional. Leave them empty to use the catalogs above.
 **rawg_api_key** (optional)
 - Searches games on [RAWG](https://rawg.io/) first, which knows console games too (Steam and GOG only have PC games)
 - Get a free key at [rawg.io/apidocs](https://rawg.io/apidocs)
+
+**ssl**, **certfile**, **keyfile** (optional)
+- Also serve the app over https on port 3101, with Home Assistant's own certificate: see
+  [Install as an app on Android](#install-as-an-app-on-android)
 
 Restart the add-on after changing an option. Items you've already added keep their covers.
 

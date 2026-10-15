@@ -14,9 +14,13 @@
  * @property {number | null} rating                  1–5, finished items only
  * @property {boolean} dropped                       done, but given up on
  * @property {number | null} hoursPlayed             games
+ * @property {string | null} note                    games: what you thought, once finished
+ * @property {number | null} leftOff                 pending books and comics: the page or volume you got to
+ * @property {{ season: number, episode: number | null } | null} seenUpTo   series not done: the last episode you saw
  * @property {number | null} runtime                 minutes: a movie's, or one episode of a series
  * @property {number | null} seasons                 series
  * @property {number | null} episodes                series
+ * @property {(number | null)[] | null} seasonEpisodes   series: how many episodes of each season are out
  * @property {{ at: number | null, episodes: number | null }[] | null} caughtUp   series: each move to Waiting, with the episodes out then
  * @property {number | null} pages                   books
  * @property {number | null} volumes                 comics
@@ -44,6 +48,9 @@ export const STATUSES = Object.freeze(['pending', 'waiting', 'done']);
 export const STATUS_LABELS = Object.freeze({ pending: 'Pending', waiting: 'Waiting', done: 'Done' });
 
 const OTHER_STATUSES = Object.freeze(['pending', 'done']);
+
+/** The categories where you can keep where you left off (a page, a volume), while pending. */
+export const LEFT_OFF = Object.freeze({ book: 'page', comic: 'volume' });
 /** The statuses a category uses, in tab order. */
 export const statusesFor = (category) => (category === 'series' ? STATUSES : OTHER_STATUSES);
 
@@ -51,6 +58,7 @@ export const MAX_RATING = 5;
 export const MAX_TITLE = 150;
 export const MAX_CREATOR = 100;
 export const MAX_QUERY = 100;
+export const MAX_NOTE = 1000;
 
 export const categoryOf = (id) => CATEGORIES.find((c) => c.id === id);
 
@@ -61,6 +69,16 @@ export const isManga = ({ category, source }) => category === 'comic' && MANGA_C
 
 /** What one item is: its category's name, but a manga or a comic rather than "Manga or comic". */
 export const kindOf = (item) => (item.category === 'comic' ? (isManga(item) ? 'Manga' : 'Comic') : categoryOf(item.category)?.label ?? '');
+
+/**
+ * A game's platform, from where it was found: Steam and GOG are PC; Nintendo's store and RAWG keep theirs as the
+ * game's creator ("Nintendo Switch", "PC, PlayStation 5": the first one). null: typed in by hand.
+ */
+export function platformOf({ category, source, creator }) {
+  if (category !== 'game' || !source) return null;
+  if (source.provider === 'steam' || source.provider === 'gog') return 'PC';
+  return creator?.split(',')[0].trim() || null;
+}
 
 /** A rating is a whole number of stars, 1–5. No rating is `null`. */
 export const isRating = (value) => Number.isInteger(value) && value >= 1 && value <= MAX_RATING;

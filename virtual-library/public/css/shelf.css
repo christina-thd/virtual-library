@@ -37,6 +37,39 @@
 }
 .category-top h1 svg.icon { width: 24px; height: 24px; color: var(--tint); }
 
+/* ----- search inside the category ----- */
+
+.find-button { width: 42px; height: 42px; margin-left: auto; color: var(--ink); }
+.find-button svg.icon { width: 22px; height: 22px; }
+.find-button[aria-expanded="true"] { color: var(--accent); }
+.find-bar {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  height: 46px;
+  margin: 8px 16px 0;
+  padding: 0 4px 0 14px;
+  border-radius: 999px;
+  background: var(--surface-2);
+  border: 1px solid var(--line);
+}
+.find-bar[hidden] { display: none; }
+.find-bar:focus-within { border-color: color-mix(in srgb, var(--accent) 60%, transparent); }
+.find-bar .search-icon svg.icon { width: 18px; height: 18px; }
+.find-bar input {
+  flex: 1;
+  min-width: 0;
+  height: 100%;
+  border: 0;
+  background: none;
+  color: var(--ink);
+  outline: none;
+  font-size: 16px;                               /* iPhone zooms into form fields with smaller text */
+}
+.find-bar input::placeholder { color: var(--faint); }
+.find-bar input::-webkit-search-cancel-button { display: none; }
+.find-bar .icon-button svg.icon { width: 18px; height: 18px; }
+
 /* ----- title, back button and tabs (stay at the top while scrolling) ----- */
 
 .category-head {
@@ -91,6 +124,23 @@
   cursor: pointer;
 }
 .sort-picker:has(select:focus-visible) { outline: 2px solid var(--accent); outline-offset: 2px; }
+
+/* turns the order the other way round: the arrow points the way it goes */
+.sort-direction {
+  flex: none;
+  display: grid;
+  place-items: center;
+  width: 46px;
+  height: 46px;
+  border-radius: 50%;
+  background: var(--surface);
+  border: 1px solid var(--line);
+  color: var(--muted);
+}
+.sort-direction svg.icon { width: 18px; height: 18px; stroke-width: 2; transition: transform 200ms var(--ease); }
+.sort-direction[aria-pressed="true"] { color: var(--accent); border-color: color-mix(in srgb, var(--accent) 45%, transparent); }
+.sort-direction[aria-pressed="true"] svg.icon { transform: rotate(180deg); }
+.sort-direction:active { transform: scale(0.94); }
 
 /* ----- grid ----- */
 
@@ -155,3 +205,51 @@
 }
 .fab:active { transform: scale(0.92); }
 .fab svg.icon { width: 26px; height: 26px; stroke-width: 2.4; }
+
+/* ----- go to top / bottom, above the add button ----- */
+
+.jump {
+  position: fixed;
+  right: 30px;
+  bottom: calc(94px + var(--safe-bottom));
+  z-index: 10;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+.jump[hidden] { display: none; }
+.jump-button {
+  display: grid;
+  place-items: center;
+  width: 40px;
+  height: 40px;
+  border-radius: 50%;
+  border: 1px solid var(--line);
+  background: rgb(9 8 13 / 0.78);
+  backdrop-filter: blur(10px);
+  -webkit-backdrop-filter: blur(10px);
+  color: var(--ink);
+  box-shadow: 0 6px 18px -6px rgb(0 0 0 / 0.7);
+  transition: transform 140ms var(--ease);
+}
+.jump-button.off { display: none; }
+.jump-button:active { transform: scale(0.92); }
+.jump-button svg.icon { width: 20px; height: 20px; stroke-width: 2.2; }
+
+/* a game with a note: a small round badge in the cover's bottom-right corner (above the Dropped band) */
+.card-note {
+  position: absolute;
+  right: 6px;
+  bottom: 6px;
+  z-index: 2;
+  display: grid;
+  place-items: center;
+  width: 24px;
+  height: 24px;
+  border-radius: 50%;
+  background: rgb(9 8 13 / 0.78);
+  color: var(--ink);
+  box-shadow: 0 2px 8px rgb(0 0 0 / 0.5);
+}
+.card-note svg.icon { width: 14px; height: 14px; }
+.cover.dropped .card-note { bottom: calc(6px + 18%); }

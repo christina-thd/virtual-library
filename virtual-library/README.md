@@ -8,8 +8,11 @@ A personal library of movies, series, books, manga, comics and games. Search for
 - Movies, series, books, manga, comics and games in one place, each with its cover
 - Search built in: no account or API key needed
 - Two lists: **Pending** and **Done** (series also **Waiting**, for a new season)
-- Optional 5-star rating for finished things
+- Optional 5-star rating for finished things, playtime and a note for games
+- Where you left off: a book's page, a manga's volume, a series' episode
+- Search and sort inside each kind
 - Stats: what you finished each month, your top genres, time spent and more
+- Recent activity, to undo a mistake
 
 ## Installation
 
@@ -24,11 +27,15 @@ A personal library of movies, series, books, manga, comics and games. Search for
 |--------|------|---------|-------------|
 | tmdb_api_key | password | (empty) | Optional. Search movies and series on TMDB |
 | rawg_api_key | password | (empty) | Optional. Search games on RAWG (every platform, not only PC) |
+| ssl | bool | false | Also serve https on port 3101 with Home Assistant's own certificate, so Android can install the app |
+| certfile | str | fullchain.pem | Certificate in Home Assistant's `ssl` folder |
+| keyfile | str | privkey.pem | Its key, in the `ssl` folder |
 
 ## Usage
 
 Open **Hoard Board** in the Home Assistant sidebar
 or go straight to `http://<your-homeassistant-ip>:3100/`.
+With `ssl` on, the secure address is `https://<your-domain>:3101/` (see the Documentation tab).
 
 ## Development
 

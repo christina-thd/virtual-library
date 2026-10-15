@@ -22,6 +22,7 @@ Search needs internet access (it asks the real catalogs); the tests don't.
 | `COVERS_DIR`   | `data/covers`       | Where cover images are saved                         |
 | `TMDB_API_KEY` | none                | Search movies and series on TMDB                     |
 | `RAWG_API_KEY` | none                | Search games on RAWG                                 |
+| `HTTPS_PORT`, `TLS_CERT`, `TLS_KEY` | off | Also serve https (PEM certificate and key, reloaded when renewed); the add-on uses 3101 with Home Assistant's certificate (`ssl` option) |
 
 The server doesn't know about Home Assistant: in the add-on, `run.sh` reads the add-on options
 with bashio and sets these variables.
@@ -35,17 +36,19 @@ config.yaml, Dockerfile, run.sh     Home Assistant add-on
 README.md, DOCS.md, CHANGELOG.md    add-on store page, Documentation tab, changelog
 
 src/                      server (Node, no framework, no dependencies)
-  server.js               entry point: load config and library, wire the parts, start HTTP, graceful shutdown
+  server.js               entry point: load config and library, wire the parts, start HTTP (and https), graceful shutdown
   config.js               environment variables
+  tls.js                  https certificate: reading it, and reloading it when it's renewed
   app.js                  HTTP routes: page, static files, covers, API
   library/state.js        state shape, repairing saved data, the view sent to screens
   library/actions.js      every library action, validated (the only code that changes state)
+  library/activity.js     recent activity: each change to an item, with the item as it was (for undo)
   catalog/index.js        search: picks a provider per category, cleans up results, image allow-list
   catalog/providers/      one file per catalog: cinemeta, tvmaze, open-library, apple-books, steam, gog, nintendo, tmdb, rawg
   covers.js               saved cover images (CoverStore) and keeping them in step with the library
   catalog/genres.js       makes the catalogs' genres comparable (aliases; book genres picked out of subjects)
   catalog/details.js      looks up details in the background (provider.details), like covers: movie durations,
-                          series seasons and episodes (again weekly for series not done yet), book pages
+                          series seasons and episodes, each season's too (again weekly for series not done yet), book pages
   http-client.js          fetch with a timeout and a User-Agent, for catalogs and images
   store.js                JSON file storage: debounced, atomic writes
   sse.js                  Server-Sent Events hub for live updates
@@ -61,10 +64,11 @@ public/                   browser (plain ES modules, no build step)
                           api, dom, format, storage
   js/ui/                  reusable pieces: back (phone back button), sheet (bottom sheets, swipe to close),
                           viewport (keeps sheets above the keyboard), celebrate (confetti + message),
-                          toast, cover, stars, icons
+                          ask (a question with two answers), toast, cover, stars, icons
   js/library/             the views: home (category tiles), category (title + Pending / (Waiting) / Done tabs, sort), shelf (grid),
                           search (the controller) and search-results (what it shows), details (one item),
-                          stats (the Stats page), cheers (the lines said when you finish something)
+                          stats (the Stats page), cheers (the lines said when you finish something),
+                          shown (settings: which categories show), activity (recent activity, with undo)
 
 test/                     node:test suites
 ```
@@ -76,10 +80,16 @@ test/                     node:test suites
 to every screen over `GET /api/events` (Server-Sent Events). Screens never change items locally; they
 only render the latest view.
 
-**Actions:** `addItem`, `setStatus`, `setDropped`, `rateItem`, `setHours` (games), `removeItem`. See `src/library/actions.js`.
+**Actions:** `addItem`, `setStatus`, `setDropped`, `rateItem`, `setHours` and `setNote` (finished games), `setLeftOff`
+(pending books and comics), `setSeenUpTo` (series not done), `removeItem`, `undo`, and the settings: `setCategoryHidden`,
+`setSetup`. See `src/library/actions.js`.
 Statuses are `pending`, `done` and, for series only, `waiting` (`statusesFor` in `public/js/shared/library.js`).
 Only finished items can be rated; moving an item away from done clears its rating and its `dropped` mark
 (dropped: given up on; it counts as done).
+
+**Recent activity.** Every action that changes an item keeps an entry in `activity` (the latest 50): what changed,
+in a few words, and the item as it was before. `undo` puts that copy back (or removes an item that was added);
+an item's entries undo newest first. The view sends the entries without the copies.
 
 **Search.** `GET /api/search?category=movie&q=dune` asks the providers for that category, one after the
 other until one finds something (a provider that's down is skipped), and returns

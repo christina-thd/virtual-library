@@ -1,5 +1,6 @@
-import { CATEGORY_IDS, isRating, MAX_CREATOR, MAX_TITLE, statusesFor } from '../../public/js/shared/library.js';
-import { detailFields, findBySource, findItem, itemDetails, newId, parseHours, parseImageUrls, parseSource, parseYear, SETUP_STEPS } from './state.js';
+import { CATEGORY_IDS, isRating, LEFT_OFF, MAX_CREATOR, MAX_TITLE, statusesFor } from '../../public/js/shared/library.js';
+import { ITEM_ACTIONS, latestOf, logChange } from './activity.js';
+import { detailFields, findBySource, findItem, itemDetails, newId, parseCount, parseHours, parseImageUrls, parseNote, parseSource, parseYear, SETUP_STEPS } from './state.js';
 
 /** A rejected action. `status` is the HTTP status the API answers with. */
 export class ActionError extends Error {
@@ -79,6 +80,9 @@ const handlers = {
       rating: status === 'done' ? rating(action.rating) : null,
       dropped: false,
       hoursPlayed: null,
+      note: null,
+      leftOff: null,
+      seenUpTo: null,
       ...details,                                  // what the search result had; the rest is looked up after adding
       caughtUp: category !== 'series' ? null : status === 'waiting' ? [{ at: ctx.now, episodes: details.episodes }] : [],
       detailsAt: detailFields(category).every((field) => details[field] != null) ? ctx.now : null,
@@ -101,6 +105,8 @@ const handlers = {
     item.beforeStats = status === 'done' && state.setupStep !== null;
     item.rating = null;
     item.dropped = false;
+    item.leftOff = null;
+    if (status === 'done') item.seenUpTo = null;
   },
 
   /** Given up on: counts as done (can still be rated), with a mark on its cover. Undropping keeps it done. */
@@ -112,6 +118,8 @@ const handlers = {
       item.finishedAt = ctx.now;
       item.beforeStats = state.setupStep !== null;
       item.rating = null;
+      item.leftOff = null;
+      item.seenUpTo = null;
     }
     item.dropped = dropped;
   },
@@ -152,9 +160,64 @@ const handlers = {
     if (step === 'done') state.setupSince = null;
   },
 
+  /** A note on a game you finished (what you thought of it); empty or null removes it. */
+  setNote(state, { itemId, note }) {
+    const item = getItem(state, itemId);
+    if (item.category !== 'game') throw new ActionError('Only games have notes');
+    if (item.status !== 'done') throw new ActionError('Notes are for finished games');
+    if (note != null && typeof note !== 'string') throw new ActionError('note must be text, or null');
+    item.note = parseNote(note);
+  },
+
+  /** Where you left off a pending book (a page) or comic (a volume); null clears it. Finishing it clears it too. */
+  setLeftOff(state, { itemId, at }) {
+    const item = getItem(state, itemId);
+    if (!LEFT_OFF[item.category]) throw new ActionError('Only books and manga/comics keep where you left off');
+    if (item.status !== 'pending') throw new ActionError('Where you left off is for pending ones');
+    if (at != null && parseCount(at) == null) throw new ActionError('at must be a whole number from 1 to 99999, or null');
+    item.leftOff = parseCount(at);
+  },
+
+  /** The last episode you saw of a series you haven't finished: a season and (optionally) an episode; null clears it. */
+  setSeenUpTo(state, { itemId, season, episode }) {
+    const item = getItem(state, itemId);
+    if (item.category !== 'series') throw new ActionError('Only series keep the last episode you saw');
+    if (item.status === 'done') throw new ActionError('The last episode you saw is for series not done yet');
+    if (season == null) {
+      item.seenUpTo = null;
+      return;
+    }
+    if (parseCount(season) == null) throw new ActionError('season must be a whole number from 1 to 99999, or null');
+    if (episode != null && parseCount(episode) == null) throw new ActionError('episode must be a whole number from 1 to 99999, or null');
+    // no more than what's out: the season's episodes, or (when a catalog doesn't say) all of them
+    if (item.seasons && season > item.seasons) throw new ActionError(`"${item.title}" has ${item.seasons} season${item.seasons > 1 ? 's' : ''}`);
+    const most = item.seasonEpisodes?.[season - 1] ?? item.episodes;
+    if (most && episode > most) {
+      const which = item.seasonEpisodes?.[season - 1] ? `Season ${season} of "${item.title}"` : `"${item.title}"`;
+      throw new ActionError(`${which} has ${most} episode${most > 1 ? 's' : ''}`);
+    }
+    item.seenUpTo = { season, episode: episode ?? null };
+  },
+
   removeItem(state, { itemId }) {
     getItem(state, itemId);
     state.items = state.items.filter((i) => i.id !== itemId);
+  },
+
+  /**
+   * Undoes a change from the recent activity: the item goes back to how it was (a removed one comes back, an added
+   * one goes). An item's changes undo newest first.
+   */
+  undo(state, { entryId }) {
+    const entry = state.activity.find((e) => e.id === entryId);
+    if (!entry) throw new ActionError('That change is no longer in the recent activity', 404);
+    if (entry.undone) throw new ActionError('That change is undone already');
+    if (latestOf(state, entry.itemId) !== entry) throw new ActionError(`Undo the newer changes to "${entry.title}" first`);
+    const current = findItem(state, entry.itemId);
+    state.items = state.items.filter((i) => i.id !== entry.itemId);
+    // its saved cover is kept while it's in the library; a removed one's comes again
+    if (entry.before) state.items.push({ ...structuredClone(entry.before), cover: current?.cover ?? null });
+    entry.undone = true;
   },
 };
 
@@ -167,5 +230,12 @@ export const ACTION_TYPES = Object.freeze(Object.keys(handlers));
 export function applyAction(state, action, { now = Date.now(), allowImage = () => false } = {}) {
   if (!action || typeof action !== 'object') throw new ActionError('Action must be a JSON object');
   if (!Object.hasOwn(handlers, action.type)) throw new ActionError(`Unknown action: ${action.type}`);
-  return handlers[action.type](state, action, { now, allowImage }) ?? { ok: true };
+  if (!ITEM_ACTIONS.has(action.type)) return handlers[action.type](state, action, { now, allowImage }) ?? { ok: true };
+  // a change to an item: kept in the recent activity, with the item as it was
+  const before = findItem(state, action.itemId);
+  const snapshot = before ? structuredClone(before) : null;
+  const result = handlers[action.type](state, action, { now, allowImage }) ?? { ok: true };
+  const after = findItem(state, result.itemId ?? action.itemId);
+  logChange(state, action.type, snapshot, after ? structuredClone(after) : null, now);
+  return result;
 }

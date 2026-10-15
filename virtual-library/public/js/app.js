@@ -1,5 +1,6 @@
 // Entry point: keeps the latest library from the server and hands it to the views.
 // The server is the only source of truth; views never change items locally, they send actions.
+import { createActivity } from './library/activity.js';
 import { createCategoryView } from './library/category.js';
 import { createDetails } from './library/details.js';
 import { onTileTap, renderHome, reshuffleHome } from './library/home.js';
@@ -28,6 +29,7 @@ const search = createSearch({ getItems: () => items, openItem: (id, how) => deta
 const statsView = createStatsView({ onBack: goBack, onOpenItem: (id) => details.open(id) });
 const shownKinds = createShownKinds();
 const welcomeSwitches = createWelcomeSwitches();
+const activity = createActivity();
 
 // ----- home ↔ category, stats -----
 
@@ -88,6 +90,9 @@ $('seenButton').addEventListener('click', () => sendSetup('library')
   .then(() => shownKinds.close())
   .catch((err) => toast(err.message, { error: true })));
 $('kindsButton').addEventListener('click', () => shownKinds.open());
+// a mistake: recent activity, on top of settings
+$('activityButton').innerHTML = `${icon('history')}<span>Recent activity</span>`;
+$('activityButton').addEventListener('click', () => activity.open());
 
 // ----- start -----
 
@@ -116,6 +121,7 @@ subscribe((view) => {
   search.setHidden(hidden);
   shownKinds.update(hidden);
   welcomeSwitches.update(hidden);
+  activity.update(view.activity ?? []);
   if (setupStep === 'categories' && !welcomed) showWelcome();
   else if (setupStep !== 'categories' && welcomed) showHome();
   details.refresh();

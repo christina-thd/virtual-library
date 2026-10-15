@@ -14,10 +14,3 @@ export function starInputHtml(rating) {
     <button type="button" data-rate="${n}" class="${n <= (rating ?? 0) ? 'on' : ''}" aria-label="${n} star${n > 1 ? 's' : ''}"
             aria-pressed="${n === rating}">${star()}</button>`).join('')}</div>`;
 }
-
-/** Lights up the first `rating` stars right away, before the server confirms. */
-export function previewStars(container, rating) {
-  for (const button of container.querySelectorAll('[data-rate]')) {
-    button.classList.toggle('on', Number(button.dataset.rate) <= (rating ?? 0));
-  }
-}

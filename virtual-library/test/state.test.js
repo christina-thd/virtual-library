@@ -7,7 +7,7 @@ const NOW = 1_700_000_000_000;
 const item = (overrides = {}) => ({
   id: 'abc123', category: 'movie', title: 'Dune', year: 2021, creator: 'Denis Villeneuve',
   source: { provider: 'cinemeta', id: 'tt1160419' }, imageUrls: ['https://images.metahub.space/poster/medium/tt1160419/img'],
-  cover: null, status: 'done', rating: 5, dropped: false, hoursPlayed: null, runtime: 155, seasons: null, episodes: null, caughtUp: null, pages: null, volumes: null, publisher: null, genres: ['Sci-Fi'], detailsAt: NOW, addedAt: NOW - 1000, finishedAt: NOW, beforeStats: false, ...overrides,
+  cover: null, status: 'done', rating: 5, dropped: false, hoursPlayed: null, note: null, leftOff: null, seenUpTo: null, runtime: 155, seasons: null, episodes: null, seasonEpisodes: null, caughtUp: null, pages: null, volumes: null, publisher: null, genres: ['Sci-Fi'], detailsAt: NOW, addedAt: NOW - 1000, finishedAt: NOW, beforeStats: false, ...overrides,
 });
 
 describe('normalizeState', () => {
@@ -94,6 +94,23 @@ describe('normalizeState', () => {
     assert.deepEqual([game.hoursPlayed, movie.hoursPlayed], [12.3, null]);
   });
 
+  test('only pending books and comics keep where you left off', () => {
+    const [book, comic, done, movie] = normalizeState({ items: [
+      item({ id: 'a1', category: 'book', status: 'pending', leftOff: 120 }), item({ id: 'b2', category: 'comic', status: 'pending', leftOff: 2.5 }),
+      item({ id: 'c3', category: 'book', leftOff: 40 }), item({ id: 'd4', status: 'pending', leftOff: 3 }),
+    ] }, NOW).items;
+    assert.deepEqual([book.leftOff, comic.leftOff, done.leftOff, movie.leftOff], [120, null, null, null]);
+  });
+
+  test('series not done keep the last episode you saw', () => {
+    const [pending, waiting, done, odd] = normalizeState({ items: [
+      item({ id: 'a1', category: 'series', status: 'pending', seenUpTo: { season: 2, episode: 5 } }),
+      item({ id: 'b2', category: 'series', status: 'waiting', seenUpTo: { season: 3, episode: 'x' } }),
+      item({ id: 'c3', category: 'series', seenUpTo: { season: 1, episode: 1 } }), item({ id: 'd4', category: 'series', status: 'pending', seenUpTo: { season: 0 } }),
+    ] }, NOW).items;
+    assert.deepEqual([pending.seenUpTo, waiting.seenUpTo, done.seenUpTo, odd.seenUpTo], [{ season: 2, episode: 5 }, { season: 3, episode: null }, null, null]);
+  });
+
   test('genres: up to three names; null means not looked up yet', () => {
     const [many, odd, none] = normalizeState({ items: [
       item({ id: 'a1', genres: ['Drama', 'Drama', ' Crime ', 'Mystery', 'Thriller'] }), item({ id: 'b2', genres: [3, '', null] }), item({ id: 'c3', genres: 'Drama' }),
@@ -144,7 +161,7 @@ describe('helpers', () => {
 
 describe('toView', () => {
   test('shows the saved cover when there is one, else the catalog image', () => {
-    const state = { schema: 1, items: [item({ cover: 'abc123.jpg' }), item({ id: 'def456' }), item({ id: 'aaa', imageUrls: [] })] };
+    const state = { schema: 1, items: [item({ cover: 'abc123.jpg' }), item({ id: 'def456' }), item({ id: 'aaa', imageUrls: [] })], activity: [] };
     const view = toView(state, '1.2.3');
     assert.equal(view.version, '1.2.3');
     assert.deepEqual(view.items.map((i) => i.image), ['covers/abc123.jpg', item().imageUrls[0], null]);

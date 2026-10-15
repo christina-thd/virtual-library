@@ -1,5 +1,17 @@
 # Changelog
 
+## 4.0.0
+- Use Home Assistant's certificate
+- Fix iPhone keyboard gap
+- Sort games by platform
+- Sort manga/comics by type, and flip any sort
+- Add a note to finished games
+- Save button for rating, playtime and note
+- Keep where you left off on pending books, manga/comics and series
+- Recent activity with undo, in settings
+- Go to top and bottom buttons
+- Search inside a category
+
 ## 3.3.0
 - Fix longest series count
 - Tap a message to dismiss it

@@ -17,6 +17,7 @@ function parsePort(value) {
  *   COVERS_DIR    where cover images are saved (default ./data/covers)
  *   TMDB_API_KEY  optional: search movies and series on TMDB first (then Cinemeta / TVmaze)
  *   RAWG_API_KEY  optional: search games on RAWG (all platforms) first (then Steam / GOG)
+ *   HTTPS_PORT, TLS_CERT, TLS_KEY  also serve https (PEM certificate and key; off unless all three are set)
  */
 export function loadConfig(env = process.env) {
   const pkg = JSON.parse(readFileSync(path.join(ROOT_DIR, 'package.json'), 'utf8'));
@@ -25,6 +26,9 @@ export function loadConfig(env = process.env) {
     version: pkg.version,
     port: parsePort(env.PORT) ?? 3100,
     host: env.HOST || '0.0.0.0',
+    httpsPort: parsePort(env.HTTPS_PORT),
+    tlsCert: env.TLS_CERT || null,
+    tlsKey: env.TLS_KEY || null,
     stateFile: env.STATE_FILE || path.join(ROOT_DIR, 'data', 'library.json'),
     coversDir: env.COVERS_DIR || path.join(ROOT_DIR, 'data', 'covers'),
     tmdbApiKey: env.TMDB_API_KEY || null,

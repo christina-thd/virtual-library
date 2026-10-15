@@ -122,6 +122,19 @@
 .setup-again svg.icon { width: 19px; height: 19px; }
 .setup-again:active { transform: scale(0.98); }
 .setup-again[hidden] { display: none; }
+/* recent activity: a quiet link under everything else */
+.settings-quiet { display: flex; align-items: center; gap: 6px; margin: 18px auto 0; padding: 6px 12px; color: var(--faint); font-size: 13px; font-weight: 500; }
+.settings-quiet svg.icon { width: 15px; height: 15px; }
+.activity-list { display: grid; gap: 8px; margin: 0; padding: 4px 16px 0; list-style: none; overflow-y: auto; }
+.activity-row { display: flex; align-items: center; gap: 12px; padding: 10px 12px; border-radius: 14px; background: var(--surface-2); }
+.activity-row.undone { opacity: 0.55; }
+.activity-text { flex: 1; min-width: 0; display: grid; gap: 2px; }
+.activity-text strong { overflow: hidden; font-size: 14px; font-weight: 600; white-space: nowrap; text-overflow: ellipsis; }
+.activity-text span { color: var(--muted); font-size: 12.5px; }
+.activity-undo { flex: none; height: 32px; padding: 0 12px; border-radius: 999px; border: 1px solid color-mix(in srgb, var(--accent) 40%, transparent); color: var(--accent); font-size: 13px; font-weight: 600; }
+.activity-undo:disabled { opacity: 0.5; }
+.activity-undone { flex: none; color: var(--faint); font-size: 12px; }
+.activity-empty { padding: 28px 0; color: var(--muted); text-align: center; }
 .kinds-sheet { padding-bottom: calc(18px + var(--safe-bottom)); -webkit-user-select: none; user-select: none; }
 .welcome-view { -webkit-user-select: none; user-select: none; }
 .kinds-head { flex: none; padding: 0 16px 6px; }

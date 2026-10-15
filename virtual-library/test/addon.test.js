@@ -28,10 +28,22 @@ test('run.sh starts the app on the ingress port', () => {
   assert.match(run, /exec node \/app\/src\/server\.js/);
 });
 
-test('the direct port and the Dockerfile use the same port as the app', () => {
+test('the direct ports and the Dockerfile use the same ports as the app', () => {
   const port = yamlValue(config, 'ingress_port');
-  assert.deepEqual(keys(block(config, 'ports').replace(/^ {2}(\d+)\/tcp:/gm, '  p$1:')), [`p${port}`]);
-  assert.match(read('Dockerfile'), new RegExp(`^EXPOSE ${port}/tcp$`, 'm'));
+  const httpsPort = read('run.sh').match(/^ +export HTTPS_PORT=(\d+)/m)?.[1];
+  const portKeys = (text) => keys(text.replace(/^ {2}(\d+)\/tcp:/gm, '  p$1:'));
+  assert.deepEqual(portKeys(block(config, 'ports')), [`p${port}`, `p${httpsPort}`].sort());
+  assert.deepEqual(portKeys(block(config, 'ports_description')), [`p${port}`, `p${httpsPort}`].sort());
+  for (const p of [port, httpsPort]) assert.match(read('Dockerfile'), new RegExp(`^EXPOSE ${p}/tcp$`, 'm'));
+});
+
+test("the ssl option uses Home Assistant's certificate", () => {
+  assert.match(config, /^ {2}- ssl:ro$/m);                                      // the ssl folder, read-only
+  assert.match(config, /^ {2}ssl: false$/m);                                    // off unless turned on
+  const run = read('run.sh');
+  assert.match(run, /bashio::config\.true 'ssl'/);
+  assert.match(run, /CERTFILE="\/ssl\/\$\{CERTFILE##\*\/\}"/);                  // just the name, in /ssl
+  assert.match(run, /KEYFILE="\/ssl\/\$\{KEYFILE##\*\/\}"/);
 });
 
 test('the library is kept in the add-on data folder', () => {
@@ -57,11 +69,13 @@ test('the app needs no npm packages (the Dockerfile installs none)', () => {
 test('every option has a schema entry, and run.sh reads each one', () => {
   assert.deepEqual(keys(block(config, 'options')), keys(block(config, 'schema')));
   const run = read('run.sh');
-  for (const option of keys(block(config, 'options'))) assert.match(run, new RegExp(`bashio::config '${option}'`), option);
+  for (const option of keys(block(config, 'options'))) assert.match(run, new RegExp(`bashio::config(\\.true)? '${option}'`), option);
 });
 
 test('API keys are hidden in the add-on configuration', () => {
-  for (const line of block(config, 'schema').trim().split('\n')) assert.match(line, /: "password\?"$/, line);
+  const keyLines = block(config, 'schema').trim().split('\n').filter((line) => /_api_key:/.test(line));
+  assert.equal(keyLines.length, 2);
+  for (const line of keyLines) assert.match(line, /: "password\?"$/, line);
 });
 
 test('the Dockerfile builds without BUILD_FROM (newer Supervisors only pass BUILD_ARCH)', () => {

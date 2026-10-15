@@ -71,7 +71,13 @@
       <header class="top category-top">
         <button type="button" class="icon-button back-button" id="backButton" aria-label="Back to all categories"></button>
         <h1 id="categoryTitle"></h1>
+        <button type="button" class="icon-button find-button" id="findButton" aria-label="Search" title="Search" aria-expanded="false"></button>
       </header>
+      <form class="find-bar" id="findBar" autocomplete="off" hidden>
+        <span class="search-icon" aria-hidden="true"></span>
+        <input type="search" id="findInput" enterkeyhint="search" maxlength="100" spellcheck="false" placeholder="Search" aria-label="Search">
+        <button type="button" class="icon-button" id="findClose" aria-label="Close search"></button>
+      </form>
       <nav class="filters" id="filters">
         <div class="status-tabs" id="statusTabs" role="tablist">
           <button type="button" role="tab" data-status="pending">Pending <span class="count"></span></button>
@@ -83,12 +89,17 @@
           <span class="sort-label" id="sortLabel" aria-hidden="true"></span>
           <select id="sortSelect" aria-label="Sort by"></select>
         </label>
+        <button type="button" class="sort-direction" id="sortDirection" aria-label="Reverse the order" title="Reverse the order" aria-pressed="false"></button>
       </nav>
     </div>
     <main class="shelf" id="shelf" aria-live="polite"></main>
     <div class="empty" id="empty" hidden></div>
   </div>
 
+  <div class="jump" id="jumpButtons" hidden>
+    <button type="button" class="jump-button" id="jumpTop" aria-label="Go to top" title="Go to top"></button>
+    <button type="button" class="jump-button" id="jumpBottom" aria-label="Go to bottom" title="Go to bottom"></button>
+  </div>
   <button type="button" class="fab" id="addButton" aria-label="Add to library"></button>
 
   <!-- ===== search (add to library) ===== -->
@@ -130,6 +141,22 @@
       <hr class="settings-divider">
       <p class="settings-label">Forgot something?</p>
       <button type="button" class="setup-again" id="seenButton"></button>
+      <button type="button" class="settings-quiet" id="activityButton"></button>
+    </section>
+  </div>
+
+  <!-- ===== recent activity, with undo (from settings) ===== -->
+  <div class="layer" id="activityLayer" hidden>
+    <div class="backdrop" data-close></div>
+    <section class="sheet kinds-sheet" role="dialog" aria-modal="true" aria-labelledby="activityTitle">
+      <div class="grabber" data-drag data-close></div>
+      <div class="kinds-head" data-drag>
+        <div class="search-title-row">
+          <h2 class="search-title" id="activityTitle">Recent activity</h2>
+          <button type="button" class="search-close" data-close>Close</button>
+        </div>
+      </div>
+      <ul class="activity-list" id="activityList"></ul>
     </section>
   </div>
 
@@ -137,6 +164,19 @@
   <div class="layer" id="detailsLayer" hidden>
     <div class="backdrop" data-close></div>
     <section class="sheet details-sheet" id="details" role="dialog" aria-modal="true"></section>
+  </div>
+
+  <!-- ===== a question with two answers, on top of another sheet (js/ui/ask.js) ===== -->
+  <div class="layer" id="askLayer" hidden>
+    <div class="backdrop" data-close></div>
+    <section class="sheet ask-sheet" role="alertdialog" aria-modal="true" aria-labelledby="askTitle">
+      <div class="grabber" data-drag data-close></div>
+      <h2 class="ask-title" id="askTitle" data-drag></h2>
+      <div class="ask-answers">
+        <button type="button" class="ask-no" id="askNo"></button>
+        <button type="button" class="ask-yes" id="askYes"></button>
+      </div>
+    </section>
   </div>
 
   <div class="toast" id="toast" role="status" aria-live="polite"></div>

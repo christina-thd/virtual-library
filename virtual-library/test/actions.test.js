@@ -184,6 +184,83 @@ describe('details', () => {
   });
 });
 
+describe('setNote', () => {
+  test('a finished game can have a note; empty removes it; it stays if moved back', () => {
+    const id = add({ category: 'game', source: null, title: 'Hades', status: 'done' });
+    apply({ type: 'setNote', itemId: id, note: '  Loved the music.  ' });
+    assert.equal(itemOf(id).note, 'Loved the music.');
+    apply({ type: 'setNote', itemId: id, note: 'x'.repeat(1200) });
+    assert.equal(itemOf(id).note.length, 1000);
+    apply({ type: 'setStatus', itemId: id, status: 'pending' });
+    assert.equal(itemOf(id).note.length, 1000);                                  // kept, like the playtime
+    rejects({ type: 'setNote', itemId: id, note: 'Again' }, 400, /finished/);
+    apply({ type: 'setStatus', itemId: id, status: 'done' });
+    apply({ type: 'setNote', itemId: id, note: '   ' });
+    assert.equal(itemOf(id).note, null);
+    rejects({ type: 'setNote', itemId: id, note: 5 }, 400, /text/);
+    rejects({ type: 'setNote', itemId: add({ status: 'done' }), note: 'A series' }, 400, /games/);
+  });
+});
+
+describe('setLeftOff', () => {
+  test('a pending book or comic keeps where you left off; null clears it; finishing clears it', () => {
+    const id = add({ category: 'book', source: null, title: 'Dune' });
+    apply({ type: 'setLeftOff', itemId: id, at: 120 });
+    assert.equal(itemOf(id).leftOff, 120);
+    apply({ type: 'setLeftOff', itemId: id, at: null });
+    assert.equal(itemOf(id).leftOff, null);
+    apply({ type: 'setLeftOff', itemId: id, at: 80 });
+    apply({ type: 'setStatus', itemId: id, status: 'done' });
+    assert.equal(itemOf(id).leftOff, null);
+    rejects({ type: 'setLeftOff', itemId: id, at: 5 }, 400, /pending/);
+    const manga = add({ category: 'comic', source: null, title: 'Naruto' });
+    apply({ type: 'setLeftOff', itemId: manga, at: 3 });
+    apply({ type: 'setDropped', itemId: manga, dropped: true });
+    assert.equal(itemOf(manga).leftOff, null);
+  });
+
+  test('only books and comics, with a whole number', () => {
+    rejects({ type: 'setLeftOff', itemId: add(), at: 2 }, 400, /books/);
+    const id = add({ category: 'book', source: null, title: 'Dune' });
+    for (const at of [0, -3, 2.5, '12', 1e9]) rejects({ type: 'setLeftOff', itemId: id, at }, 400);
+  });
+});
+
+describe('setSeenUpTo', () => {
+  test('a series not done keeps the last episode you saw; null clears it; finishing clears it', () => {
+    const id = add();
+    apply({ type: 'setSeenUpTo', itemId: id, season: 2, episode: 5 });
+    assert.deepEqual(itemOf(id).seenUpTo, { season: 2, episode: 5 });
+    apply({ type: 'setStatus', itemId: id, status: 'waiting' });
+    assert.deepEqual(itemOf(id).seenUpTo, { season: 2, episode: 5 });          // kept while waiting
+    apply({ type: 'setSeenUpTo', itemId: id, season: 3 });
+    assert.deepEqual(itemOf(id).seenUpTo, { season: 3, episode: null });
+    apply({ type: 'setSeenUpTo', itemId: id, season: null });
+    assert.equal(itemOf(id).seenUpTo, null);
+    apply({ type: 'setSeenUpTo', itemId: id, season: 1, episode: 2 });
+    apply({ type: 'setStatus', itemId: id, status: 'done' });
+    assert.equal(itemOf(id).seenUpTo, null);
+    rejects({ type: 'setSeenUpTo', itemId: id, season: 1 }, 400, /not done/);
+  });
+
+  test('only series, with whole numbers', () => {
+    rejects({ type: 'setSeenUpTo', itemId: add({ category: 'book', source: null, title: 'Dune' }), season: 1 }, 400, /series/);
+    const id = add();
+    for (const [season, episode] of [[0, 1], [1.5, 1], ['2', 1], [1, 0], [1, 'x']]) rejects({ type: 'setSeenUpTo', itemId: id, season, episode }, 400);
+  });
+
+  test('no more seasons or episodes than the series has', () => {
+    const id = add({ seasons: 3, episodes: 26 });
+    rejects({ type: 'setSeenUpTo', itemId: id, season: 4, episode: 1 }, 400, /3 seasons/);
+    rejects({ type: 'setSeenUpTo', itemId: id, season: 3, episode: 27 }, 400, /26 episodes/);
+    apply({ type: 'setSeenUpTo', itemId: id, season: 3, episode: 8 });
+    assert.deepEqual(itemOf(id).seenUpTo, { season: 3, episode: 8 });
+    const known = add({ source: null, seasons: 2, episodes: 18, seasonEpisodes: [10, 8] });   // each season's known
+    rejects({ type: 'setSeenUpTo', itemId: known, season: 2, episode: 9 }, 400, /Season 2 of "Dark" has 8 episodes/);
+    apply({ type: 'setSeenUpTo', itemId: known, season: 1, episode: 10 });
+  });
+});
+
 describe('setDropped', () => {
   test('dropping a pending item makes it done (and new items are not dropped)', () => {
     const id = add();
@@ -279,6 +356,6 @@ describe('applyAction', () => {
   });
 
   test('lists every action', () => {
-    assert.deepEqual([...ACTION_TYPES].sort(), ['addItem', 'rateItem', 'removeItem', 'setCategoryHidden', 'setDropped', 'setHours', 'setSetup', 'setStatus']);
+    assert.deepEqual([...ACTION_TYPES].sort(), ['addItem', 'rateItem', 'removeItem', 'setCategoryHidden', 'setDropped', 'setHours', 'setLeftOff', 'setNote', 'setSeenUpTo', 'setSetup', 'setStatus', 'undo']);
   });
 });
