@@ -161,26 +161,41 @@ export function createDetails({ getItem }) {
       </form>` : ''}`;
   }
 
-  /** A series' last seen episode: the same bookmark button ("S2 · E5" on it), opening a season and an episode field. */
+  /**
+   * A season or episode picker: looks like the field, with the phone's own list on top (a wheel on iPhone) when how
+   * many there are is known; a field to type in when it isn't.
+   */
+  function numberPicker(id, name, value, most) {
+    if (!most) {
+      return `<input id="${id}" class="short-input" type="text" inputmode="numeric" autocomplete="off" maxlength="4" placeholder="–"
+        aria-label="${name}" value="${escapeHtml(value)}">`;
+    }
+    const options = Array.from({ length: most }, (_, i) => `<option value="${i + 1}" ${String(i + 1) === value ? 'selected' : ''}>${i + 1}</option>`);
+    return `<span class="wheel-value">${escapeHtml(value) || '–'}</span>${icon('down')}
+      <select id="${id}" aria-label="${name}"><option value="" ${value ? '' : 'selected'}>–</option>${options.join('')}</select>`;
+  }
+
+  /** A series' last seen episode: the same bookmark button ("S2 · E5" on it), opening a season and an episode picker. */
   function seenHtml(item, value) {
     const seen = item.seenUpTo;
     const saved = seen != null;
     const label = !seen ? 'Left off at' : seen.episode ? `S${seen.season} · E${seen.episode}` : `Season ${seen.season}`;
+    const seasons = item.seasons ?? item.seasonEpisodes?.length;
+    // the season's episodes when the catalog says, else all of them
+    const episodes = item.seasonEpisodes?.[Number(value.season) - 1] ?? item.episodes;
     return `
       <button type="button" class="pill left-off-toggle ${seen ? 'on' : ''}" data-left-off-toggle aria-expanded="${leftOffOpen}"
         aria-controls="seasonInput">${icon('bookmark')}${label}</button>
       ${leftOffOpen ? `
       <form class="hours left-off" data-field>
-        <span class="hours-field">
+        <label class="hours-field ${seasons ? 'wheel' : ''}">
           <span aria-hidden="true">Season</span>
-          <input id="seasonInput" class="short-input" type="text" inputmode="numeric" autocomplete="off" maxlength="3" placeholder="–"
-            aria-label="Season" value="${escapeHtml(value.season)}">${item.seasons ? `<span aria-hidden="true">of ${item.seasons}</span>` : ''}
-        </span>
-        <span class="hours-field">
+          ${numberPicker('seasonInput', 'Season', value.season.trim(), seasons)}
+        </label>
+        <label class="hours-field ${seasons && episodes ? 'wheel' : ''}">
           <span aria-hidden="true">Ep.</span>
-          <input id="episodeInput" class="short-input" type="text" inputmode="numeric" autocomplete="off" maxlength="4" placeholder="–"
-            aria-label="Episode" value="${escapeHtml(value.episode)}">
-        </span>
+          ${numberPicker('episodeInput', 'Episode', value.episode.trim(), seasons && episodes)}
+        </label>
         ${saved ? `<button type="button" class="icon-button left-off-clear" data-left-off-clear aria-label="Clear" title="Clear">${icon('close')}</button>` : ''}
       </form>` : ''}`;
   }
@@ -242,7 +257,7 @@ export function createDetails({ getItem }) {
     if (closest(e, '[data-left-off-toggle]')) {
       leftOffOpen = !leftOffOpen;
       render(item);
-      if (leftOffOpen) /** @type {HTMLElement} */ (panel.querySelector('#leftOffInput, #seasonInput')).focus();
+      if (leftOffOpen) /** @type {HTMLElement | null} */ (panel.querySelector('input#leftOffInput, input#seasonInput'))?.focus();
       return;
     }
 
@@ -278,6 +293,12 @@ export function createDetails({ getItem }) {
     const key = { hoursInput: 'hours', noteInput: 'note', leftOffInput: 'leftOff', seasonInput: 'season', episodeInput: 'episode' }[field.id];
     if (!item || !key) return;
     draft = { ...draft, [key]: field.value };
+    // picked from a list: shown, and a new season's episodes listed (the one picked kept if that season has it)
+    if (field.tagName === 'SELECT') {
+      const most = key === 'season' && (item.seasonEpisodes?.[Number(field.value) - 1] ?? item.episodes);
+      if (most && Number(shown(item).episode) > most) draft.episode = '';
+      return render(item);
+    }
     const button = panel.querySelector('[data-save]');
     if (dirty(item) && !button) panel.querySelector('.details-remove').insertAdjacentHTML('beforebegin', '<button type="button" class="details-save" data-save>Save</button>');
     if (!dirty(item)) button?.remove();
@@ -390,7 +411,8 @@ export function createDetails({ getItem }) {
         draft = null;
         return sheet.close({ force: true });
       }
-      if (['hoursInput', 'noteInput', 'leftOffInput', 'seasonInput', 'episodeInput'].includes(document.activeElement?.id)) return;   // typing: redrawn on leaving
+      const typing = document.activeElement instanceof HTMLInputElement || document.activeElement instanceof HTMLTextAreaElement;
+      if (typing && ['hoursInput', 'noteInput', 'leftOffInput', 'seasonInput', 'episodeInput'].includes(document.activeElement.id)) return;   // redrawn on leaving
       render(item);
     },
   };

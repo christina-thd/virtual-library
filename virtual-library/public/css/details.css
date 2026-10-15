@@ -133,6 +133,12 @@
 .hours.left-off { display: flex; align-items: center; justify-content: center; gap: 8px; margin-top: 12px; }
 .hours.left-off .hours-field { gap: 4px; margin-top: 0; padding: 0 12px; white-space: nowrap; }
 .hours-field input.short-input { width: 32px; }
+/* a season or episode from the phone's own list: the invisible <select> on top opens it */
+.hours-field.wheel { position: relative; }
+.wheel-value { min-width: 22px; color: var(--ink); font-size: 16px; font-weight: 600; text-align: center; }
+.hours-field.wheel svg.icon { width: 13px; height: 13px; stroke-width: 2.4; color: var(--faint); }
+.hours-field.wheel select { position: absolute; inset: 0; width: 100%; opacity: 0; font-size: 16px; cursor: pointer; }
+.hours-field.wheel:has(select:focus-visible) { border-color: color-mix(in srgb, var(--accent) 60%, transparent); }
 .left-off-clear { width: 42px; height: 42px; border: 1px solid var(--line); background: var(--surface-2); }
 .left-off-clear svg.icon { width: 16px; height: 16px; }
 .star-input { display: flex; justify-content: center; gap: 6px; margin-top: 8px; }
