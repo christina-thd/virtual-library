@@ -8,12 +8,17 @@ import { renderShelf, SORTS, sortsFor } from './shelf.js';
 // the order each tab starts in
 const START_SORT = { pending: 'recent', waiting: 'recent', done: 'rating' };
 
+/** "Pokémon" is found by "pokemon". */
+const simplify = (text) => text.normalize('NFD').replace(/\p{M}/gu, '').toLowerCase();
+const matches = (item, query) => simplify(`${item.title} ${item.creator ?? ''}`).includes(query);
+
 export function createCategoryView({ onBack }) {
   let category = null;
   let status = 'pending';
   // the order on each tab, while it's shown
   const sorts = { ...START_SORT };
   let library = [];
+  let query = '';                   // searching inside the category: by title or creator, on every tab
 
   const view = $('categoryView');
   const tabs = $('statusTabs');
@@ -44,12 +49,13 @@ export function createCategoryView({ onBack }) {
   function render({ animate = false } = {}) {
     if (!category) return;
     const inCategory = library.filter((i) => i.category === category);
+    const found = query ? inCategory.filter((i) => matches(i, query)) : inCategory;
     for (const button of tabButtons()) {
-      const count = inCategory.filter((i) => i.status === button.dataset.status).length;
+      const count = found.filter((i) => i.status === button.dataset.status).length;
       button.querySelector('.count').textContent = count ? String(count) : '';
     }
-    const context = { category, status, inCategory: inCategory.length, sort: currentSort().id };
-    renderShelf(inCategory.filter((i) => i.status === status), context, { animate });
+    const context = { category, status, inCategory: inCategory.length, sort: currentSort().id, query };
+    renderShelf(found.filter((i) => i.status === status), context, { animate });
     updateJump();
   }
 
@@ -71,6 +77,39 @@ export function createCategoryView({ onBack }) {
   // the title and tabs stay at the top; they get a background once the shelf scrolls under them
   new IntersectionObserver(([entry]) => $('categoryHead').classList.toggle('stuck', !entry.isIntersecting))
     .observe($('headSentinel'));
+
+  const findInput = /** @type {HTMLInputElement} */ ($('findInput'));
+  $('findButton').innerHTML = icon('search');
+  $('findBar').querySelector('.search-icon').innerHTML = icon('search');
+  $('findClose').innerHTML = icon('close');
+
+  function openFind() {
+    $('findBar').hidden = false;
+    $('findButton').setAttribute('aria-expanded', 'true');
+    findInput.focus();
+  }
+
+  function closeFind() {
+    $('findBar').hidden = true;
+    $('findButton').setAttribute('aria-expanded', 'false');
+    findInput.value = '';
+    if (query) {
+      query = '';
+      render();
+    }
+  }
+
+  $('findButton').addEventListener('click', () => ($('findBar').hidden ? openFind() : closeFind()));
+  $('findClose').addEventListener('click', closeFind);
+  findInput.addEventListener('input', () => {
+    query = simplify(findInput.value.trim());
+    render();
+  });
+  // Enter hides the keyboard
+  $('findBar').addEventListener('submit', (e) => {
+    e.preventDefault();
+    findInput.blur();
+  });
 
   // go to top / bottom: each shows once there's a screen's worth to go that way
   const JUMP_MIN = 300;
@@ -105,6 +144,8 @@ export function createCategoryView({ onBack }) {
       markSelected();
       $('categoryTitle').innerHTML = `${icon(id)}<span>${categoryOf(id).plural}</span>`;
       $('jumpButtons').hidden = false;
+      query = '';
+      closeFind();
       render({ animate: true });
       requestAnimationFrame(updateJump);           // once the view is on screen
     },

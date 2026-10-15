@@ -72,7 +72,8 @@ function cardHtml(item, index, sort) {
     </button>`;
 }
 
-function emptyHtml({ category, status, inCategory }) {
+function emptyHtml({ category, status, inCategory, query }) {
+  if (query) return `${icon('search')}<h2>No matches</h2>`;
   const kind = categoryOf(category).plural.toLowerCase();
   const [title, hint] = !inCategory
     ? [`No ${kind} yet`, 'Tap + to hoard your first one.']

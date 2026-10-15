@@ -7,6 +7,7 @@
 - Add a note to finished games
 - Save button for rating, playtime and note
 - Go to top and bottom buttons
+- Search inside a category
 
 ## 3.3.0
 - Fix longest series count

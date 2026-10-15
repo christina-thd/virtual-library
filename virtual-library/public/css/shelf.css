@@ -37,6 +37,39 @@
 }
 .category-top h1 svg.icon { width: 24px; height: 24px; color: var(--tint); }
 
+/* ----- search inside the category ----- */
+
+.find-button { width: 42px; height: 42px; margin-left: auto; color: var(--ink); }
+.find-button svg.icon { width: 22px; height: 22px; }
+.find-button[aria-expanded="true"] { color: var(--accent); }
+.find-bar {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  height: 46px;
+  margin: 8px 16px 0;
+  padding: 0 4px 0 14px;
+  border-radius: 999px;
+  background: var(--surface-2);
+  border: 1px solid var(--line);
+}
+.find-bar[hidden] { display: none; }
+.find-bar:focus-within { border-color: color-mix(in srgb, var(--accent) 60%, transparent); }
+.find-bar .search-icon svg.icon { width: 18px; height: 18px; }
+.find-bar input {
+  flex: 1;
+  min-width: 0;
+  height: 100%;
+  border: 0;
+  background: none;
+  color: var(--ink);
+  outline: none;
+  font-size: 16px;                               /* iPhone zooms into form fields with smaller text */
+}
+.find-bar input::placeholder { color: var(--faint); }
+.find-bar input::-webkit-search-cancel-button { display: none; }
+.find-bar .icon-button svg.icon { width: 18px; height: 18px; }
+
 /* ----- title, back button and tabs (stay at the top while scrolling) ----- */
 
 .category-head {
