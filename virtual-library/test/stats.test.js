@@ -133,12 +133,13 @@ test('manga and comics are told apart: manga volumes, comics read, each with its
     ...library,
     item({ category: 'comic', source: manga, volumes: 72, finishedAt: on(2026, 9), genres: ['Action'], creator: 'Kishimoto' }),
     item({ category: 'comic', source: { provider: 'mangadex', id: '2' }, volumes: 30, finishedAt: on(2026, 9), creator: 'Kishimoto' }),
-    item({ category: 'comic', source: { provider: 'openlibrary', id: '3' }, volumes: 1, finishedAt: on(2026, 8), genres: ['Superheroes'], publisher: 'DC' }),
+    item({ category: 'comic', source: { provider: 'openlibrary', id: '3' }, volumes: 1, pages: 416, finishedAt: on(2026, 8), genres: ['Superheroes'], publisher: 'DC' }),
     item({ category: 'comic', volumes: 1, finishedAt: on(2026, 8) }),                                 // typed in: a comic
     item({ category: 'comic', status: 'pending', finishedAt: null, addedAt: on(2025, 2) }),
   ];
   const stats = libraryStats(shelf, { now: NOW });
   assert.deepEqual([stats.time.volumes, stats.time.comics], [102, 2]);
+  assert.equal(stats.time.pages, libraryStats(library, { now: NOW }).time.pages);       // a comic's pages aren't pages read: it's one comic
   assert.deepEqual(stats.records.filter((r) => r.item.category === 'comic').map((r) => [r.kind, r.value]), [['manga', 72]]);   // comics: no length
   assert.deepEqual([stats.genresByKind.manga, stats.genresByKind.comic], [[{ name: 'Action', count: 1 }], [{ name: 'Superheroes', count: 1 }]]);
   assert.equal(stats.creatorsByKind.manga, undefined);                                   // no creators for manga
