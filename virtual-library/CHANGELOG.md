@@ -4,6 +4,7 @@
 - Fix typing a note or where you left off on iPhone
 - Fix iPhone keyboard gap under an item
 - Comics use pages instead of volumes
+- Where you left off can't go past the last page or volume
 
 ## 4.0.0
 - Use Home Assistant's certificate

@@ -1,4 +1,4 @@
-import { CATEGORY_IDS, isRating, LEFT_OFF, MAX_CREATOR, MAX_TITLE, statusesFor } from '../../public/js/shared/library.js';
+import { CATEGORY_IDS, isRating, LEFT_OFF, leftOffUnit, MAX_CREATOR, MAX_TITLE, statusesFor } from '../../public/js/shared/library.js';
 import { ITEM_ACTIONS, latestOf, logChange } from './activity.js';
 import { detailFields, findBySource, findItem, itemDetails, newId, parseCount, parseHours, parseImageUrls, parseNote, parseSource, parseYear, SETUP_STEPS } from './state.js';
 
@@ -175,6 +175,10 @@ const handlers = {
     if (!LEFT_OFF[item.category]) throw new ActionError('Only books and manga/comics keep where you left off');
     if (item.status !== 'pending') throw new ActionError('Where you left off is for pending ones');
     if (at != null && parseCount(at) == null) throw new ActionError('at must be a whole number from 1 to 99999, or null');
+    // no further than it goes, when that's known
+    const unit = leftOffUnit(item);
+    const most = unit === 'page' ? item.pages : item.volumes;
+    if (most && at > most) throw new ActionError(`"${item.title}" has ${most} ${unit}${most > 1 ? 's' : ''}`);
     item.leftOff = parseCount(at);
   },
 

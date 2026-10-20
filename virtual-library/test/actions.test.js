@@ -219,6 +219,18 @@ describe('setLeftOff', () => {
     assert.equal(itemOf(manga).leftOff, null);
   });
 
+  test('no further than the book, comic or manga goes', () => {
+    const book = add({ category: 'book', source: null, title: 'Dune', pages: 608 });
+    rejects({ type: 'setLeftOff', itemId: book, at: 609 }, 400, /"Dune" has 608 pages/);
+    apply({ type: 'setLeftOff', itemId: book, at: 608 });
+    const comic = add({ category: 'comic', source: null, title: 'Watchmen', pages: 416, volumes: 1 });
+    rejects({ type: 'setLeftOff', itemId: comic, at: 417 }, 400, /416 pages/);
+    apply({ type: 'setLeftOff', itemId: comic, at: 214 });                  // a page, not a volume
+    const manga = add({ category: 'comic', source: { provider: 'mangadex', id: 'x1' }, title: 'Berserk', volumes: 43 });
+    rejects({ type: 'setLeftOff', itemId: manga, at: 44 }, 400, /43 volumes/);
+    apply({ type: 'setLeftOff', itemId: add({ category: 'book', source: null, title: 'Unknown length' }), at: 5000 });   // not known: any
+  });
+
   test('only books and comics, with a whole number', () => {
     rejects({ type: 'setLeftOff', itemId: add(), at: 2 }, 400, /books/);
     const id = add({ category: 'book', source: null, title: 'Dune' });
