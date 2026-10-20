@@ -1,5 +1,8 @@
 # Changelog
 
+## 4.1.0
+- Fix typing a note or where you left off on iPhone
+
 ## 4.0.0
 - Use Home Assistant's certificate
 - Fix iPhone keyboard gap
