@@ -51,6 +51,7 @@ const OTHER_STATUSES = Object.freeze(['pending', 'done']);
 
 /** The categories where you can keep where you left off (a page, a volume), while pending. */
 export const LEFT_OFF = Object.freeze({ book: 'page', comic: 'volume' });
+
 /** The statuses a category uses, in tab order. */
 export const statusesFor = (category) => (category === 'series' ? STATUSES : OTHER_STATUSES);
 
@@ -66,6 +67,9 @@ const MANGA_CATALOGS = ['kitsu', 'mangadex'];
 
 /** A manga (found in a manga catalog) rather than a western comic. */
 export const isManga = ({ category, source }) => category === 'comic' && MANGA_CATALOGS.includes(source?.provider);
+
+/** Where you left off one: a book's or a comic's page, a manga's volume (a comic is one book). */
+export const leftOffUnit = (item) => (item.category === 'comic' && !isManga(item) ? 'page' : LEFT_OFF[item.category]);
 
 /** What one item is: its category's name, but a manga or a comic rather than "Manga or comic". */
 export const kindOf = (item) => (item.category === 'comic' ? (isManga(item) ? 'Manga' : 'Comic') : categoryOf(item.category)?.label ?? '');

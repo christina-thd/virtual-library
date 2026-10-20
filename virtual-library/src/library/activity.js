@@ -1,6 +1,6 @@
 // Recent activity: the latest changes to items, newest first, each with the item as it was before, so a mistake
 // (a wrong status, a removed item) can be undone. Each item's changes undo newest first.
-import { LEFT_OFF, STATUS_LABELS } from '../../public/js/shared/library.js';
+import { leftOffUnit, STATUS_LABELS } from '../../public/js/shared/library.js';
 import { newId } from './state.js';
 
 export const MAX_ACTIVITY = 50;
@@ -18,7 +18,7 @@ function describe(type, before, after) {
     case 'rateItem': return after.rating ? `Rated ${after.rating}★` : 'Rating cleared';
     case 'setHours': return after.hoursPlayed ? `Playtime ${after.hoursPlayed}h` : 'Playtime cleared';
     case 'setNote': return !after.note ? 'Note removed' : before.note ? 'Note changed' : 'Note added';
-    case 'setLeftOff': return after.leftOff ? `Left off at ${LEFT_OFF[after.category]} ${after.leftOff}` : 'Left off cleared';
+    case 'setLeftOff': return after.leftOff ? `Left off at ${leftOffUnit(after)} ${after.leftOff}` : 'Left off cleared';
     case 'setSeenUpTo': {
       const seen = after.seenUpTo;
       if (!seen) return 'Left off cleared';

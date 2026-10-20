@@ -4,7 +4,7 @@
 import { sendAction } from '../shared/api.js';
 import { $, closest, escapeHtml } from '../shared/dom.js';
 import { formatCount, formatRuntime } from '../shared/format.js';
-import { kindOf, LEFT_OFF, MAX_NOTE, STATUS_LABELS, statusesFor } from '../shared/library.js';
+import { isManga, kindOf, LEFT_OFF, leftOffUnit, MAX_NOTE, STATUS_LABELS, statusesFor } from '../shared/library.js';
 import { ask } from '../ui/ask.js';
 import { celebrate } from '../ui/celebrate.js';
 import { coverHtml } from '../ui/cover.js';
@@ -73,9 +73,9 @@ export function createDetails({ getItem }) {
     const value = shown(item);
     const meta = [item.year, item.creator].filter(Boolean).map(escapeHtml).join(' · ');
     // a quieter line under it: how long a movie or book is, how many seasons and episodes of a series are out,
-    // how many volumes of a comic
+    // how many volumes of a manga, how many pages of a book or comic
     const facts = [item.category === 'series' ? '' : formatRuntime(item.runtime),     // a series': for the stats only
-      formatCount(item.seasons, 'season'), formatCount(item.episodes, 'episode'), formatCount(item.pages, 'page'), formatCount(item.volumes, 'volume')]
+      formatCount(item.seasons, 'season'), formatCount(item.episodes, 'episode'), formatCount(item.pages, 'page'), isManga(item) ? formatCount(item.volumes, 'volume') : '']
       .filter(Boolean).join(' · ');
     const done = item.status === 'done';
     const glow = item.image
@@ -139,12 +139,12 @@ export function createDetails({ getItem }) {
   }
 
   /**
-   * A pending book's page or comic's volume, "of 412" when it's known: a bookmark button (with the saved one on it)
+   * A pending book's or comic's page or manga's volume, "of 412" when it's known: a bookmark button (with the saved one on it)
    * that opens the field.
    */
   function leftOffHtml(item, typed) {
     const saved = item.leftOff != null;
-    const unit = LEFT_OFF[item.category];
+    const unit = leftOffUnit(item);
     const short = unit === 'page' ? 'Page' : 'Vol.';
     const total = unit === 'page' ? item.pages : item.volumes;
     return `
@@ -357,7 +357,7 @@ export function createDetails({ getItem }) {
   async function saveLeftOff(item, typed) {
     const at = typed === '' ? null : Number(typed);
     if (at !== null && !(Number.isInteger(at) && at >= 1 && at <= 99_999)) {
-      toast(`Type a ${LEFT_OFF[item.category]} number, like 42`, { error: true });
+      toast(`Type a ${leftOffUnit(item)} number, like 42`, { error: true });
       return false;
     }
     try {

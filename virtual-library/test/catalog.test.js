@@ -141,11 +141,11 @@ describe('keyless catalogs', () => {
       'https://api.mangaupdates.com/v1/series/3': { status: '115 Volumes (Ongoing)  \n' },
     });
     const catalog = createCatalog({ http, providers: chooseProviders() });
-    assert.deepEqual(await catalog.detailsOf('comic', { provider: 'kitsu', id: '38' }), { volumes: 115, publisher: null, genres: [] });
+    assert.deepEqual(await catalog.detailsOf('comic', { provider: 'kitsu', id: '38' }), { volumes: 115, pages: null, publisher: null, genres: [] });
     assert.deepEqual(http.calls[1].body, { search: 'One Piece', perpage: 5 });
     // MangaUpdates down: a finished manga keeps its catalog's own count, an ongoing one has none
     const down = fakeHttp({ 'https://kitsu.io/api/edge/manga/38': kitsuManga });
-    assert.deepEqual(await createCatalog({ http: down, providers: chooseProviders() }).detailsOf('comic', { provider: 'kitsu', id: '38' }), { volumes: null, publisher: null, genres: [] });
+    assert.deepEqual(await createCatalog({ http: down, providers: chooseProviders() }).detailsOf('comic', { provider: 'kitsu', id: '38' }), { volumes: null, pages: null, publisher: null, genres: [] });
   });
 
   test('the publisher of a comic: the known one its editions name most; others are none', () => {
@@ -165,11 +165,11 @@ describe('keyless catalogs', () => {
     assert.equal(parseVolumes(null), null);
   });
 
-  test('comics: western comics from Open Library, only those filed as comics, one volume each', async () => {
-    const http = fakeHttp({ 'https://openlibrary.org/search.json': { docs: [{ key: '/works/OL2897798W', title: 'Watchmen', author_name: ['Alan Moore', 'DC Comics'], first_publish_year: 1986, cover_i: 7774899, publisher: ['Panini', 'DC', 'IDW Publishing'] }] } });
+  test('comics: western comics from Open Library, only those filed as comics, one volume each, with their pages', async () => {
+    const http = fakeHttp({ 'https://openlibrary.org/search.json': { docs: [{ key: '/works/OL2897798W', title: 'Watchmen', author_name: ['Alan Moore', 'DC Comics'], first_publish_year: 1986, cover_i: 7774899, publisher: ['Panini', 'DC', 'IDW Publishing'], number_of_pages_median: 416 }] } });
     const results = await createCatalog({ http, providers }).search('comic', 'watchmen', 'comics');
     assert.match(decodeURIComponent(http.calls[0].url), /q=watchmen subject:\(comics OR "graphic novels"/);
-    assert.deepEqual([results[0].title, results[0].creator, results[0].volumes, results[0].publisher], ['Watchmen', 'Alan Moore', 1, 'DC']);
+    assert.deepEqual([results[0].title, results[0].creator, results[0].volumes, results[0].pages, results[0].publisher], ['Watchmen', 'Alan Moore', 1, 416, 'DC']);
   });
 
   const steamSearch = { items: [{ type: 'app', id: 3357650, name: 'PRAGMATA' }, { type: 'app', id: 1145360, name: 'Hades' }, { type: 'sub', id: 9, name: 'Bundle' }] };

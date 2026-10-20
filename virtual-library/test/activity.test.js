@@ -53,6 +53,14 @@ describe('recent activity', () => {
     assert.equal(itemOf(id), undefined);
   });
 
+  test('where you left off: a page of a book or comic, a volume of a manga', () => {
+    for (const [category, source] of [['book', null], ['comic', null], ['comic', { provider: 'mangadex', id: 'x1' }]]) {
+      const id = add({ category, source });
+      apply({ type: 'setLeftOff', itemId: id, at: 3 });
+    }
+    assert.deepEqual(view().slice(0, 5).filter((e) => e.text.startsWith('Left')).map((e) => e.text), ['Left off at volume 3', 'Left off at page 3', 'Left off at page 3']);
+  });
+
   test(`keeps the latest ${MAX_ACTIVITY}`, () => {
     const id = add();
     for (let i = 0; i < MAX_ACTIVITY + 5; i++) apply({ type: 'setStatus', itemId: id, status: i % 2 ? 'pending' : 'done' });
