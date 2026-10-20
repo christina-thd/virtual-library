@@ -1,4 +1,4 @@
-import { CATEGORY_IDS, isRating, LEFT_OFF, MAX_CREATOR, MAX_TITLE, statusesFor } from '../../public/js/shared/library.js';
+import { CATEGORY_IDS, isRating, LEFT_OFF, leftOffUnit, MAX_CREATOR, MAX_TITLE, statusesFor } from '../../public/js/shared/library.js';
 import { ITEM_ACTIONS, latestOf, logChange } from './activity.js';
 import { detailFields, findBySource, findItem, itemDetails, newId, parseCount, parseHours, parseImageUrls, parseNote, parseSource, parseYear, SETUP_STEPS } from './state.js';
 
@@ -87,6 +87,7 @@ const handlers = {
       caughtUp: category !== 'series' ? null : status === 'waiting' ? [{ at: ctx.now, episodes: details.episodes }] : [],
       detailsAt: detailFields(category).every((field) => details[field] != null) ? ctx.now : null,
       addedAt: ctx.now,
+      updatedAt: ctx.now,
       finishedAt: status === 'done' ? ctx.now : null,
       beforeStats: status === 'done' && state.setupStep !== null,   // added while setting up: seen before
     };
@@ -175,6 +176,10 @@ const handlers = {
     if (!LEFT_OFF[item.category]) throw new ActionError('Only books and manga/comics keep where you left off');
     if (item.status !== 'pending') throw new ActionError('Where you left off is for pending ones');
     if (at != null && parseCount(at) == null) throw new ActionError('at must be a whole number from 1 to 99999, or null');
+    // no further than it goes, when that's known
+    const unit = leftOffUnit(item);
+    const most = unit === 'page' ? item.pages : item.volumes;
+    if (most && at > most) throw new ActionError(`"${item.title}" has ${most} ${unit}${most > 1 ? 's' : ''}`);
     item.leftOff = parseCount(at);
   },
 
@@ -236,6 +241,7 @@ export function applyAction(state, action, { now = Date.now(), allowImage = () =
   const snapshot = before ? structuredClone(before) : null;
   const result = handlers[action.type](state, action, { now, allowImage }) ?? { ok: true };
   const after = findItem(state, result.itemId ?? action.itemId);
-  logChange(state, action.type, snapshot, after ? structuredClone(after) : null, now);
-  return result;
+  const activityId = logChange(state, action.type, snapshot, after ? structuredClone(after) : null, now);
+  if (activityId && after) after.updatedAt = now;                // changed: first on Pending's Recent order
+  return activityId ? { ...result, activityId } : result;     // for an Undo on the screen's message
 }

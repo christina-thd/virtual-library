@@ -72,7 +72,7 @@ const publisherOf = (comic) => pickPublisher([...(comic?.publisher ?? []), ...(c
 export const openLibraryComics = {
   ...openLibrary,
   async search(query, http) {
-    const fields = 'key,title,author_name,first_publish_year,cover_i,publisher';
+    const fields = 'key,title,author_name,first_publish_year,cover_i,publisher,number_of_pages_median';
     const data = await http.json(`${API}/search.json?q=${encodeURIComponent(`${query} ${COMICS}`)}&limit=20&fields=${fields}`);
     return (data.docs ?? []).map((comic) => ({
       id: comic.key,
@@ -82,14 +82,15 @@ export const openLibraryComics = {
       thumbUrl: comic.cover_i ? `${COVERS}/${comic.cover_i}-M.jpg` : null,
       coverUrl: comic.cover_i ? `${COVERS}/${comic.cover_i}-L.jpg` : null,
       volumes: 1,
+      pages: comic.number_of_pages_median,
       publisher: publisherOf(comic),
     }));
   },
 
-  /** Subjects (for the genres) and the publisher. */
+  /** Subjects (for the genres), the publisher and the typical length. */
   async details(id, http) {
-    const data = await http.json(`${API}/search.json?q=${encodeURIComponent(`key:"${id}"`)}&fields=key,subject,publisher,author_name`);
+    const data = await http.json(`${API}/search.json?q=${encodeURIComponent(`key:"${id}"`)}&fields=key,subject,publisher,author_name,number_of_pages_median`);
     const comic = data.docs?.[0];
-    return { volumes: 1, genres: comic?.subject ?? [], publisher: publisherOf(comic) };
+    return { volumes: 1, pages: comic?.number_of_pages_median, genres: comic?.subject ?? [], publisher: publisherOf(comic) };
   },
 };

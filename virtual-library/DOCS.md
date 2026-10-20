@@ -24,9 +24,9 @@ Anything marked done until then counts as seen before; nothing else changes.
 - Don't use a category? Tap **⋯** at the top right of the home screen and switch it off. It leaves the home
   screen, the stats and the search, but everything in it is kept: switch it back on any time. One always stays on.
 - In each kind, **Pending** is everything you haven't seen, read or played yet, or haven't finished.
-  **Done** is everything you've finished. Each kind opens on Pending, newest first; Done starts with your best rated.
+  **Done** is everything you've finished. Each kind opens on Pending, what you added or changed last first; Done starts with your best rated.
   Use the sort button next to the tabs for name, rating (on Done) or length: a movie's duration, a series' seasons,
-  a book's pages, a manga's or comic's volumes, or the hours you played a game (on Done). Games can also be sorted by
+  a book's or comic's pages, a manga's volumes, or the hours you played a game (on Done). Games can also be sorted by
   platform, and Manga/Comics by type (comics first). The arrow next to it turns any order the other way round.
 - Looking for something? Tap the search icon next to the kind's title and type: it finds things by title or creator,
   on every tab (the tabs show how many match). **✕** closes it.
@@ -36,8 +36,8 @@ Anything marked done until then counts as seen before; nothing else changes.
 - Tap a cover to open it: move it between Pending, (Waiting) and Done, rate it, or remove it. A finished game also
   has a **Playtime** field and a note (the button next to Playtime), if you want to keep track; a game with a note has
   a small badge on its cover. A rating, playtime or note is saved with **Save**; closing with changes not saved asks first.
-- **Left off at** (the bookmark button on an item's page) keeps your place: the page of a pending book, the volume of a
-  pending manga or comic, or the season and episode of a series in Pending or Waiting (picked from a list, up to what's out).
+- **Left off at** (the bookmark button on an item's page) keeps your place: the page of a pending book or comic, the volume
+  of a pending manga, or the season and episode of a series in Pending or Waiting (picked from a list), never past the end.
   It shows on the cover's card too. **✕** clears it, and finishing the item clears it too. It isn't counted in the stats.
 - Gave up on something because it wasn't worth finishing? Tap **Dropped it** on its page. It goes to Done (no confetti),
   greyed out with a red **Dropped** band across its cover. Tap it again to undo, or move it back to Pending.
@@ -64,7 +64,10 @@ you can rate it right away. Moving an item back to Pending (or Waiting) clears i
 
 ### Undo a mistake
 
-Tap **⋯** at the top right of the home screen, then **Recent activity** at the bottom: your latest 50 changes to items
+Adding, moving, dropping or removing something shows a message with **Undo**: tap it to take that back. Moving something
+from Done back to Pending says what that clears (its rating, the Dropped mark).
+
+For anything older, tap **⋯** at the top right of the home screen, then **Recent activity** at the bottom: your latest 50 changes to items
 (added, removed, moved, rated…), newest first. **Undo** puts the item back as it was before that change; a removed item
 comes back with everything it had. An item's changes undo newest first, so only its latest one has the button.
 Changes to settings aren't in it.
@@ -80,6 +83,9 @@ Besides the sidebar, the add-on answers at `http://<homeassistant-ip>:3100/` on 
 Open that address in your phone's browser and use **Add to Home Screen** (iPhone: Share → Add to Home Screen)
 to open the library like an app, full screen, with its own icon.
 You can change the port, or turn it off, in the add-on's **Network** settings. The sidebar doesn't need it.
+
+If the connection to Home Assistant is lost for more than a few seconds, a small **Offline** badge shows in the bottom
+left corner until it's back. Changes can't be saved meanwhile.
 
 The direct address has no login: anyone on your home network who knows it can open the library.
 Turn it off if that's a concern; the sidebar and the Home Assistant app use your Home Assistant login.
@@ -118,9 +124,8 @@ The next catalog is also asked when one doesn't answer, so search keeps working 
 The line under the results says which catalog found them.
 
 An item's page also shows how long a movie is (e.g. 2h 35m), how many seasons and episodes of a series are out
-(e.g. 3 seasons · 26 episodes), how many pages a book has (from Open Library; Apple Books doesn't say), and how many
-volumes a manga or comic has (for manga, how many are out so far, from MangaUpdates; a western comic is one book,
-so one volume).
+(e.g. 3 seasons · 26 episodes), how many pages a book or a comic has (from Open Library; Apple Books doesn't say), and
+how many volumes of a manga are out so far (from MangaUpdates).
 They're looked up in the background after adding; a series or manga you haven't finished is checked again every
 week, as new episodes and volumes come out.
 

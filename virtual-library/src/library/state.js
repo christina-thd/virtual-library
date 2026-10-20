@@ -88,7 +88,7 @@ const DETAIL_READERS = {
   series: (raw) => ({ seasons: parseCount(raw.seasons), episodes: parseCount(raw.episodes), seasonEpisodes: parseSeasonEpisodes(raw.seasonEpisodes),
     runtime: parseMinutes(raw.runtime), genres: parseGenres(raw.genres) }),
   book: (raw) => ({ pages: parseCount(raw.pages), genres: parseGenres(raw.genres) }),
-  comic: (raw) => ({ volumes: parseCount(raw.volumes), publisher: toText(raw.publisher, 40) || null, genres: parseGenres(raw.genres) }),
+  comic: (raw) => ({ volumes: parseCount(raw.volumes), pages: parseCount(raw.pages), publisher: toText(raw.publisher, 40) || null, genres: parseGenres(raw.genres) }),
   game: (raw) => ({ genres: parseGenres(raw.genres) }),
 };
 const NO_DETAILS = Object.freeze({ runtime: null, seasons: null, episodes: null, seasonEpisodes: null, pages: null, volumes: null, publisher: null, genres: null });
@@ -164,6 +164,7 @@ function normalizeItem(raw, now) {
     caughtUp: raw.category === 'series' ? parseCaughtUp(raw.caughtUp, status, parseCount(raw.episodes)) : null,
     detailsAt: Number.isFinite(raw.detailsAt) && raw.detailsAt > 0 ? raw.detailsAt : null,
     addedAt,
+    updatedAt: Number.isFinite(raw.updatedAt) && raw.updatedAt >= addedAt ? raw.updatedAt : null,
     finishedAt: status === 'done' ? toTime(raw.finishedAt, addedAt) : null,
     beforeStats: status === 'done' && raw.beforeStats === true,
   };

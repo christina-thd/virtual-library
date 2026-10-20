@@ -53,6 +53,30 @@ describe('recent activity', () => {
     assert.equal(itemOf(id), undefined);
   });
 
+  test('where you left off: a page of a book or comic, a volume of a manga', () => {
+    for (const [category, source] of [['book', null], ['comic', null], ['comic', { provider: 'mangadex', id: 'x1' }]]) {
+      const id = add({ category, source });
+      apply({ type: 'setLeftOff', itemId: id, at: 3 });
+    }
+    assert.deepEqual(view().slice(0, 5).filter((e) => e.text.startsWith('Left')).map((e) => e.text), ['Left off at volume 3', 'Left off at page 3', 'Left off at page 3']);
+  });
+
+  test('the answer names the change kept, so a message can undo it; nothing changed, nothing named', () => {
+    const id = add();
+    const { activityId } = apply({ type: 'setStatus', itemId: id, status: 'done' });
+    assert.equal(activityId, state.activity[0].id);
+    assert.equal(apply({ type: 'setStatus', itemId: id, status: 'done' }).activityId, undefined);
+  });
+
+  test('a change marks the item as changed now (for the Recent order); nothing changed, nothing marked', () => {
+    const id = add({ category: 'book' });
+    assert.equal(itemOf(id).updatedAt, NOW);
+    apply({ type: 'setLeftOff', itemId: id, at: 40 }, NOW + 5);
+    assert.equal(itemOf(id).updatedAt, NOW + 5);
+    apply({ type: 'setLeftOff', itemId: id, at: 40 }, NOW + 9);
+    assert.equal(itemOf(id).updatedAt, NOW + 5);
+  });
+
   test(`keeps the latest ${MAX_ACTIVITY}`, () => {
     const id = add();
     for (let i = 0; i < MAX_ACTIVITY + 5; i++) apply({ type: 'setStatus', itemId: id, status: i % 2 ? 'pending' : 'done' });

@@ -134,7 +134,8 @@ svg.icon { width: 1.2em; height: 1.2em; flex: none; fill: none; stroke: currentC
   top: var(--viewport-top);
   left: 0;
   right: 0;
-  height: var(--viewport-height);
+  height: calc(var(--viewport-height) + 50vh);
+  padding-bottom: 50vh;
   z-index: 20;
   display: flex;
   flex-direction: column;
@@ -144,20 +145,19 @@ svg.icon { width: 1.2em; height: 1.2em; flex: none; fill: none; stroke: currentC
 .layer::after {
   content: "";
   position: absolute;
-  top: 100%;
+  bottom: 0;
   left: 0;
   right: 0;
   height: 50vh;
   background: var(--surface);
   opacity: 0;
   transition: opacity 200ms;
-  pointer-events: none;
 }
 .layer.open::after { opacity: 1; }
 
 .backdrop {
   position: absolute;
-  inset: -50vh 0;
+  inset: -50vh 0 50vh;
   background: rgb(4 3 8 / 0.72);
   backdrop-filter: blur(6px);
   -webkit-backdrop-filter: blur(6px);
@@ -241,6 +241,39 @@ svg.icon { width: 1.2em; height: 1.2em; flex: none; fill: none; stroke: currentC
 }
 .toast-icon svg.icon { width: 13px; height: 13px; stroke-width: 3; }
 .toast.error { border-color: rgb(248 113 113 / 0.4); color: #fecaca; }
+.toast-action {
+  flex: none;
+  margin: -4px -8px -4px 2px;
+  padding: 5px 12px;
+  border-radius: 999px;
+  background: color-mix(in srgb, var(--accent) 22%, transparent);
+  color: var(--accent);
+  font-size: 13px;
+  font-weight: 700;
+}
+
+/* ----- offline: a small badge in the corner, level with the add button (js/app.js) ----- */
+
+.offline-badge {
+  position: fixed;
+  left: 20px;
+  bottom: calc(38px + var(--safe-bottom));
+  z-index: 30;
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  height: 28px;
+  padding: 0 12px 0 10px;
+  border-radius: 999px;
+  border: 1px solid rgb(248 113 113 / 0.35);
+  background: var(--surface-3);
+  color: #fecaca;
+  font-size: 12px;
+  font-weight: 600;
+  pointer-events: none;
+}
+.offline-badge::before { content: ""; width: 7px; height: 7px; border-radius: 50%; background: var(--danger); }
+.offline-badge[hidden] { display: none; }
 
 /* ----- celebration (see js/ui/celebrate.js) ----- */
 

@@ -1,7 +1,7 @@
 // The grid of covers, or a message when there's nothing to show.
 import { $, escapeHtml } from '../shared/dom.js';
 import { byRecent, formatCount, formatRuntime } from '../shared/format.js';
-import { categoryOf, isManga, kindOf, LEFT_OFF, platformOf } from '../shared/library.js';
+import { categoryOf, isManga, kindOf, leftOffUnit, platformOf } from '../shared/library.js';
 import { coverHtml } from '../ui/cover.js';
 import { icon } from '../ui/icons.js';
 import { starsHtml } from '../ui/stars.js';
@@ -13,6 +13,8 @@ const byTitle = (a, b) => sortTitle(a.title).localeCompare(sortTitle(b.title), u
 /** Biggest first; items without one last. */
 const byMost = (valueOf) => (a, b) => (valueOf(b) ?? -Infinity) - (valueOf(a) ?? -Infinity);
 
+const PAGES_PER_VOLUME = 200;
+
 /**
  * How long something is, per kind: what the Length sort orders by, and what the cards show while sorting by it.
  * Games: the hours you played, entered once done (so on the Done tab only).
@@ -22,7 +24,9 @@ const LENGTHS = {
   series: { label: 'Seasons', value: (i) => i.seasons, then: (i) => i.episodes,
     show: (i) => formatCount(i.seasons, 'season') },
   book: { label: 'Pages', value: (i) => i.pages, show: (i) => formatCount(i.pages, 'page') },
-  comic: { label: 'Volumes', value: (i) => i.volumes, show: (i) => formatCount(i.volumes, 'volume') },
+  // a manga by its volumes (about 200 pages each), a comic by its pages
+  comic: { label: 'Length', value: (i) => (isManga(i) ? (i.volumes == null ? null : i.volumes * PAGES_PER_VOLUME) : i.pages),
+    show: (i) => (isManga(i) ? formatCount(i.volumes, 'volume') : formatCount(i.pages, 'page')) },
   game: { label: 'Playtime', value: (i) => i.hoursPlayed, doneOnly: true,
     show: (i) => (i.hoursPlayed ? `${i.hoursPlayed}h played` : '') },
 };
@@ -65,10 +69,11 @@ const TYPE_SORT = {
 export const sortsFor = (category, status) =>
   [...SORTS, lengthSort(category), category === 'game' ? PLATFORM_SORT : null, category === 'comic' ? TYPE_SORT : null].filter((s) => s && (!s.doneOnly || status === 'done'));
 
-/** Where you left off a pending book or comic, or a series not done: "Page 120", "Vol. 3", "S2 · E5". */
-function leftOffText({ category, leftOff, seenUpTo }) {
+/** Where you left off a pending book, comic or manga, or a series not done: "Page 120", "Vol. 3", "S2 · E5". */
+function leftOffText(item) {
+  const { leftOff, seenUpTo } = item;
   if (seenUpTo) return seenUpTo.episode ? `S${seenUpTo.season} · E${seenUpTo.episode}` : `Season ${seenUpTo.season}`;
-  return leftOff ? `${LEFT_OFF[category] === 'page' ? 'Page' : 'Vol.'} ${leftOff}` : '';
+  return leftOff ? `${leftOffUnit(item) === 'page' ? 'Page' : 'Vol.'} ${leftOff}` : '';
 }
 
 function cardHtml(item, index, sort) {

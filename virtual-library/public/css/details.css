@@ -34,8 +34,10 @@
 }
 /* top row: "Added to Done" (right after adding) on the left, Close / Back to search on the right */
 .details-bar {
-  position: relative;
-  z-index: 1;
+  position: sticky;
+  top: 8px;
+  z-index: 3;
+  pointer-events: none;
   display: flex;
   align-items: center;
   gap: 10px;
@@ -43,6 +45,7 @@
   padding: 0 16px;
 }
 .details-close {
+  pointer-events: auto;
   height: 36px;
   margin-left: auto;
   padding: 0 14px;

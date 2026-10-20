@@ -20,6 +20,16 @@ function ago(at, now = Date.now()) {
   return new Date(at).toLocaleDateString(undefined, { day: 'numeric', month: 'short' });
 }
 
+/** An Undo button for a change's message, when the server kept the change in the recent activity (else null). */
+export function undoFor(result) {
+  if (!result?.activityId) return null;
+  return {
+    label: 'Undo',
+    run: () => sendAction({ type: 'undo', entryId: result.activityId })
+      .then(() => toast('Undone', { icon: 'check' }), (err) => toast(err.message, { error: true })),
+  };
+}
+
 export function createActivity() {
   const list = $('activityList');
   const sheet = createSheet($('activityLayer'));

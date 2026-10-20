@@ -1,6 +1,6 @@
 name: "Hoard Board"
 description: "Your movies, series, books, comics and games: what's pending and what you've finished"
-version: "4.0.0"
+version: "4.1.0"
 slug: "virtual_library"
 init: false
 arch:

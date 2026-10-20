@@ -1,3 +1,4 @@
+import { isManga } from '../../public/js/shared/library.js';
 import { detailFields } from '../library/state.js';
 
 const WEEK = 7 * 24 * 60 * 60 * 1000;
@@ -17,6 +18,7 @@ export function createDetailsSync({ state, catalog, onChange, now = Date.now, lo
     if (item.detailsAt == null || item.genres == null) return true;     // genres: looked up before they were kept
     if (item.category === 'series' && item.runtime == null) return true;  // an episode's length, the same (once a run)
     if (item.category === 'series' && item.status !== 'done' && item.seasonEpisodes == null) return true;   // each season's episodes, the same
+    if (item.category === 'comic' && !isManga(item) && item.pages == null) return true;   // a comic's pages, the same
     return ['series', 'comic'].includes(item.category) && item.status !== 'done' && now() - item.detailsAt > WEEK;
   }
 

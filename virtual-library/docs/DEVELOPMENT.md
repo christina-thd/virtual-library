@@ -48,7 +48,7 @@ src/                      server (Node, no framework, no dependencies)
   covers.js               saved cover images (CoverStore) and keeping them in step with the library
   catalog/genres.js       makes the catalogs' genres comparable (aliases; book genres picked out of subjects)
   catalog/details.js      looks up details in the background (provider.details), like covers: movie durations,
-                          series seasons and episodes, each season's too (again weekly for series not done yet), book pages
+                          series seasons and episodes, each season's too (again weekly for series not done yet), book and comic pages
   http-client.js          fetch with a timeout and a User-Agent, for catalogs and images
   store.js                JSON file storage: debounced, atomic writes
   sse.js                  Server-Sent Events hub for live updates
@@ -89,7 +89,9 @@ Only finished items can be rated; moving an item away from done clears its ratin
 
 **Recent activity.** Every action that changes an item keeps an entry in `activity` (the latest 50): what changed,
 in a few words, and the item as it was before. `undo` puts that copy back (or removes an item that was added);
-an item's entries undo newest first. The view sends the entries without the copies.
+an item's entries undo newest first. The view sends the entries without the copies. An action's answer names its
+entry (`activityId`), so the screen's message can offer **Undo**; a change also sets the item's `updatedAt`, which
+the Recent order uses on Pending and Waiting.
 
 **Search.** `GET /api/search?category=movie&q=dune` asks the providers for that category, one after the
 other until one finds something (a provider that's down is skipped), and returns
