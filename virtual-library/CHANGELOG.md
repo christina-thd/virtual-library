@@ -6,6 +6,7 @@
 - Comics use pages instead of volumes
 - Where you left off can't go past the last page or volume
 - Add new toast messages
+- Close stays visible while scrolling an item
 
 ## 4.0.0
 - Use Home Assistant's certificate
