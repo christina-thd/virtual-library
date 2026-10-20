@@ -252,6 +252,29 @@ svg.icon { width: 1.2em; height: 1.2em; flex: none; fill: none; stroke: currentC
   font-weight: 700;
 }
 
+/* ----- offline: a small badge in the corner, level with the add button (js/app.js) ----- */
+
+.offline-badge {
+  position: fixed;
+  left: 20px;
+  bottom: calc(38px + var(--safe-bottom));
+  z-index: 30;
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  height: 28px;
+  padding: 0 12px 0 10px;
+  border-radius: 999px;
+  border: 1px solid rgb(248 113 113 / 0.35);
+  background: var(--surface-3);
+  color: #fecaca;
+  font-size: 12px;
+  font-weight: 600;
+  pointer-events: none;
+}
+.offline-badge::before { content: ""; width: 7px; height: 7px; border-radius: 50%; background: var(--danger); }
+.offline-badge[hidden] { display: none; }
+
 /* ----- celebration (see js/ui/celebrate.js) ----- */
 
 .cheer {

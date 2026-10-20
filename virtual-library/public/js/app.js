@@ -116,21 +116,18 @@ if (updatedTo) {
   toast(`Updated to ${updatedTo}`, { icon: 'check' });
 }
 
-// the connection to Home Assistant: a message once it's been gone a few seconds (not for a blip), one when it's back
+// the connection to Home Assistant: a small badge once it's been gone a few seconds (not for a blip), until it's back
 const OFFLINE_AFTER_MS = 4000;
 let offlineTimer = null;
-let offline = false;
 function connection(online) {
   if (online) {
     clearTimeout(offlineTimer);
     offlineTimer = null;
-    if (offline) toast('Back online', { icon: 'check' });
-    offline = false;
-  } else if (!offline && !offlineTimer) {
+    $('offlineBadge').hidden = true;
+  } else if (!offlineTimer && $('offlineBadge').hidden) {
     offlineTimer = setTimeout(() => {
       offlineTimer = null;
-      offline = true;
-      toast('Offline, reconnecting…', { error: true, sticky: true });
+      $('offlineBadge').hidden = false;
     }, OFFLINE_AFTER_MS);
   }
 }

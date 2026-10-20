@@ -84,8 +84,8 @@ Open that address in your phone's browser and use **Add to Home Screen** (iPhone
 to open the library like an app, full screen, with its own icon.
 You can change the port, or turn it off, in the add-on's **Network** settings. The sidebar doesn't need it.
 
-If the connection to Home Assistant is lost for more than a few seconds, an **Offline, reconnecting…** message stays at the
-top until it's back.
+If the connection to Home Assistant is lost for more than a few seconds, a small **Offline** badge shows in the bottom
+left corner until it's back. Changes can't be saved meanwhile.
 
 The direct address has no login: anyone on your home network who knows it can open the library.
 Turn it off if that's a concern; the sidebar and the Home Assistant app use your Home Assistant login.

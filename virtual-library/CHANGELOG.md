@@ -6,6 +6,7 @@
 - Comics use pages instead of volumes
 - Where you left off can't go past the last page or volume
 - Add new toast messages
+- Offline badge
 - Close stays visible while scrolling an item
 - What you changed last comes first on Pending
 

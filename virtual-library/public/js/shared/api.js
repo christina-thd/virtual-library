@@ -15,6 +15,8 @@ export async function sendAction(action) {
     method: 'POST',
     headers: { 'Content-Type': 'application/json' },
     body: JSON.stringify(action),
+  }).catch(() => {
+    throw new Error("You're offline");                    // not "Load failed" (iPhone) or "Failed to fetch"
   });
   return readJson(res);
 }
