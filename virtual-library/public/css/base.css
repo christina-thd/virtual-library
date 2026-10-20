@@ -241,6 +241,16 @@ svg.icon { width: 1.2em; height: 1.2em; flex: none; fill: none; stroke: currentC
 }
 .toast-icon svg.icon { width: 13px; height: 13px; stroke-width: 3; }
 .toast.error { border-color: rgb(248 113 113 / 0.4); color: #fecaca; }
+.toast-action {
+  flex: none;
+  margin: -4px -8px -4px 2px;
+  padding: 5px 12px;
+  border-radius: 999px;
+  background: color-mix(in srgb, var(--accent) 22%, transparent);
+  color: var(--accent);
+  font-size: 13px;
+  font-weight: 700;
+}
 
 /* ----- celebration (see js/ui/celebrate.js) ----- */
 

@@ -28,15 +28,20 @@ function describe(type, before, after) {
   }
 }
 
-/** Keeps a change to one item (before: null when it was added; after: null when it was removed). Nothing changed: nothing kept. */
+/**
+ * Keeps a change to one item (before: null when it was added; after: null when it was removed) and returns its id.
+ * Nothing changed: nothing kept (null).
+ */
 export function logChange(state, type, before, after, now) {
-  if (JSON.stringify(before) === JSON.stringify(after)) return;
+  if (JSON.stringify(before) === JSON.stringify(after)) return null;
   const item = after ?? before;
+  const id = newId();
   state.activity.unshift({
-    id: newId(), at: now, type, itemId: item.id, title: item.title, category: item.category,
+    id, at: now, type, itemId: item.id, title: item.title, category: item.category,
     text: describe(type, before, after), before, undone: false,
   });
   state.activity.length = Math.min(state.activity.length, MAX_ACTIVITY);
+  return id;
 }
 
 /** The newest change to that item not undone yet: the only one of its changes that can be undone now. */

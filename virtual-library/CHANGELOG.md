@@ -5,6 +5,7 @@
 - Fix iPhone keyboard gap under an item
 - Comics use pages instead of volumes
 - Where you left off can't go past the last page or volume
+- Add new toast messages
 
 ## 4.0.0
 - Use Home Assistant's certificate

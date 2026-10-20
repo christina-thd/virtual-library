@@ -6,6 +6,7 @@ import { $, closest, escapeHtml } from '../shared/dom.js';
 import { formatCount, formatRuntime } from '../shared/format.js';
 import { isManga, kindOf, LEFT_OFF, leftOffUnit, MAX_NOTE, STATUS_LABELS, statusesFor } from '../shared/library.js';
 import { ask } from '../ui/ask.js';
+import { undoFor } from './activity.js';
 import { celebrate } from '../ui/celebrate.js';
 import { coverHtml } from '../ui/cover.js';
 import { icon } from '../ui/icons.js';
@@ -219,7 +220,13 @@ export function createDetails({ getItem }) {
     if (statusButton && statusButton.dataset.status !== item.status) {
       const status = statusButton.dataset.status;
       send({ type: 'setStatus', itemId, status })
-        .then(() => { if (status === 'done') celebrateFinishing(item); })
+        .then((result) => {
+          if (status === 'done') return celebrateFinishing(item);      // the cheer says it
+          // leaving Done clears its rating and its Dropped mark: said, so it's no surprise
+          const lost = item.status === 'done' ? [item.rating ? 'rating cleared' : '', item.dropped ? 'no longer dropped' : ''] : [];
+          const message = [`“${item.title}” moved to ${STATUS_LABELS[status]}`, ...lost].filter(Boolean).join(' · ');
+          toast(message, { icon: 'check', action: undoFor(result) });
+        })
         .catch(() => {});
       return;
     }
@@ -228,7 +235,7 @@ export function createDetails({ getItem }) {
     if (closest(e, '[data-drop]')) {
       const dropped = !item.dropped;
       send({ type: 'setDropped', itemId, dropped })
-        .then(() => toast(dropped ? `“${item.title}” dropped` : `“${item.title}” is no longer dropped`, { icon: 'check' }))
+        .then((result) => toast(dropped ? `“${item.title}” dropped` : `“${item.title}” is no longer dropped`, { icon: 'check', action: undoFor(result) }))
         .catch(() => {});
       return;
     }
@@ -271,9 +278,9 @@ export function createDetails({ getItem }) {
         return;
       }
       disarm();
-      const removed = await send({ type: 'removeItem', itemId }).then(() => true, () => false);
+      const removed = await send({ type: 'removeItem', itemId }).catch(() => null);
       if (!removed) return render(item);
-      toast(`Removed “${item.title}”`);
+      toast(`Removed “${item.title}”`, { action: undoFor(removed) });
       draft = null;
       sheet.close({ force: true });
     }

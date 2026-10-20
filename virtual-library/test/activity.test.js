@@ -61,6 +61,13 @@ describe('recent activity', () => {
     assert.deepEqual(view().slice(0, 5).filter((e) => e.text.startsWith('Left')).map((e) => e.text), ['Left off at volume 3', 'Left off at page 3', 'Left off at page 3']);
   });
 
+  test('the answer names the change kept, so a message can undo it; nothing changed, nothing named', () => {
+    const id = add();
+    const { activityId } = apply({ type: 'setStatus', itemId: id, status: 'done' });
+    assert.equal(activityId, state.activity[0].id);
+    assert.equal(apply({ type: 'setStatus', itemId: id, status: 'done' }).activityId, undefined);
+  });
+
   test(`keeps the latest ${MAX_ACTIVITY}`, () => {
     const id = add();
     for (let i = 0; i < MAX_ACTIVITY + 5; i++) apply({ type: 'setStatus', itemId: id, status: i % 2 ? 'pending' : 'done' });

@@ -240,6 +240,6 @@ export function applyAction(state, action, { now = Date.now(), allowImage = () =
   const snapshot = before ? structuredClone(before) : null;
   const result = handlers[action.type](state, action, { now, allowImage }) ?? { ok: true };
   const after = findItem(state, result.itemId ?? action.itemId);
-  logChange(state, action.type, snapshot, after ? structuredClone(after) : null, now);
-  return result;
+  const activityId = logChange(state, action.type, snapshot, after ? structuredClone(after) : null, now);
+  return activityId ? { ...result, activityId } : result;     // for an Undo on the screen's message
 }

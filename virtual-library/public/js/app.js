@@ -9,6 +9,7 @@ import { createShownKinds, createWelcomeSwitches } from './library/shown.js';
 import { createStatsView } from './library/stats.js';
 import { fetchInfo, sendAction, subscribe } from './shared/api.js';
 import { $, closest } from './shared/dom.js';
+import { storage } from './shared/storage.js';
 import { goBack, pushBack } from './ui/back.js';
 import { installCelebrate } from './ui/celebrate.js';
 import { installCoverFallback } from './ui/cover.js';
@@ -108,6 +109,32 @@ $('shelf').addEventListener('click', (e) => {
 
 fetchInfo().then(({ sources }) => search.setSources(sources)).catch(() => {});
 
+// just updated (the page reloaded itself for the new version)
+const updatedTo = storage.get('updatedTo');
+if (updatedTo) {
+  storage.set('updatedTo', null);
+  toast(`Updated to ${updatedTo}`, { icon: 'check' });
+}
+
+// the connection to Home Assistant: a message once it's been gone a few seconds (not for a blip), one when it's back
+const OFFLINE_AFTER_MS = 4000;
+let offlineTimer = null;
+let offline = false;
+function connection(online) {
+  if (online) {
+    clearTimeout(offlineTimer);
+    offlineTimer = null;
+    if (offline) toast('Back online', { icon: 'check' });
+    offline = false;
+  } else if (!offline && !offlineTimer) {
+    offlineTimer = setTimeout(() => {
+      offlineTimer = null;
+      offline = true;
+      toast('Offline, reconnecting…', { error: true, sticky: true });
+    }, OFFLINE_AFTER_MS);
+  }
+}
+
 subscribe((view) => {
   items = view.items;
   hidden = view.hiddenCategories ?? [];
@@ -126,4 +153,4 @@ subscribe((view) => {
   else if (setupStep !== 'categories' && welcomed) showHome();
   details.refresh();
   search.refresh();
-});
+}, connection);
