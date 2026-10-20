@@ -27,6 +27,7 @@
  * @property {string | null} publisher               western comics: Marvel, DC, Image… (null: another one)
  * @property {string[] | null} genres                null: not looked up yet
  * @property {number} addedAt                        ms
+ * @property {number | null} updatedAt              ms: last changed by you (null: not since this was kept)
  * @property {number | null} finishedAt              ms
  * @property {boolean} beforeStats                   done while setting up: seen before, in no month or year
  */

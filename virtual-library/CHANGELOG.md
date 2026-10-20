@@ -7,6 +7,7 @@
 - Where you left off can't go past the last page or volume
 - Add new toast messages
 - Close stays visible while scrolling an item
+- What you changed last comes first on Pending
 
 ## 4.0.0
 - Use Home Assistant's certificate

@@ -87,6 +87,7 @@ const handlers = {
       caughtUp: category !== 'series' ? null : status === 'waiting' ? [{ at: ctx.now, episodes: details.episodes }] : [],
       detailsAt: detailFields(category).every((field) => details[field] != null) ? ctx.now : null,
       addedAt: ctx.now,
+      updatedAt: ctx.now,
       finishedAt: status === 'done' ? ctx.now : null,
       beforeStats: status === 'done' && state.setupStep !== null,   // added while setting up: seen before
     };
@@ -241,5 +242,6 @@ export function applyAction(state, action, { now = Date.now(), allowImage = () =
   const result = handlers[action.type](state, action, { now, allowImage }) ?? { ok: true };
   const after = findItem(state, result.itemId ?? action.itemId);
   const activityId = logChange(state, action.type, snapshot, after ? structuredClone(after) : null, now);
+  if (activityId && after) after.updatedAt = now;                // changed: first on Pending's Recent order
   return activityId ? { ...result, activityId } : result;     // for an Undo on the screen's message
 }

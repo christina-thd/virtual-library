@@ -68,6 +68,15 @@ describe('recent activity', () => {
     assert.equal(apply({ type: 'setStatus', itemId: id, status: 'done' }).activityId, undefined);
   });
 
+  test('a change marks the item as changed now (for the Recent order); nothing changed, nothing marked', () => {
+    const id = add({ category: 'book' });
+    assert.equal(itemOf(id).updatedAt, NOW);
+    apply({ type: 'setLeftOff', itemId: id, at: 40 }, NOW + 5);
+    assert.equal(itemOf(id).updatedAt, NOW + 5);
+    apply({ type: 'setLeftOff', itemId: id, at: 40 }, NOW + 9);
+    assert.equal(itemOf(id).updatedAt, NOW + 5);
+  });
+
   test(`keeps the latest ${MAX_ACTIVITY}`, () => {
     const id = add();
     for (let i = 0; i < MAX_ACTIVITY + 5; i++) apply({ type: 'setStatus', itemId: id, status: i % 2 ? 'pending' : 'done' });

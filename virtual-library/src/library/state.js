@@ -164,6 +164,7 @@ function normalizeItem(raw, now) {
     caughtUp: raw.category === 'series' ? parseCaughtUp(raw.caughtUp, status, parseCount(raw.episodes)) : null,
     detailsAt: Number.isFinite(raw.detailsAt) && raw.detailsAt > 0 ? raw.detailsAt : null,
     addedAt,
+    updatedAt: Number.isFinite(raw.updatedAt) && raw.updatedAt >= addedAt ? raw.updatedAt : null,
     finishedAt: status === 'done' ? toTime(raw.finishedAt, addedAt) : null,
     beforeStats: status === 'done' && raw.beforeStats === true,
   };
