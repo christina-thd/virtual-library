@@ -48,7 +48,8 @@ Anything marked done until then counts as seen before; nothing else changes.
 - **Stats** (the chart button at the top of the home screen): what you finished each month over the last year,
   your streak of months in a row, your top genres and creators (directors, networks, authors), the publishers of your comics (Marvel, DC…), totals
   (hours of movies, episodes, pages, manga volumes, comics read, playtime), records (the longest movie, biggest book…), release decades
-  (for movies, series and books), ratings, the oldest thing still pending, and a year in review. For the whole library or one kind. Dropped things are counted on their own, not as finished;
+  (for movies, series and books), ratings, the oldest thing still pending, and a year in review (tap its total, or a
+  category's count, to see what you finished). For the whole library or one kind. Dropped things are counted on their own, not as finished;
   moving something back to Pending takes it out of the month it was finished in. The monthly and this-year numbers
   count from the day you updated to 3.0.0 (shown under the chart), so a library filled in all at once doesn't skew them.
   Episodes count when you see them: moving a series to Waiting counts the episodes out then, and finishing it
