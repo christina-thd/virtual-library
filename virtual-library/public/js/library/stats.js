@@ -3,10 +3,11 @@
 // Numbers: shared/stats.js.
 import { $, closest, escapeHtml } from '../shared/dom.js';
 import { formatCount, formatRuntime } from '../shared/format.js';
-import { CATEGORIES, kindOf } from '../shared/library.js';
+import { categoryOf, CATEGORIES, kindOf } from '../shared/library.js';
 import { libraryStats, STAT_KINDS } from '../shared/stats.js';
 import { coverHtml } from '../ui/cover.js';
 import { icon, star } from '../ui/icons.js';
+import { createSheet } from '../ui/sheet.js';
 
 const SHORT_MONTH = new Intl.DateTimeFormat('en', { month: 'short' });
 const MONTH_YEAR = new Intl.DateTimeFormat('en', { month: 'short', year: 'numeric' });
@@ -116,14 +117,17 @@ function genresHtml(s, kind) {
   return section('Top genres', groupsHtml(s.genresByKind, (k) => k.plural, genreRows) || empty);
 }
 
-/** The chosen year: how much of each kind, top genres, busiest month, time spent. A switch per year. */
+/**
+ * The chosen year: how much of each kind, top genres, busiest month, time spent. A switch per year. The total and each
+ * kind's count open what was finished.
+ */
 function reviewHtml(s, kind) {
   const r = s.review;
   const years = s.years.length > 1 ? `<div class="stats-years">${s.years.map((y) =>
     `<button type="button" data-year="${y}" class="${y === r.year ? 'selected' : ''}">${y}</button>`).join('')}</div>` : '';
   if (!r.finished) return section('Year in review', `${years}<p class="stats-empty">Nothing finished in ${r.year} yet.</p>`);
   const kinds = CATEGORIES.filter((c) => r.byCategory[c.id]).map((c) =>
-    `<span data-category="${c.id}">${icon(c.id)}${r.byCategory[c.id]}</span>`).join('');
+    `<button type="button" data-review="${c.id}" data-category="${c.id}" aria-label="${c.plural}: ${r.byCategory[c.id]}">${icon(c.id)}${r.byCategory[c.id]}</button>`).join('');
   const tiles = timeTiles(r.time);
   const spent = kindsOf(kind).filter((k) => tiles[k.id][0] !== '0' && tiles[k.id][0] !== '0h');
   const time = spent.length ? `
@@ -135,7 +139,7 @@ function reviewHtml(s, kind) {
     r.busiestMonth != null ? ['Busiest month', LONG_MONTH.format(new Date(r.year, r.busiestMonth, 1))] : null,
   ].filter(Boolean).map(([label, value]) => `<div class="review-fact"><span>${label}</span><strong>${value}</strong></div>`).join('');
   return section('Year in review', `${years}
-    <div class="review-total"><strong>${number(r.finished)}</strong><span>finished in ${r.year}</span></div>
+    <button type="button" class="review-total" data-review=""><strong>${number(r.finished)}</strong><span>finished in ${r.year}</span>${icon('down')}</button>
     ${kind ? '' : `<div class="stats-averages">${kinds}</div>`}
     ${facts}${time}`);
 }
@@ -255,6 +259,28 @@ export function createStatsView({ onBack, onOpenItem }) {
   let settingUp = false;            // setting up for the first time: no stats until it's done
   let year = new Date().getFullYear();   // the one in review
   let shown = false;
+  let review = null;                // the year in review shown
+
+  // what was finished in the year in review: all of it, or one category's
+  const reviewSheet = createSheet($('reviewLayer'));
+  const reviewList = $('reviewList');
+  function openReview(category) {
+    const items = review.items.filter((item) => !category || item.category === category);
+    const what = category ? categoryOf(category).plural : kind ? STAT_KINDS.find((k) => k.id === kind).plural : 'Everything';
+    $('reviewTitle').textContent = `${what} · ${review.year}`;
+    reviewList.innerHTML = items.map((item, i) => `
+      <button type="button" class="card" data-item="${item.id}" style="--i:${Math.min(i, 20)}">
+        ${coverHtml(item)}
+        <div class="card-title">${escapeHtml(item.title)}</div>
+        <div class="card-meta">${LONG_MONTH.format(new Date(item.finishedAt))}</div>
+      </button>`).join('');
+    reviewList.scrollTop = 0;
+    reviewSheet.open();
+  }
+  reviewList.addEventListener('click', (e) => {
+    const card = closest(e, '[data-item]');
+    if (card) onOpenItem(card.dataset.item);
+  });
 
   $('statsBack').innerHTML = icon('back');
   $('statsBack').addEventListener('click', onBack);
@@ -278,6 +304,7 @@ export function createStatsView({ onBack, onOpenItem }) {
     let s = libraryStats(library, { kind, since, year });
     // a year picked for another kind may not exist for this one (no switch to get back): its newest instead
     if (!s.years.includes(year)) s = libraryStats(library, { kind, since, year: (year = s.years[0]) });
+    review = s.review;
     body.innerHTML = settingUp
       ? `<div class="empty">${icon('chart')}<h2>Stats start after setup</h2><p>Tap Start stats on the home screen.</p></div>`
       : s.total
@@ -300,6 +327,8 @@ export function createStatsView({ onBack, onOpenItem }) {
       year = Number(yearButton.dataset.year);
       return render();
     }
+    const reviewButton = closest(e, '[data-review]');
+    if (reviewButton) return openReview(reviewButton.dataset.review || null);
     const item = closest(e, '[data-item]');               // the backlog or a record
     if (item) onOpenItem(item.dataset.item);
   });

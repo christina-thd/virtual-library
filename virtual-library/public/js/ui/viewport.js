@@ -29,7 +29,24 @@ export function keepFieldInView() {
   else if (rect.top < box.top + FIELD_MARGIN_PX) scroller.scrollTop -= box.top - rect.top + FIELD_MARGIN_PX;
 }
 
+const TEXT_INPUTS = ['text', 'search', 'number', 'email', 'url', 'tel', 'password'];
+
+/** A field the keyboard opens for. */
+const isField = (el) => el instanceof HTMLTextAreaElement || el instanceof HTMLSelectElement
+  || (el instanceof HTMLInputElement && TEXT_INPUTS.includes(el.type));
+
+/**
+ * html.typing while a field is focused: phones draw only the page (not the sheets) next to the keyboard, so while
+ * typing in a sheet the page shows the sheet's color there instead of the screens behind it (css/base.css).
+ */
+function trackTyping() {
+  const update = () => document.documentElement.classList.toggle('typing', isField(document.activeElement));
+  document.addEventListener('focusin', update);
+  document.addEventListener('focusout', () => setTimeout(update));   // once the next field (if any) has focus
+}
+
 export function trackVisibleViewport() {
+  trackTyping();
   const viewport = window.visualViewport;
   if (!viewport) return;
   const root = document.documentElement.style;

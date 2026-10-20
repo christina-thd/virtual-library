@@ -96,6 +96,8 @@ test('year in review: what was finished that year, its genres, busiest month and
   assert.deepEqual(stats.years, [2026, 2025, 2024]);
   const r = stats.review;
   assert.deepEqual([r.year, r.finished, r.byCategory], [2026, 5, { movie: 3, series: 1, game: 1 }]);
+  assert.equal(r.items.length, 5);
+  assert.ok(r.items.every((item, i) => i === 0 || r.items[i - 1].finishedAt >= item.finishedAt));   // newest first
   assert.deepEqual(r.genres.map((g) => g.name), ['Drama', 'Comedy', 'Sci-Fi']);
   assert.equal(r.busiestMonth, 2);                                                      // March (tied with October: the first)
   assert.deepEqual(r.time, { movieMinutes: 365, episodes: 26, pages: 0, volumes: 0, comics: 0, hours: 42.5 });
@@ -131,12 +133,13 @@ test('manga and comics are told apart: manga volumes, comics read, each with its
     ...library,
     item({ category: 'comic', source: manga, volumes: 72, finishedAt: on(2026, 9), genres: ['Action'], creator: 'Kishimoto' }),
     item({ category: 'comic', source: { provider: 'mangadex', id: '2' }, volumes: 30, finishedAt: on(2026, 9), creator: 'Kishimoto' }),
-    item({ category: 'comic', source: { provider: 'openlibrary', id: '3' }, volumes: 1, finishedAt: on(2026, 8), genres: ['Superheroes'], publisher: 'DC' }),
+    item({ category: 'comic', source: { provider: 'openlibrary', id: '3' }, volumes: 1, pages: 416, finishedAt: on(2026, 8), genres: ['Superheroes'], publisher: 'DC' }),
     item({ category: 'comic', volumes: 1, finishedAt: on(2026, 8) }),                                 // typed in: a comic
     item({ category: 'comic', status: 'pending', finishedAt: null, addedAt: on(2025, 2) }),
   ];
   const stats = libraryStats(shelf, { now: NOW });
   assert.deepEqual([stats.time.volumes, stats.time.comics], [102, 2]);
+  assert.equal(stats.time.pages, libraryStats(library, { now: NOW }).time.pages);       // a comic's pages aren't pages read: it's one comic
   assert.deepEqual(stats.records.filter((r) => r.item.category === 'comic').map((r) => [r.kind, r.value]), [['manga', 72]]);   // comics: no length
   assert.deepEqual([stats.genresByKind.manga, stats.genresByKind.comic], [[{ name: 'Action', count: 1 }], [{ name: 'Superheroes', count: 1 }]]);
   assert.equal(stats.creatorsByKind.manga, undefined);                                   // no creators for manga

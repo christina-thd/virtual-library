@@ -155,6 +155,11 @@ svg.icon { width: 1.2em; height: 1.2em; flex: none; fill: none; stroke: currentC
 }
 .layer.open::after { opacity: 1; }
 
+@media (pointer: coarse) {
+  html.typing:has(body.locked), html.typing body.locked { background: var(--surface); }
+  html.typing body.locked :is(.view, .fab, .jump) { visibility: hidden; }
+}
+
 .backdrop {
   position: absolute;
   inset: -50vh 0 50vh;
