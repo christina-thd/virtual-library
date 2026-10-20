@@ -2,6 +2,7 @@
 
 ## 4.2.0
 - Tap the year in review to see what you finished
+- Fix the keyboard gap on phones
 
 ## 4.1.0
 - Fix typing a note or where you left off on iPhone
