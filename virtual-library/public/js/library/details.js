@@ -4,7 +4,7 @@
 import { sendAction } from '../shared/api.js';
 import { $, closest, escapeHtml } from '../shared/dom.js';
 import { formatCount, formatRuntime } from '../shared/format.js';
-import { isManga, kindOf, LEFT_OFF, leftOffUnit, MAX_NOTE, STATUS_LABELS, statusesFor } from '../shared/library.js';
+import { hasNotes, isManga, kindOf, LEFT_OFF, leftOffUnit, MAX_NOTE, STATUS_LABELS, statusesFor } from '../shared/library.js';
 import { ask } from '../ui/ask.js';
 import { undoFor } from './activity.js';
 import { celebrate } from '../ui/celebrate.js';
@@ -79,6 +79,10 @@ export function createDetails({ getItem }) {
       formatCount(item.seasons, 'season'), formatCount(item.episodes, 'episode'), formatCount(item.pages, 'page'), isManga(item) ? formatCount(item.volumes, 'volume') : '']
       .filter(Boolean).join(' · ');
     const done = item.status === 'done';
+    const noteHtml = noteOpen ? `
+      <div class="note">
+        <textarea id="noteInput" rows="3" maxlength="${MAX_NOTE}" placeholder="Thoughts?" aria-label="Note">${escapeHtml(value.note)}</textarea>
+      </div>` : '';
     const glow = item.image
       ? `<div class="details-glow" style="background-image:url('${escapeHtml(item.image)}')"></div>`
       : '<div class="details-glow tint"></div>';
@@ -123,10 +127,11 @@ export function createDetails({ getItem }) {
             <button type="button" class="note-toggle ${value.note.trim() ? 'has-note' : ''}" data-note-toggle aria-expanded="${noteOpen}"
               aria-label="${value.note.trim() ? 'Note' : 'Add a note'}" title="${value.note.trim() ? 'Note' : 'Add a note'}">${icon('note')}</button>
           </form>
-          ${noteOpen ? `
-            <div class="note">
-              <textarea id="noteInput" rows="3" maxlength="${MAX_NOTE}" placeholder="Thoughts?" aria-label="Note">${escapeHtml(value.note)}</textarea>
-            </div>` : ''}` : ''}
+          ${noteHtml}` : ''}
+
+        ${done && item.category === 'book' ? `
+          <button type="button" class="pill left-off-toggle ${value.note.trim() ? 'on' : ''}" data-note-toggle aria-expanded="${noteOpen}">${icon('note')}Note</button>
+          ${noteHtml}` : ''}
 
         ${keepsLeftOff(item) ? leftOffHtml(item, value.leftOff) : ''}
         ${keepsSeen(item) ? seenHtml(item, value) : ''}
@@ -326,7 +331,7 @@ export function createDetails({ getItem }) {
     const actions = [
       value.rating !== item.rating ? { type: 'rateItem', itemId, rating: value.rating } : null,
       item.category === 'game' && hours !== item.hoursPlayed ? { type: 'setHours', itemId, hours } : null,
-      item.category === 'game' && note !== item.note ? { type: 'setNote', itemId, note } : null,
+      hasNotes(item.category) && note !== item.note ? { type: 'setNote', itemId, note } : null,
     ].filter(Boolean);
     try {
       for (const action of actions) await send(action);

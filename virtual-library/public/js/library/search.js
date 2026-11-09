@@ -8,6 +8,7 @@ import { icon } from '../ui/icons.js';
 import { createSheet } from '../ui/sheet.js';
 import { toast } from '../ui/toast.js';
 import { undoFor } from './activity.js';
+import { LONG_PENDING, pileLine } from './cheers.js';
 import { createResults } from './search-results.js';
 
 const CATEGORY_KEY = 'searchCategory';
@@ -163,11 +164,15 @@ export function createSearch({ getItems, openItem }) {
     const buttons = /** @type {HTMLCollectionOf<HTMLButtonElement>} */ (button.parentElement.children);
     for (const b of buttons) b.disabled = true;
     try {
+      const pending = getItems().filter((i) => i.category === entry.category && i.status === 'pending').length;
       const added = await sendAction({ type: 'addItem', ...entry, status });
       const { itemId } = added;
       shown.markAdded(entry, { itemId, status });
       render();
-      toast(`“${entry.title}” added to ${STATUS_LABELS[status]}`, { icon: 'check', action: undoFor(added) });
+      const message = status === 'pending' && pending >= LONG_PENDING
+        ? `“${entry.title}” added. ${pileLine()}`
+        : `“${entry.title}” added to ${STATUS_LABELS[status]}`;
+      toast(message, { icon: 'check', action: undoFor(added) });
       if (status === 'done') openItem(itemId, { fromSearch: true });   // to rate it, if you like
     } catch (err) {
       toast(err.message, { error: true });

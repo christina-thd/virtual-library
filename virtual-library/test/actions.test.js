@@ -185,7 +185,7 @@ describe('details', () => {
 });
 
 describe('setNote', () => {
-  test('a finished game can have a note; empty removes it; it stays if moved back', () => {
+  test('a finished game or book can have a note; empty removes it; it stays if moved back', () => {
     const id = add({ category: 'game', source: null, title: 'Hades', status: 'done' });
     apply({ type: 'setNote', itemId: id, note: '  Loved the music.  ' });
     assert.equal(itemOf(id).note, 'Loved the music.');
@@ -198,7 +198,10 @@ describe('setNote', () => {
     apply({ type: 'setNote', itemId: id, note: '   ' });
     assert.equal(itemOf(id).note, null);
     rejects({ type: 'setNote', itemId: id, note: 5 }, 400, /text/);
-    rejects({ type: 'setNote', itemId: add({ status: 'done' }), note: 'A series' }, 400, /games/);
+    rejects({ type: 'setNote', itemId: add({ status: 'done' }), note: 'A series' }, 400, /games and books/);
+    const book = add({ category: 'book', source: null, title: 'Dune', status: 'done' });
+    apply({ type: 'setNote', itemId: book, note: 'The spice must flow.' });
+    assert.equal(itemOf(book).note, 'The spice must flow.');
   });
 });
 

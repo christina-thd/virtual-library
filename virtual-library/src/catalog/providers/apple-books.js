@@ -4,14 +4,15 @@ const API = 'https://itunes.apple.com/search';
 /** Artwork URLs end in the size they're served at ("…/100x100bb.jpg"); any size can be asked for. */
 const sized = (url, size) => (typeof url === 'string' ? url.replace(/\/\d+x\d+bb\.(jpg|png)$/, `/${size}bb.$1`) : null);
 
-export const appleBooks = {
+/** The store of one country: the US one, or the Greek one (Greek books, with their Greek titles). */
+const createAppleBooks = (country) => ({
   id: 'applebooks',
   name: 'Apple Books',
   url: 'https://www.apple.com/apple-books/',
   imageHosts: ['is1-ssl.mzstatic.com', 'is2-ssl.mzstatic.com', 'is3-ssl.mzstatic.com', 'is4-ssl.mzstatic.com', 'is5-ssl.mzstatic.com'],
 
   async search(query, http) {
-    const data = await http.json(`${API}?term=${encodeURIComponent(query)}&media=ebook&entity=ebook&country=US&limit=20`);
+    const data = await http.json(`${API}?term=${encodeURIComponent(query)}&media=ebook&entity=ebook&country=${country}&limit=20`);
     return (data.results ?? []).map((book) => ({
       id: book.trackId,
       title: book.trackName,
@@ -22,4 +23,7 @@ export const appleBooks = {
       genres: book.genres ?? [],                     // store sections ("Fantasy", "Books"…): sorted out in genres.js
     }));
   },
-};
+});
+
+export const appleBooks = createAppleBooks('US');
+export const appleBooksGreek = createAppleBooks('GR');

@@ -80,7 +80,8 @@ test/                     node:test suites
 to every screen over `GET /api/events` (Server-Sent Events). Screens never change items locally; they
 only render the latest view.
 
-**Actions:** `addItem`, `setStatus`, `setDropped`, `rateItem`, `setHours` and `setNote` (finished games), `setLeftOff`
+**Actions:** `addItem`, `setStatus`, `setDropped`, `rateItem`, `setHours` (finished games), `setNote` (finished games and
+books), `setLeftOff`
 (pending books and comics), `setSeenUpTo` (series not done), `removeItem`, `undo`, and the settings: `setCategoryHidden`,
 `setSetup`. See `src/library/actions.js`.
 Statuses are `pending`, `done` and, for series only, `waiting` (`statusesFor` in `public/js/shared/library.js`).
@@ -101,7 +102,7 @@ The screen sends a result back as it is with `addItem`. `source` stops the same 
 A provider is a small object: `{ id, name, url, imageHosts, search(query, http) }`. To add or swap one,
 write a file in `src/catalog/providers/` and add it to its category's list in `chooseProviders`
 (`src/catalog/index.js`), best first. TMDB and RAWG go first when their API key is set; the keyless ones stay as fallbacks.
-A category can instead offer several sources to pick from (games: `pc` and `nintendo`, sent as `&source=`);
+A category can instead offer several sources to pick from (games: `pc` and `nintendo`; books: `en` and `el`, Greek; sent as `&source=`);
 `/api/info` lists them per category with their credits, and the search screen shows a switch when there's more than one.
 
 **Covers.** Items keep a list of image URLs, best first (e.g. a large poster, then the search thumbnail).

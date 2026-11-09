@@ -30,6 +30,12 @@ export const openLibrary = {
   },
 };
 
+/** Books with a Greek edition (their titles are often written in Latin letters). */
+export const openLibraryGreek = {
+  ...openLibrary,
+  search: (query, http) => openLibrary.search(`${query} language:gre`, http),
+};
+
 /** Comics: only works filed under comics or graphic novels. Each is one book, so one volume. */
 const COMICS = 'subject:(comics OR "graphic novels" OR "comic books, strips, etc")';
 

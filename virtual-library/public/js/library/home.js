@@ -81,7 +81,7 @@ export function renderHome(items, hidden = [], setup = { step: null, since: 0, f
   const library = items.filter((i) => !hidden.includes(i.category));
   const done = library.filter((i) => i.status === 'done').length;
   $('summary').textContent = library.length
-    ? `${library.length} ${library.length === 1 ? 'story' : 'stories'} hoarded · ${done} finished`
+    ? `${library.length} in the hoard · ${done} finished`
     : 'Movies, series, books, comics & games — hoard them all';
   shownLibrary = library;
   $('tiles').innerHTML = CATEGORIES.filter((c) => !hidden.includes(c.id)).map((c) => tileHtml(c, library.filter((i) => i.category === c.id))).join('');
