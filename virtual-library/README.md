@@ -6,9 +6,9 @@ A personal library of movies, series, books, manga, comics and games. Search for
 ## Features
 
 - Movies, series, books, manga, comics and games in one place, each with its cover
-- Search built in: no account or API key needed
+- Search built in: no account or API key needed (books in English or Greek)
 - Two lists: **Pending** and **Done** (series also **Waiting**, for a new season)
-- Optional 5-star rating for finished things, playtime and a note for games
+- Optional 5-star rating for finished things, playtime for games, and a note for games and books
 - Where you left off: a book's page, a manga's volume, a series' episode
 - Search and sort inside each kind
 - Stats: what you finished each month, your top genres, time spent and more

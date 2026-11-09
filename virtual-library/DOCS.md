@@ -34,8 +34,9 @@ Anything marked done until then counts as seen before; nothing else changes.
 - **Series** have a third tab, **Waiting**: series you've caught up on, waiting for a new season. Move a series there
   from its page; when the new season is out, move it back to Pending.
 - Tap a cover to open it: move it between Pending, (Waiting) and Done, rate it, or remove it. A finished game also
-  has a **Playtime** field and a note (the button next to Playtime), if you want to keep track; a game with a note has
-  a small badge on its cover. A rating, playtime or note is saved with **Save**; closing with changes not saved asks first.
+  has a **Playtime** field and a note (the button next to Playtime), if you want to keep track; a finished book has a
+  note too (**Note**, under the rating). One with a note has a small badge on its cover. A rating, playtime or note is
+  saved with **Save**; closing with changes not saved asks first.
 - **Left off at** (the bookmark button on an item's page) keeps your place: the page of a pending book or comic, the volume
   of a pending manga, or the season and episode of a series in Pending or Waiting (picked from a list), never past the end.
   It shows on the cover's card too. **✕** clears it, and finishing the item clears it too. It isn't counted in the stats.
@@ -113,14 +114,16 @@ Search works out of the box, with no account:
 |--------|-------------|---------------------------|-------------------------------|
 | Movies | Cinemeta (IMDb data) | — | TMDB |
 | Series | TVmaze | Cinemeta | TMDB |
-| Books  | Open Library | Apple Books | — |
+| Books: English | Open Library | Apple Books | — |
+| Books: Greek | Apple Books (the Greek store) | Open Library (Greek editions) | — |
 | Manga/Comics: Manga | Kitsu (manga, manhwa, manhua) | MangaDex, then Open Library | — |
 | Manga/Comics: Comics | Open Library (comics and graphic novels) | — | — |
 | Games: PC | Steam | GOG | RAWG (every platform) |
 | Games: Nintendo | Nintendo's store (Switch, 3DS, Wii U, Wii and the classics) | — | — |
 
 For games, pick **PC** or **Nintendo** in the search field under the Game tab; each time you open the search it starts on PC.
-For Manga/Comics, pick **Manga** or **Comics** the same way; it starts on Manga.
+For Manga/Comics, pick **Manga** or **Comics** the same way; it starts on Manga. For books, pick **EN** or **GR**
+(Greek books, by their Greek titles); it starts on EN.
 The next catalog is also asked when one doesn't answer, so search keeps working if a website is down.
 The line under the results says which catalog found them.
 
