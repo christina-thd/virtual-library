@@ -1,5 +1,5 @@
-// What the app says when you finish something (Pending → Done), per category.
-// Picks one at random, never the same one twice in a row.
+// What the app says when you finish something (Pending → Done), per category, and when you add to a Pending that's
+// long already. Picks one at random, never the same one twice in a row.
 
 const CHEERS = {
   movie: [
@@ -37,6 +37,26 @@ const CHEERS = {
 let last = null;
 
 /** { emoji, title, line } for finishing something in this category. */
+/** How many pending (in that category) make it long. */
+export const LONG_PENDING = 20;
+
+const PILE_LINES = [
+  'Your backlog called. It wants a bigger house.',
+  'Pending is now a lifestyle.',
+  "Bold of you to assume you'll get to this one.",
+  "Collecting is the real hobby, isn't it?",
+  'Ambitious. Very ambitious.',
+  "It's not a backlog, it's a library.",
+];
+let lastPile = null;
+
+/** A line for adding to a long Pending. */
+export function pileLine() {
+  const fresh = PILE_LINES.filter((l) => l !== lastPile);
+  lastPile = fresh[Math.floor(Math.random() * fresh.length)];
+  return lastPile;
+}
+
 export function cheerFor(category) {
   const options = CHEERS[category] ?? CHEERS.movie;
   const fresh = options.filter((c) => c !== last);

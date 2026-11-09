@@ -1,5 +1,9 @@
 # Changelog
 
+## 4.3.0
+- Search books in English or Greek
+- Add a note to finished books
+
 ## 4.2.0
 - Tap the year in review to see what you finished
 - Fix the keyboard gap on phones

@@ -1,5 +1,5 @@
 import { randomBytes } from 'node:crypto';
-import { CATEGORY_IDS, isRating, LEFT_OFF, MAX_CREATOR, MAX_NOTE, MAX_TITLE, sameSource, statusesFor } from '../../public/js/shared/library.js';
+import { CATEGORY_IDS, hasNotes, isRating, LEFT_OFF, MAX_CREATOR, MAX_NOTE, MAX_TITLE, sameSource, statusesFor } from '../../public/js/shared/library.js';
 import { activityView, ITEM_ACTIONS, MAX_ACTIVITY } from './activity.js';
 
 /**
@@ -157,7 +157,7 @@ function normalizeItem(raw, now) {
     rating: status === 'done' && isRating(raw.rating) ? raw.rating : null,
     dropped: status === 'done' && raw.dropped === true,
     hoursPlayed: raw.category === 'game' ? parseHours(raw.hoursPlayed) : null,   // kept if moved back from done
-    note: raw.category === 'game' ? parseNote(raw.note) : null,                  // the same
+    note: hasNotes(raw.category) ? parseNote(raw.note) : null,                  // the same
     leftOff: LEFT_OFF[raw.category] && status === 'pending' ? parseCount(raw.leftOff) : null,
     seenUpTo: raw.category === 'series' && status !== 'done' ? parseSeenUpTo(raw.seenUpTo) : null,
     ...itemDetails(raw.category, raw),

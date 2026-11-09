@@ -330,11 +330,23 @@ describe('fallback catalogs (asked when the one before finds nothing)', () => {
 
   test('credits list every catalog of a category, in the order they are asked', () => {
     const { sources } = createCatalog({ http: fakeHttp({}), providers });
-    assert.deepEqual(sources.book, [{ id: 'all', label: null, icon: null, credits: [
+    assert.deepEqual(sources.book[0], { id: 'en', label: 'EN', icon: null, credits: [
       { id: 'openlibrary', name: 'Open Library', url: 'https://openlibrary.org/' },
       { id: 'applebooks', name: 'Apple Books', url: 'https://www.apple.com/apple-books/' },
-    ] }]);
+    ] });
     assert.deepEqual(sources.game[0].credits[1], { id: 'gog', name: 'GOG', url: 'https://www.gog.com/' });
+  });
+
+  test('books in Greek: the Greek Apple Books store first, then Greek editions on Open Library', async () => {
+    const http = fakeHttp({ 'https://itunes.apple.com/search': { results: [
+      { trackId: 7, trackName: 'Βίος και πολιτεία του Αλέξη Ζορμπά', artistName: 'Nikos Kazantzakis', releaseDate: '2014-01-01', artworkUrl100: 'https://is1-ssl.mzstatic.com/a/100x100bb.jpg' },
+    ] } });
+    const results = await createCatalog({ http, providers }).search('book', 'Ζορμπάς', 'el');
+    assert.equal(results[0].title, 'Βίος και πολιτεία του Αλέξη Ζορμπά');
+    assert.match(http.calls[0].url, /country=GR/);
+    const empty = fakeHttp({ 'https://itunes.apple.com/search': { results: [] }, 'https://openlibrary.org/search.json': { docs: [] } });
+    await createCatalog({ http: empty, providers }).search('book', 'Ζορμπάς', 'el');
+    assert.match(decodeURIComponent(empty.calls[1].url), /q=Ζορμπάς language:gre/);
   });
 });
 
@@ -426,11 +438,11 @@ describe('catalogs with an API key', () => {
     const ids = (providers) => Object.fromEntries(Object.entries(createCatalog({ http: fakeHttp({}), providers }).sources)
       .map(([c, list]) => [c, Object.fromEntries(list.map((s) => [s.id, s.credits.map((p) => p.id)]))]));
     assert.deepEqual(ids(chooseProviders()), {
-      movie: { all: ['cinemeta'] }, series: { all: ['tvmaze', 'cinemeta'] }, book: { all: ['openlibrary', 'applebooks'] },
+      movie: { all: ['cinemeta'] }, series: { all: ['tvmaze', 'cinemeta'] }, book: { en: ['openlibrary', 'applebooks'], el: ['applebooks', 'openlibrary'] },
       comic: { manga: ['kitsu', 'mangadex', 'openlibrary'], comics: ['openlibrary'] }, game: { pc: ['steam', 'gog'], nintendo: ['nintendo'] },
     });
     assert.deepEqual(ids(chooseProviders({ tmdbApiKey: 'a', rawgApiKey: 'b' })), {
-      movie: { all: ['tmdb', 'cinemeta'] }, series: { all: ['tmdb', 'tvmaze', 'cinemeta'] }, book: { all: ['openlibrary', 'applebooks'] },
+      movie: { all: ['tmdb', 'cinemeta'] }, series: { all: ['tmdb', 'tvmaze', 'cinemeta'] }, book: { en: ['openlibrary', 'applebooks'], el: ['applebooks', 'openlibrary'] },
       comic: { manga: ['kitsu', 'mangadex', 'openlibrary'], comics: ['openlibrary'] }, game: { pc: ['rawg', 'steam', 'gog'], nintendo: ['nintendo'] },
     });
   });

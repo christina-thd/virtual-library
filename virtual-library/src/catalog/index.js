@@ -1,13 +1,13 @@
 import { CATEGORY_IDS, MAX_CREATOR, MAX_QUERY, MAX_TITLE } from '../../public/js/shared/library.js';
 import { parseYear, readDetails } from '../library/state.js';
 import { cleanGenres } from './genres.js';
-import { appleBooks } from './providers/apple-books.js';
+import { appleBooks, appleBooksGreek } from './providers/apple-books.js';
 import { createCinemeta } from './providers/cinemeta.js';
 import { gog } from './providers/gog.js';
 import { kitsu } from './providers/kitsu.js';
 import { mangaDex } from './providers/mangadex.js';
 import { nintendo } from './providers/nintendo.js';
-import { openLibrary, openLibraryComics } from './providers/open-library.js';
+import { openLibrary, openLibraryComics, openLibraryGreek } from './providers/open-library.js';
 import { createRawg } from './providers/rawg.js';
 import { steam } from './providers/steam.js';
 import { createTmdb } from './providers/tmdb.js';
@@ -32,14 +32,17 @@ export class SearchError extends Error {
  * or doesn't answer. A catalog with an API key goes first when the key is set.
  * Games are split by platform (a switch on the search screen): each store answers every search with its own
  * look-alikes ("metroid" on Steam is "Metroidvania Maker"), so one can't fall back to the other. Comics are split
- * into manga and western comics the same way.
+ * into manga and western comics the same way, and books into English and Greek ones.
  */
 export function chooseProviders({ tmdbApiKey = null, rawgApiKey = null } = {}) {
   const withKey = (key, create) => (key ? [create(key)] : []);
   return {
     movie: [...withKey(tmdbApiKey, (k) => createTmdb('movie', k)), createCinemeta('movie')],
     series: [...withKey(tmdbApiKey, (k) => createTmdb('series', k)), tvmaze, createCinemeta('series')],
-    book: [openLibrary, appleBooks],
+    book: [
+      { id: 'en', label: 'EN', providers: [openLibrary, appleBooks] },
+      { id: 'el', label: 'GR', providers: [appleBooksGreek, openLibraryGreek] },
+    ],
     game: [
       // icon: on the switch (ui/icons.js); label: its name, for screen readers
       { id: 'pc', label: rawgApiKey ? 'All platforms' : 'PC & Steam Deck', icon: rawgApiKey ? 'game' : 'steam', providers: [...withKey(rawgApiKey, createRawg), steam, gog] },

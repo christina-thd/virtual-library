@@ -1,4 +1,4 @@
-import { CATEGORY_IDS, isRating, LEFT_OFF, leftOffUnit, MAX_CREATOR, MAX_TITLE, statusesFor } from '../../public/js/shared/library.js';
+import { CATEGORY_IDS, hasNotes, isRating, LEFT_OFF, leftOffUnit, MAX_CREATOR, MAX_TITLE, statusesFor } from '../../public/js/shared/library.js';
 import { ITEM_ACTIONS, latestOf, logChange } from './activity.js';
 import { detailFields, findBySource, findItem, itemDetails, newId, parseCount, parseHours, parseImageUrls, parseNote, parseSource, parseYear, SETUP_STEPS } from './state.js';
 
@@ -161,11 +161,11 @@ const handlers = {
     if (step === 'done') state.setupSince = null;
   },
 
-  /** A note on a game you finished (what you thought of it); empty or null removes it. */
+  /** A note on a game or book you finished (what you thought of it); empty or null removes it. */
   setNote(state, { itemId, note }) {
     const item = getItem(state, itemId);
-    if (item.category !== 'game') throw new ActionError('Only games have notes');
-    if (item.status !== 'done') throw new ActionError('Notes are for finished games');
+    if (!hasNotes(item.category)) throw new ActionError('Only games and books have notes');
+    if (item.status !== 'done') throw new ActionError('Notes are for finished games and books');
     if (note != null && typeof note !== 'string') throw new ActionError('note must be text, or null');
     item.note = parseNote(note);
   },

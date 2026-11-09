@@ -14,7 +14,7 @@
  * @property {number | null} rating                  1–5, finished items only
  * @property {boolean} dropped                       done, but given up on
  * @property {number | null} hoursPlayed             games
- * @property {string | null} note                    games: what you thought, once finished
+ * @property {string | null} note                    games and books: what you thought, once finished
  * @property {number | null} leftOff                 pending books and comics: the page or volume you got to
  * @property {{ season: number, episode: number | null } | null} seenUpTo   series not done: the last episode you saw
  * @property {number | null} runtime                 minutes: a movie's, or one episode of a series
@@ -61,6 +61,9 @@ export const MAX_TITLE = 150;
 export const MAX_CREATOR = 100;
 export const MAX_QUERY = 100;
 export const MAX_NOTE = 1000;
+
+/** The categories whose finished items can have a note. */
+export const hasNotes = (category) => category === 'game' || category === 'book';
 
 export const categoryOf = (id) => CATEGORIES.find((c) => c.id === id);
 
