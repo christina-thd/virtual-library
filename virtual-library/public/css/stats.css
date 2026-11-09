@@ -148,6 +148,9 @@
 .stats-averages button:active, .review-total:active { transform: scale(0.96); }
 /* what was finished in the year in review: covers, three a row */
 .review-list { display: grid; grid-template-columns: repeat(3, 1fr); gap: 16px 10px; padding: 6px 16px 0; overflow-y: auto; }
+@media (min-width: 640px) {
+  .review-list { grid-template-columns: repeat(auto-fill, minmax(150px, 1fr)); }
+}
 .review-total strong { font-family: var(--font-display); font-weight: 600; font-size: 34px; line-height: 1; }
 .review-total span { color: var(--muted); font-size: 14px; }
 .stats-card .stats-oldest { margin: 4px 0 12px; }

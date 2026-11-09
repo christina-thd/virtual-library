@@ -150,6 +150,10 @@
   gap: 18px 12px;
   padding: 6px 16px calc(110px + var(--safe-bottom));
 }
+/* wider screens (a computer): as many covers a row as fit, not three huge ones */
+@media (min-width: 640px) {
+  .shelf { grid-template-columns: repeat(auto-fill, minmax(150px, 1fr)); gap: 22px 16px; }
+}
 
 .card {
   display: flex;
